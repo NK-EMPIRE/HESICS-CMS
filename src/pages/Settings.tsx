@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import {
   Building, Database, RefreshCw,
-  CheckCircle2, Save, Crown, Shield
+  CheckCircle2, Save, Crown, Shield, History, Trash2
 } from 'lucide-react';
 import { db, isSupabaseConfigured } from '../lib/supabase';
 import { EntityType, User } from '../lib/types';
+import { getAuditLog, formatAuditAction, clearAuditLog } from '../lib/auditLog';
 
 interface SettingsProps {
   activeUser: User;
@@ -13,6 +14,7 @@ interface SettingsProps {
 export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
   const [org, setOrg] = useState(db.getOrg());
   const [isSaved, setIsSaved] = useState(false);
+  const [auditLogs, setAuditLogs] = useState(() => getAuditLog());
 
   const canEdit = activeUser.hierarchy === 'founder' || activeUser.hierarchy === 'admin';
 
@@ -29,15 +31,22 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
     }
   };
 
+  const handleClearAudit = () => {
+    if (window.confirm('Clear all audit logs?')) {
+      clearAuditLog();
+      setAuditLogs([]);
+    }
+  };
+
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
+    <div className="space-y-6 max-w-4xl mx-auto">
 
       {/* Header */}
       <div className="space-y-1 pb-4 border-b border-[#1a1a1a]">
         <div className="text-2xl">⚙️</div>
-        <h1 className="text-xl font-bold text-white tracking-tight">Settings</h1>
+        <h1 className="text-xl font-bold text-white tracking-tight">Settings & Security</h1>
         <p className="text-[11px] text-[#666666]">
-          Organisation profile, tax configuration, and system status.
+          Organisation profile, tax parameters, engine status, and audit log.
         </p>
       </div>
 
@@ -57,7 +66,7 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
               </span>
             )}
             {activeUser.hierarchy === 'admin' && (
-              <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border text-blue-400 bg-blue-950/40 border-blue-900/50">
+              <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border text-[#1E9EFF] bg-[#1E9EFF]/10 border-[#1E9EFF]/30">
                 <Shield className="w-2.5 h-2.5" /> Admin
               </span>
             )}
@@ -162,13 +171,51 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
             </button>
           </div>
         )}
-
-        {!canEdit && (
-          <p className="text-[11px] text-[#555555] pt-2 border-t border-[#1a1a1a]">
-            Only Founders and Admins can edit organisation settings.
-          </p>
-        )}
       </form>
+
+      {/* Audit Trail Section (Founders & Admins) */}
+      {canEdit && (
+        <div className="p-4 bg-[#0f0f0f] border border-[#161616] rounded-xl space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold text-white flex items-center gap-2">
+              <History className="w-4 h-4 text-[#1E9EFF]" /> Security Audit Log
+            </h3>
+            {auditLogs.length > 0 && (
+              <button
+                onClick={handleClearAudit}
+                className="text-[10px] text-[#555555] hover:text-red-400 flex items-center gap-1 transition-colors"
+              >
+                <Trash2 className="w-3 h-3" /> Clear Log
+              </button>
+            )}
+          </div>
+
+          <div className="space-y-1.5 max-h-60 overflow-y-auto">
+            {auditLogs.length === 0 ? (
+              <div className="py-6 text-center text-[10px] text-[#444444]">
+                No security audit records yet. All team actions will be logged here.
+              </div>
+            ) : (
+              auditLogs.map((log) => (
+                <div key={log.id} className="p-2 bg-[#080808] border border-[#141414] rounded-lg flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-white font-mono">{log.user_name}</span>
+                    <span className="text-[10px] text-[#1E9EFF] bg-[#1E9EFF]/10 px-1.5 py-0.2 rounded">
+                      {formatAuditAction(log.action)}
+                    </span>
+                    {log.entity_label && (
+                      <span className="text-[10px] text-[#666666] font-mono">"{log.entity_label}"</span>
+                    )}
+                  </div>
+                  <span className="text-[9px] text-[#444444] font-mono">
+                    {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Danger Zone — Founder only */}
       {activeUser.hierarchy === 'founder' && (

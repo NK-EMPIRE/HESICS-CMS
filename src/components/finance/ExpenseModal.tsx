@@ -140,6 +140,19 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           />
         </div>
 
+        <div className="flex items-center gap-2 pt-1">
+          <input
+            type="checkbox"
+            id="is_recurring"
+            checked={formData.is_recurring}
+            onChange={(e) => setFormData({ ...formData, is_recurring: e.target.checked })}
+            className="rounded border-[#1e1e1e] bg-[#080808] text-[#1E9EFF] focus:ring-0"
+          />
+          <label htmlFor="is_recurring" className="text-xs text-[#cccccc] cursor-pointer">
+            Mark as <span className="text-[#1E9EFF] font-medium">Recurring Monthly Expense</span> (Software/Hosting)
+          </label>
+        </div>
+
         <div className="pt-3 flex justify-end gap-2 border-t border-[#161616]">
           <button
             type="button"

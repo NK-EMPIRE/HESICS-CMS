@@ -30,6 +30,25 @@ export function App() {
     }
   });
 
+  // Keyboard shortcuts (c = clients, d = deals, f = finance, q = quotations)
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if inside input/textarea/select
+      const activeEl = document.activeElement;
+      if (activeEl && ['INPUT', 'TEXTAREA', 'SELECT'].includes(activeEl.tagName)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      switch (e.key.toLowerCase()) {
+        case 'c': setCurrentTab('clients'); break;
+        case 'd': setCurrentTab('deals'); break;
+        case 'f': setCurrentTab('finance'); break;
+        case 'q': setCurrentTab('quotations'); break;
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const handleLogin = (user: User) => {
     setActiveUser(user);
     try {

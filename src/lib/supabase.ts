@@ -165,6 +165,12 @@ class DataStore {
   getActivities(): Activity[] {
     return this.activities;
   }
+  getOverdueActivitiesCount(): number {
+    const today = new Date().toISOString().split('T')[0];
+    return this.activities.filter(
+      (a) => a.follow_up_date && a.follow_up_date < today
+    ).length;
+  }
   addActivity(act: Omit<Activity, 'id' | 'org_id' | 'created_at'>): Activity {
     const newAct: Activity = {
       ...act,

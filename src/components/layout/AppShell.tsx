@@ -37,9 +37,22 @@ export const AppShell: React.FC<AppShellProps> = ({
 
   const userPermissions = getPermissionsForRole(activeUser.role_id);
 
+  // Calculate overdue count for badge
+  const overdueCount = db.getOverdueActivitiesCount();
+  const coldCount = db.getClients().filter((c) => {
+    if (c.status !== 'active') return false;
+    const acts = db.getActivities().filter((a) => a.client_id === c.id);
+    let latest = new Date(c.updated_at || c.created_at).getTime();
+    acts.forEach((a) => {
+      const t = new Date(a.created_at).getTime();
+      if (t > latest) latest = t;
+    });
+    return Math.floor((Date.now() - latest) / (1000 * 60 * 60 * 24)) >= 30;
+  }).length;
+
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, perm: 'deals:read' as PermissionKey },
-    { id: 'clients', label: 'Clients', icon: Users, perm: 'clients:read' as PermissionKey },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, perm: 'deals:read' as PermissionKey, badge: overdueCount > 0 ? overdueCount : undefined },
+    { id: 'clients', label: 'Clients', icon: Users, perm: 'clients:read' as PermissionKey, badge: coldCount > 0 ? `${coldCount} cold` : undefined, badgeColor: 'bg-amber-950/50 text-amber-400 border-amber-900/50' },
     { id: 'deals', label: 'Deals Board', icon: Kanban, perm: 'deals:read' as PermissionKey },
     { id: 'finance', label: 'Finance & Tax', icon: DollarSign, perm: 'finance:read' as PermissionKey },
     { id: 'quotations', label: 'Quotations', icon: FileText, perm: 'invoices:read' as PermissionKey },
@@ -109,7 +122,18 @@ export const AppShell: React.FC<AppShellProps> = ({
                   }`}
                 >
                   <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#1E9EFF]' : isAllowed ? 'text-[#777777]' : 'text-[#3d3d3d]'}`} />
-                  {!collapsed && <span>{item.label}</span>}
+                  {!collapsed && (
+                    <div className="flex items-center justify-between flex-1 min-w-0">
+                      <span className="truncate">{item.label}</span>
+                      {item.badge && (
+                        <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full border ${
+                          item.badgeColor || 'bg-red-950/60 text-red-400 border-red-900/50'
+                        }`}>
+                          {item.badge}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </button>
               );
             })}
