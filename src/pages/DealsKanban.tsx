@@ -45,7 +45,7 @@ export const DealsKanban: React.FC<DealsKanbanProps> = ({ activeUser }) => {
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Page Header */}
-      <div className="space-y-1 pb-3 border-b border-[#262626]">
+      <div className="space-y-1 pb-3 border-b border-[#1a1a1a]">
         <div className="text-2xl">📋</div>
         <h1 className="text-xl font-bold text-white tracking-tight">Deals Board</h1>
         <p className="text-xs text-[#888888]">
@@ -60,7 +60,7 @@ export const DealsKanban: React.FC<DealsKanbanProps> = ({ activeUser }) => {
             setEditingDeal(undefined);
             setIsDealModalOpen(true);
           }}
-          className="notion-button bg-[#FF6B00] hover:bg-[#ea580c] text-white font-medium text-xs"
+          className="notion-button bg-[#1E9EFF] hover:bg-[#0A8AE6] text-white font-medium text-xs"
         >
           <Plus className="w-3.5 h-3.5" /> New Deal
         </button>
@@ -75,10 +75,10 @@ export const DealsKanban: React.FC<DealsKanbanProps> = ({ activeUser }) => {
           return (
             <div
               key={col.id}
-              className="bg-[#1f1f1f] border border-[#2a2a2a] rounded-lg p-2.5 space-y-2.5 min-h-[480px] flex flex-col"
+              className="bg-[#0d0d0d] border border-[#161616] rounded-lg p-2.5 space-y-2.5 min-h-[480px] flex flex-col"
             >
               {/* Header */}
-              <div className="pb-2 border-b border-[#2a2a2a] flex items-center justify-between text-xs">
+              <div className="pb-2 border-b border-[#161616] flex items-center justify-between text-xs">
                 <span className="font-semibold text-white">
                   {col.label} <span className="text-[#666666] font-normal">({colDeals.length})</span>
                 </span>
@@ -90,14 +90,14 @@ export const DealsKanban: React.FC<DealsKanbanProps> = ({ activeUser }) => {
               {/* Cards */}
               <div className="space-y-2 flex-1 overflow-y-auto">
                 {colDeals.length === 0 ? (
-                  <div className="py-8 text-center text-[10px] text-[#555555] border border-dashed border-[#282828] rounded">
+                  <div className="py-8 text-center text-[10px] text-[#555555] border border-dashed border-[#181818] rounded">
                     Empty
                   </div>
                 ) : (
                   colDeals.map((deal) => (
                     <div
                       key={deal.id}
-                      className="p-2.5 bg-[#252525] border border-[#333333] rounded space-y-1.5 hover:border-[#444444] transition-colors cursor-pointer"
+                      className="p-2.5 bg-[#131313] border border-[#333333] rounded space-y-1.5 hover:border-[#444444] transition-colors cursor-pointer"
                       onClick={() => {
                         setEditingDeal(deal);
                         setIsDealModalOpen(true);

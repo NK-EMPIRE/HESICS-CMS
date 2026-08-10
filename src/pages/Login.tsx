@@ -47,20 +47,24 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#191919] flex items-center justify-center p-4 font-sans text-[#d4d4d4]">
+    <div className="min-h-screen bg-[#080808] flex items-center justify-center p-4 font-sans text-[#d4d4d4]">
       <div className="w-full max-w-sm space-y-5">
 
         {/* Brand */}
         <div className="text-center space-y-2">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#FF6B00] to-[#ea580c] flex items-center justify-center font-bold text-lg text-white mx-auto shadow-xl shadow-orange-900/30">
-            H
+          {/* HESICS H-bracket logo mark */}
+          <div className="w-12 h-12 rounded-xl bg-[#0d0d0d] border border-[#1E9EFF]/20 flex items-center justify-center mx-auto shadow-lg shadow-[#1E9EFF]/10">
+            <svg width="28" height="22" viewBox="0 0 28 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2 2H7V10H13V2H18V20H13V13H7V20H2V2Z" fill="white"/>
+              <path d="M20 2L24 2L24 20" stroke="#1E9EFF" strokeWidth="2.5" strokeLinecap="round"/>
+            </svg>
           </div>
-          <h1 className="text-xl font-bold text-white tracking-tight">HESICS OS</h1>
-          <p className="text-[11px] text-[#666666]">Internal Business Operating System</p>
+          <h1 className="text-xl font-bold text-white tracking-tight font-display">HESICS</h1>
+          <p className="text-[11px] text-[#444444]">Make It Simple.</p>
         </div>
 
         {/* Auth Card */}
-        <div className="p-5 bg-[#202020] border border-[#2e2e2e] rounded-xl space-y-5">
+        <div className="p-5 bg-[#0a0a0a] border border-[#1e1e1e] rounded-xl space-y-5">
 
           {/* Email sign-in */}
           <form onSubmit={handleSubmit} className="space-y-3">
@@ -74,7 +78,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 value={email}
                 onChange={(e) => { setEmail(e.target.value); setError(''); }}
                 placeholder="you@hesics.com"
-                className="w-full px-3 py-2 bg-[#191919] border border-[#2e2e2e] rounded-lg text-xs text-white placeholder-[#444444] focus:outline-none focus:border-[#555555] transition-colors"
+                className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-xs text-white placeholder-[#333333] focus:outline-none focus:border-[#1E9EFF]/40 transition-colors"
               />
               {error && (
                 <p className="text-[10px] text-red-400 mt-1.5">{error}</p>
@@ -82,7 +86,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </div>
             <button
               type="submit"
-              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-[#FF6B00] hover:bg-[#ea580c] text-white font-semibold text-xs rounded-lg transition-colors"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-[#1E9EFF] hover:bg-[#0A8AE6] text-white font-semibold text-xs rounded-lg transition-colors"
             >
               Sign In <ArrowRight className="w-3.5 h-3.5" />
             </button>
@@ -90,9 +94,9 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
           {/* Divider */}
           <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-[#2a2a2a]" />
+            <div className="flex-1 h-px bg-[#161616]" />
             <span className="text-[10px] text-[#555555] uppercase font-semibold tracking-wider">or</span>
-            <div className="flex-1 h-px bg-[#2a2a2a]" />
+            <div className="flex-1 h-px bg-[#161616]" />
           </div>
 
           {/* Team Members */}
@@ -107,7 +111,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   <button
                     key={u.id}
                     onClick={() => onLogin(u)}
-                    className="w-full flex items-center justify-between p-2.5 rounded-lg bg-[#191919] border border-[#282828] hover:border-[#383838] hover:bg-[#242424] transition-all text-left group"
+                    className="w-full flex items-center justify-between p-2.5 rounded-lg bg-[#080808] border border-[#181818] hover:border-[#383838] hover:bg-[#111111] transition-all text-left group"
                   >
                     <div className="flex items-center gap-2.5">
                       <img

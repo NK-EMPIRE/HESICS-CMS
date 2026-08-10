@@ -6,6 +6,7 @@ export const INITIAL_ORG: Organization = {
   gstin: '33AAAAA0000A1Z5',
   entity_type: 'pvt_ltd',
   created_at: new Date().toISOString(),
+  // Brand: Make It Simple. | hesics1@gmail.com | +91 78679 99298
 };
 
 // Role definitions with hierarchy

@@ -7,25 +7,40 @@ export default {
   theme: {
     extend: {
       colors: {
-        brand: {
-          50: '#fff7ed',
-          100: '#ffedd5',
-          500: '#FF6B00', // Hesics Orange
-          600: '#ea580c',
-          700: '#c2410c',
+        // HESICS Brand
+        hesics: {
+          blue:      '#1E9EFF',
+          'blue-dark': '#0A8AE6',
+          'blue-dim':  'rgba(30, 158, 255, 0.12)',
         },
-        dark: {
-          900: '#0B0B0E', // Main background
-          800: '#121217', // Secondary card background
-          700: '#1A1A22', // Hover/Border
-          600: '#262633', // Muted border
-        }
+        // Surface system
+        surface: {
+          main:    '#080808',
+          card:    '#0f0f0f',
+          hover:   '#161616',
+          border:  '#1a1a1a',
+        },
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        display: ['Space Grotesk', 'sans-serif'],
-      }
+        sans:    ['Inter', 'system-ui', 'sans-serif'],
+        display: ['Space Grotesk', 'Inter', 'sans-serif'],
+        mono:    ['JetBrains Mono', 'Fira Code', 'monospace'],
+      },
+      animation: {
+        'fade-in': 'fadeIn 0.15s ease-out',
+        'slide-up': 'slideUp 0.2s ease-out',
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        slideUp: {
+          '0%': { opacity: '0', transform: 'translateY(6px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
     },
   },
   plugins: [],
-}
+};

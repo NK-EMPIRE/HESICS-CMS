@@ -54,7 +54,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeUser, onNavigate }) 
     <div className="space-y-6 max-w-6xl mx-auto">
 
       {/* Page Header */}
-      <div className="space-y-1 pb-4 border-b border-[#262626]">
+      <div className="space-y-1 pb-4 border-b border-[#1a1a1a]">
         <div className="flex items-center gap-3">
           <div>
             <div className="text-2xl">⚡</div>
@@ -78,19 +78,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeUser, onNavigate }) 
       <div className="flex items-center gap-2 flex-wrap">
         <button
           onClick={() => setIsClientModalOpen(true)}
-          className="notion-button bg-[#242424] hover:bg-[#2c2c2c] text-white border border-[#333333]"
+          className="notion-button bg-[#111111] hover:bg-[#141414] text-white border border-[#333333]"
         >
           <Plus className="w-3.5 h-3.5 text-[#aaaaaa]" /> New Client
         </button>
         <button
           onClick={() => setIsDealModalOpen(true)}
-          className="notion-button bg-[#242424] hover:bg-[#2c2c2c] text-white border border-[#333333]"
+          className="notion-button bg-[#111111] hover:bg-[#141414] text-white border border-[#333333]"
         >
-          <Sparkles className="w-3.5 h-3.5 text-[#FF6B00]" /> New Deal
+          <Sparkles className="w-3.5 h-3.5 text-[#1E9EFF]" /> New Deal
         </button>
         <button
           onClick={() => setIsActivityModalOpen(true)}
-          className="notion-button bg-[#242424] hover:bg-[#2c2c2c] text-white border border-[#333333]"
+          className="notion-button bg-[#111111] hover:bg-[#141414] text-white border border-[#333333]"
         >
           <Clock className="w-3.5 h-3.5 text-[#aaaaaa]" /> Log Activity
         </button>
@@ -117,7 +117,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeUser, onNavigate }) 
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-[#555555] mb-3">Revenue Overview</p>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="p-4 bg-[#1d1d1d] border border-[#2a2a2a] rounded-xl space-y-1 hover:border-[#383838] transition-colors">
+            <div className="p-4 bg-[#0f0f0f] border border-[#161616] rounded-xl space-y-1 hover:border-[#383838] transition-colors">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-[#666666]">Total Income</span>
                 <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
@@ -126,7 +126,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeUser, onNavigate }) 
               <div className="text-[10px] text-[#555555]">Collected + logged</div>
             </div>
 
-            <div className="p-4 bg-[#1d1d1d] border border-[#2a2a2a] rounded-xl space-y-1 hover:border-[#383838] transition-colors">
+            <div className="p-4 bg-[#0f0f0f] border border-[#161616] rounded-xl space-y-1 hover:border-[#383838] transition-colors">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-[#666666]">Total Expenses</span>
                 <TrendingDown className="w-3.5 h-3.5 text-red-500" />
@@ -135,10 +135,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeUser, onNavigate }) 
               <div className="text-[10px] text-[#555555]">All categories</div>
             </div>
 
-            <div className="p-4 bg-[#1d1d1d] border border-[#2a2a2a] rounded-xl space-y-1 hover:border-[#383838] transition-colors">
+            <div className="p-4 bg-[#0f0f0f] border border-[#161616] rounded-xl space-y-1 hover:border-[#383838] transition-colors">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-[#666666]">Net Profit</span>
-                <DollarSign className="w-3.5 h-3.5 text-[#FF6B00]" />
+                <DollarSign className="w-3.5 h-3.5 text-[#1E9EFF]" />
               </div>
               <div className={`text-xl font-bold font-mono ${stats.netProfit >= 0 ? 'text-white' : 'text-red-400'}`}>
                 {fmt(stats.netProfit)}
@@ -148,7 +148,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeUser, onNavigate }) 
               </div>
             </div>
 
-            <div className="p-4 bg-[#1d1d1d] border border-[#2a2a2a] rounded-xl space-y-1 hover:border-[#383838] transition-colors">
+            <div className="p-4 bg-[#0f0f0f] border border-[#161616] rounded-xl space-y-1 hover:border-[#383838] transition-colors">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-[#666666]">Pipeline Value</span>
                 <Target className="w-3.5 h-3.5 text-[#888888]" />
@@ -164,7 +164,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeUser, onNavigate }) 
       <div>
         <p className="text-[10px] font-semibold uppercase tracking-wider text-[#555555] mb-3">CRM Snapshot</p>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="p-4 bg-[#1d1d1d] border border-[#2a2a2a] rounded-xl space-y-1">
+          <div className="p-4 bg-[#0f0f0f] border border-[#161616] rounded-xl space-y-1">
             <div className="flex items-center gap-1.5">
               <Users className="w-3.5 h-3.5 text-[#888888]" />
               <span className="text-[10px] font-semibold uppercase tracking-wider text-[#666666]">Clients</span>
@@ -173,7 +173,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeUser, onNavigate }) 
             <div className="text-[10px] text-[#555555]">{stats.activeClients} active · {stats.leadClients} leads</div>
           </div>
 
-          <div className="p-4 bg-[#1d1d1d] border border-[#2a2a2a] rounded-xl space-y-1">
+          <div className="p-4 bg-[#0f0f0f] border border-[#161616] rounded-xl space-y-1">
             <div className="flex items-center gap-1.5">
               <Briefcase className="w-3.5 h-3.5 text-[#888888]" />
               <span className="text-[10px] font-semibold uppercase tracking-wider text-[#666666]">Won Revenue</span>
@@ -182,13 +182,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeUser, onNavigate }) 
             <div className="text-[10px] text-[#555555]">Committed contracts</div>
           </div>
 
-          <div className="p-4 bg-[#1d1d1d] border border-[#2a2a2a] rounded-xl space-y-1">
+          <div className="p-4 bg-[#0f0f0f] border border-[#161616] rounded-xl space-y-1">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-[#666666] mb-1">Cash Collected</div>
             <div className="text-xl font-bold font-mono text-white">{fmt(stats.collectedCash)}</div>
             <div className="text-[10px] text-[#555555]">Paid invoices</div>
           </div>
 
-          <div className="p-4 bg-[#1d1d1d] border border-[#2a2a2a] rounded-xl space-y-1">
+          <div className="p-4 bg-[#0f0f0f] border border-[#161616] rounded-xl space-y-1">
             <div className="text-[10px] font-semibold uppercase tracking-wider text-[#666666] mb-1">Outstanding</div>
             <div className={`text-xl font-bold font-mono ${stats.outstandingInvoices > 0 ? 'text-amber-400' : 'text-white'}`}>
               {fmt(stats.outstandingInvoices)}
@@ -200,9 +200,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeUser, onNavigate }) 
 
       {/* Admin: Team Overview strip */}
       {isAdminUser && (
-        <div className="p-4 bg-[#1d1d1d] border border-[#2a2a2a] rounded-xl flex items-center justify-between">
+        <div className="p-4 bg-[#0f0f0f] border border-[#161616] rounded-xl flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Users className="w-4 h-4 text-[#FF6B00]" />
+            <Users className="w-4 h-4 text-[#1E9EFF]" />
             <div>
               <div className="text-xs font-semibold text-white">Team — {stats.teamSize} active members</div>
               <div className="text-[10px] text-[#666666] mt-0.5">
@@ -225,7 +225,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeUser, onNavigate }) 
       {/* Deals & Activities Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Active Deals */}
-        <div className="lg:col-span-2 bg-[#1d1d1d] border border-[#2a2a2a] rounded-xl p-4 space-y-3">
+        <div className="lg:col-span-2 bg-[#0f0f0f] border border-[#161616] rounded-xl p-4 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-[11px] font-bold uppercase tracking-wider text-[#888888]">Active Deals</h3>
             <button
@@ -237,11 +237,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeUser, onNavigate }) 
           </div>
 
           {db.getDeals().length === 0 ? (
-            <div className="py-10 text-center border border-dashed border-[#2a2a2a] rounded-lg space-y-2">
+            <div className="py-10 text-center border border-dashed border-[#161616] rounded-lg space-y-2">
               <p className="text-xs text-[#666666]">No deals in pipeline yet.</p>
               <button
                 onClick={() => setIsDealModalOpen(true)}
-                className="text-xs text-[#FF6B00] hover:underline"
+                className="text-xs text-[#1E9EFF] hover:underline"
               >
                 + Add your first deal
               </button>
@@ -251,7 +251,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeUser, onNavigate }) 
               {db.getDeals().slice(0, 6).map((deal) => (
                 <div
                   key={deal.id}
-                  className="p-3 bg-[#191919] border border-[#282828] rounded-lg flex items-center justify-between hover:border-[#383838] transition-colors"
+                  className="p-3 bg-[#080808] border border-[#181818] rounded-lg flex items-center justify-between hover:border-[#383838] transition-colors"
                 >
                   <div>
                     <div className="text-xs font-medium text-white">{deal.title}</div>
@@ -261,7 +261,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeUser, onNavigate }) 
                     <div className="text-xs font-mono font-semibold text-white">
                       ₹{Number(deal.value).toLocaleString('en-IN')}
                     </div>
-                    <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-[#262626] text-[#888888]">
+                    <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-[#1a1a1a] text-[#888888]">
                       {deal.stage}
                     </span>
                   </div>
@@ -272,7 +272,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeUser, onNavigate }) 
         </div>
 
         {/* Activity Feed */}
-        <div className="bg-[#1d1d1d] border border-[#2a2a2a] rounded-xl p-4 space-y-3">
+        <div className="bg-[#0f0f0f] border border-[#161616] rounded-xl p-4 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-[11px] font-bold uppercase tracking-wider text-[#888888]">Touchpoints</h3>
             <button
@@ -284,13 +284,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeUser, onNavigate }) 
           </div>
 
           {db.getActivities().length === 0 ? (
-            <div className="py-10 text-center border border-dashed border-[#2a2a2a] rounded-lg">
+            <div className="py-10 text-center border border-dashed border-[#161616] rounded-lg">
               <p className="text-xs text-[#666666]">No touchpoints yet.</p>
             </div>
           ) : (
             <div className="space-y-2">
               {db.getActivities().slice(0, 5).map((act) => (
-                <div key={act.id} className="p-2.5 bg-[#191919] border border-[#282828] rounded-lg text-xs space-y-1">
+                <div key={act.id} className="p-2.5 bg-[#080808] border border-[#181818] rounded-lg text-xs space-y-1">
                   <div className="flex items-center justify-between text-[11px] font-medium text-white">
                     <span>{act.client_name || '—'}</span>
                     <span className="text-[9px] text-[#666666] uppercase">{act.type}</span>

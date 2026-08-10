@@ -55,7 +55,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           <select
             value={formData.category}
             onChange={(e) => setFormData({ ...formData, category: e.target.value as ExpenseCategory })}
-            className="w-full px-3 py-2 bg-[#191919] border border-[#2e2e2e] rounded-md text-white focus:outline-none"
+            className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-md text-white focus:outline-none"
           >
             <option value="software">Software & SaaS Tools</option>
             <option value="marketing">Marketing & Ads</option>
@@ -76,7 +76,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
               value={formData.vendor}
               onChange={(e) => setFormData({ ...formData, vendor: e.target.value })}
               placeholder="e.g. OpenAI, AWS, Vercel"
-              className="w-full px-3 py-2 bg-[#191919] border border-[#2e2e2e] rounded-md text-white focus:outline-none"
+              className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-md text-white focus:outline-none"
             />
           </div>
 
@@ -89,7 +89,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
               required
               value={formData.spent_at}
               onChange={(e) => setFormData({ ...formData, spent_at: e.target.value })}
-              className="w-full px-3 py-2 bg-[#191919] border border-[#2e2e2e] rounded-md text-white focus:outline-none"
+              className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-md text-white focus:outline-none"
             />
           </div>
         </div>
@@ -109,7 +109,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 // Auto compute 18% input GST estimate
                 setFormData({ ...formData, amount: amt, gst_paid: Math.round(amt * 0.18) });
               }}
-              className="w-full px-3 py-2 bg-[#191919] border border-[#2e2e2e] rounded-md text-white font-mono focus:outline-none"
+              className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-md text-white font-mono focus:outline-none"
             />
           </div>
 
@@ -122,7 +122,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
               min="0"
               value={formData.gst_paid}
               onChange={(e) => setFormData({ ...formData, gst_paid: Number(e.target.value) })}
-              className="w-full px-3 py-2 bg-[#191919] border border-[#2e2e2e] rounded-md text-emerald-400 font-mono focus:outline-none"
+              className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-md text-emerald-400 font-mono focus:outline-none"
             />
           </div>
         </div>
@@ -136,11 +136,11 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
             value={formData.notes}
             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
             placeholder="e.g. Monthly subscription invoice #1042"
-            className="w-full px-3 py-2 bg-[#191919] border border-[#2e2e2e] rounded-md text-white focus:outline-none"
+            className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-md text-white focus:outline-none"
           />
         </div>
 
-        <div className="pt-3 flex justify-end gap-2 border-t border-[#2a2a2a]">
+        <div className="pt-3 flex justify-end gap-2 border-t border-[#161616]">
           <button
             type="button"
             onClick={onClose}
@@ -150,7 +150,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           </button>
           <button
             type="submit"
-            className="notion-button bg-[#FF6B00] hover:bg-[#ea580c] text-white font-medium text-xs"
+            className="notion-button bg-[#1E9EFF] hover:bg-[#0A8AE6] text-white font-medium text-xs"
           >
             Save Expense
           </button>

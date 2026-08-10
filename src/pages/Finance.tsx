@@ -60,7 +60,7 @@ export const Finance: React.FC<FinanceProps> = ({ activeUser }) => {
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       {/* Page Header */}
-      <div className="space-y-1 pb-3 border-b border-[#262626]">
+      <div className="space-y-1 pb-3 border-b border-[#1a1a1a]">
         <div className="text-2xl">📊</div>
         <h1 className="text-xl font-bold text-white tracking-tight">Finance & Tax Operations</h1>
         <p className="text-xs text-[#888888]">
@@ -70,14 +70,14 @@ export const Finance: React.FC<FinanceProps> = ({ activeUser }) => {
 
       {/* Tabs & Action Bar */}
       <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
-        <div className="flex items-center gap-1 bg-[#1f1f1f] p-1 border border-[#2a2a2a] rounded-lg">
+        <div className="flex items-center gap-1 bg-[#0d0d0d] p-1 border border-[#161616] rounded-lg">
           {(['overview', 'income', 'expenses', 'tax'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`px-3 py-1 text-xs font-medium rounded capitalize transition-all ${
                 activeTab === tab
-                  ? 'bg-[#2d2d2d] text-white font-semibold shadow-xs'
+                  ? 'bg-[#151515] text-white font-semibold shadow-xs'
                   : 'text-[#888888] hover:text-[#cccccc]'
               }`}
             >
@@ -89,13 +89,13 @@ export const Finance: React.FC<FinanceProps> = ({ activeUser }) => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsExpenseModalOpen(true)}
-            className="notion-button bg-[#242424] hover:bg-[#2c2c2c] text-white border border-[#333333]"
+            className="notion-button bg-[#111111] hover:bg-[#141414] text-white border border-[#333333]"
           >
             <Plus className="w-3.5 h-3.5" /> + Expense
           </button>
           <button
             onClick={() => setIsIncomeModalOpen(true)}
-            className="notion-button bg-[#FF6B00] hover:bg-[#ea580c] text-white font-medium text-xs"
+            className="notion-button bg-[#1E9EFF] hover:bg-[#0A8AE6] text-white font-medium text-xs"
           >
             <Plus className="w-3.5 h-3.5" /> + Record Income
           </button>
@@ -129,7 +129,7 @@ export const Finance: React.FC<FinanceProps> = ({ activeUser }) => {
         </div>
 
         <div className="p-4 notion-card space-y-1 bg-[#1e1c18] border-[#382d1e]">
-          <div className="text-[11px] font-medium text-[#FF6B00] uppercase tracking-wider">Net GST Liability</div>
+          <div className="text-[11px] font-medium text-[#1E9EFF] uppercase tracking-wider">Net GST Liability</div>
           <div className="text-xl font-bold font-mono text-white">
             ₹{netGSTPayable.toLocaleString('en-IN')}
           </div>
@@ -157,10 +157,10 @@ export const Finance: React.FC<FinanceProps> = ({ activeUser }) => {
                       <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#161616" />
                   <XAxis dataKey="month" stroke="#666666" fontSize={11} />
                   <YAxis stroke="#666666" fontSize={11} />
-                  <Tooltip contentStyle={{ backgroundColor: '#202020', borderColor: '#333333', borderRadius: '6px', fontSize: '11px' }} />
+                  <Tooltip contentStyle={{ backgroundColor: '#0a0a0a', borderColor: '#333333', borderRadius: '6px', fontSize: '11px' }} />
                   <Area type="monotone" dataKey="Income" stroke="#10b981" fillOpacity={1} fill="url(#incomeGrad)" />
                   <Area type="monotone" dataKey="Expenses" stroke="#ef4444" fillOpacity={1} fill="url(#expenseGrad)" />
                 </AreaChart>
@@ -174,7 +174,7 @@ export const Finance: React.FC<FinanceProps> = ({ activeUser }) => {
       {activeTab === 'income' && (
         <div className="notion-card overflow-hidden">
           <table className="w-full text-left text-xs">
-            <thead className="bg-[#1c1c1c] border-b border-[#282828] text-[#888888] font-medium">
+            <thead className="bg-[#1c1c1c] border-b border-[#181818] text-[#888888] font-medium">
               <tr>
                 <th className="p-3">Source / Client</th>
                 <th className="p-3">Type</th>
@@ -183,14 +183,14 @@ export const Finance: React.FC<FinanceProps> = ({ activeUser }) => {
                 <th className="p-3 font-mono text-right">Amount (₹)</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#242424] text-[#cccccc]">
+            <tbody className="divide-y divide-[#111111] text-[#cccccc]">
               {incomes.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="p-8 text-center text-[#666666]">No income entries recorded yet.</td>
                 </tr>
               ) : (
                 incomes.map((inc) => (
-                  <tr key={inc.id} className="hover:bg-[#242424]">
+                  <tr key={inc.id} className="hover:bg-[#111111]">
                     <td className="p-3 font-semibold text-white">{inc.client_name || 'Revenue Stream'}</td>
                     <td className="p-3 uppercase text-[10px] text-[#888888]">{inc.source_type}</td>
                     <td className="p-3 text-[#888888] font-mono">{inc.received_at}</td>
@@ -208,7 +208,7 @@ export const Finance: React.FC<FinanceProps> = ({ activeUser }) => {
       {activeTab === 'expenses' && (
         <div className="notion-card overflow-hidden">
           <table className="w-full text-left text-xs">
-            <thead className="bg-[#1c1c1c] border-b border-[#282828] text-[#888888] font-medium">
+            <thead className="bg-[#1c1c1c] border-b border-[#181818] text-[#888888] font-medium">
               <tr>
                 <th className="p-3">Category</th>
                 <th className="p-3">Vendor</th>
@@ -218,14 +218,14 @@ export const Finance: React.FC<FinanceProps> = ({ activeUser }) => {
                 <th className="p-3 text-right">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#242424] text-[#cccccc]">
+            <tbody className="divide-y divide-[#111111] text-[#cccccc]">
               {expenses.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="p-8 text-center text-[#666666]">No expense entries recorded.</td>
                 </tr>
               ) : (
                 expenses.map((exp) => (
-                  <tr key={exp.id} className="hover:bg-[#242424]">
+                  <tr key={exp.id} className="hover:bg-[#111111]">
                     <td className="p-3 font-semibold text-white capitalize">{exp.category}</td>
                     <td className="p-3 text-[#aaaaaa]">{exp.vendor || '—'}</td>
                     <td className="p-3 text-[#888888] font-mono">{exp.spent_at}</td>
@@ -247,24 +247,24 @@ export const Finance: React.FC<FinanceProps> = ({ activeUser }) => {
       {/* Tab 4: Quarterly GST Tax Calculator */}
       {activeTab === 'tax' && (
         <div className="notion-card p-6 space-y-6">
-          <div className="flex items-center justify-between border-b border-[#2a2a2a] pb-4">
+          <div className="flex items-center justify-between border-b border-[#161616] pb-4">
             <div>
               <h3 className="text-base font-bold text-white">Quarterly GST Tax Provisioning (India 18%)</h3>
               <p className="text-xs text-[#888888] mt-0.5">Automated computation of Output GST Liability vs. Input Tax Credit.</p>
             </div>
-            <span className="px-2.5 py-1 rounded bg-[#2e2e2e] text-xs font-mono text-[#cccccc]">2026-Q2</span>
+            <span className="px-2.5 py-1 rounded bg-[#1e1e1e] text-xs font-mono text-[#cccccc]">2026-Q2</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 bg-[#191919] border border-[#2a2a2a] rounded-lg space-y-1">
+            <div className="p-4 bg-[#080808] border border-[#161616] rounded-lg space-y-1">
               <div className="text-xs text-[#888888]">1. Output GST Collected</div>
-              <div className="text-lg font-bold font-mono text-[#FF6B00]">
+              <div className="text-lg font-bold font-mono text-[#1E9EFF]">
                 ₹{totalOutputGST.toLocaleString('en-IN')}
               </div>
               <div className="text-[10px] text-[#666666]">18% GST charged on sales</div>
             </div>
 
-            <div className="p-4 bg-[#191919] border border-[#2a2a2a] rounded-lg space-y-1">
+            <div className="p-4 bg-[#080808] border border-[#161616] rounded-lg space-y-1">
               <div className="text-xs text-[#888888]">2. Input GST Credit (Expenses)</div>
               <div className="text-lg font-bold font-mono text-emerald-400">
                 - ₹{totalInputGST.toLocaleString('en-IN')}
@@ -273,7 +273,7 @@ export const Finance: React.FC<FinanceProps> = ({ activeUser }) => {
             </div>
 
             <div className="p-4 bg-[#1e1a14] border border-[#42331c] rounded-lg space-y-1">
-              <div className="text-xs text-[#FF6B00] font-bold">3. Net GST Payable</div>
+              <div className="text-xs text-[#1E9EFF] font-bold">3. Net GST Payable</div>
               <div className="text-xl font-bold font-mono text-white">
                 ₹{netGSTPayable.toLocaleString('en-IN')}
               </div>

@@ -49,7 +49,7 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       {/* Page Header */}
-      <div className="space-y-1 pb-3 border-b border-[#262626]">
+      <div className="space-y-1 pb-3 border-b border-[#1a1a1a]">
         <div className="text-2xl">📂</div>
         <h1 className="text-xl font-bold text-white tracking-tight">Clients Directory</h1>
         <p className="text-xs text-[#888888]">
@@ -67,7 +67,7 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
               placeholder="Search clients..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 bg-[#202020] border border-[#2e2e2e] rounded-md text-xs text-white placeholder-[#666666] focus:outline-none focus:border-[#444444]"
+              className="w-full pl-8 pr-3 py-1.5 bg-[#0a0a0a] border border-[#1e1e1e] rounded-md text-xs text-white placeholder-[#666666] focus:outline-none focus:border-[#444444]"
             />
           </div>
         </div>
@@ -76,7 +76,7 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
           <select
             value={sourceFilter}
             onChange={(e) => setSourceFilter(e.target.value)}
-            className="px-2.5 py-1.5 bg-[#202020] border border-[#2e2e2e] rounded-md text-xs text-[#aaaaaa] focus:outline-none"
+            className="px-2.5 py-1.5 bg-[#0a0a0a] border border-[#1e1e1e] rounded-md text-xs text-[#aaaaaa] focus:outline-none"
           >
             <option value="all">All Sources</option>
             <option value="referral">Referral</option>
@@ -90,7 +90,7 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
               setEditingClient(undefined);
               setIsClientModalOpen(true);
             }}
-            className="notion-button bg-[#FF6B00] hover:bg-[#ea580c] text-white font-medium text-xs ml-auto"
+            className="notion-button bg-[#1E9EFF] hover:bg-[#0A8AE6] text-white font-medium text-xs ml-auto"
           >
             <Plus className="w-3.5 h-3.5" /> New Client
           </button>
@@ -99,14 +99,14 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
 
       {/* Notion Database Table View */}
       {filteredClients.length === 0 ? (
-        <div className="p-12 notion-card text-center border-dashed border-[#2d2d2d] space-y-2">
+        <div className="p-12 notion-card text-center border-dashed border-[#151515] space-y-2">
           <p className="text-xs text-[#777777]">No clients found in directory.</p>
           <button
             onClick={() => {
               setEditingClient(undefined);
               setIsClientModalOpen(true);
             }}
-            className="text-xs text-white underline hover:text-[#FF6B00]"
+            className="text-xs text-white underline hover:text-[#1E9EFF]"
           >
             + Add your first client
           </button>
@@ -114,7 +114,7 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
       ) : (
         <div className="notion-card overflow-hidden">
           <table className="w-full text-left text-xs">
-            <thead className="bg-[#1c1c1c] border-b border-[#282828] text-[#888888] font-medium">
+            <thead className="bg-[#1c1c1c] border-b border-[#181818] text-[#888888] font-medium">
               <tr>
                 <th className="p-3">Name</th>
                 <th className="p-3">Company</th>
@@ -124,9 +124,9 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
                 <th className="p-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#242424] text-[#cccccc]">
+            <tbody className="divide-y divide-[#111111] text-[#cccccc]">
               {filteredClients.map((client) => (
-                <tr key={client.id} className="hover:bg-[#242424] transition-colors">
+                <tr key={client.id} className="hover:bg-[#111111] transition-colors">
                   <td className="p-3 font-semibold text-white">{client.name}</td>
                   <td className="p-3 text-[#aaaaaa]">{client.company_name || '—'}</td>
                   <td className="p-3 space-y-0.5">
@@ -139,7 +139,7 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
                       className={`inline-block text-[10px] font-mono px-2 py-0.5 rounded ${
                         client.status === 'active'
                           ? 'bg-emerald-950/40 text-emerald-400 border border-emerald-900/40'
-                          : 'bg-[#282828] text-[#aaaaaa]'
+                          : 'bg-[#181818] text-[#aaaaaa]'
                       }`}
                     >
                       {client.status}
@@ -151,7 +151,7 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
                         setSelectedClientId(client.id);
                         setIsActivityModalOpen(true);
                       }}
-                      className="px-2 py-1 bg-[#282828] hover:bg-[#333333] text-[#cccccc] rounded text-[10px]"
+                      className="px-2 py-1 bg-[#181818] hover:bg-[#333333] text-[#cccccc] rounded text-[10px]"
                     >
                       + Touchpoint
                     </button>

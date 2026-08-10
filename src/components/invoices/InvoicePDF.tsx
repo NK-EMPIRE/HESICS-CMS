@@ -15,13 +15,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 24,
     borderBottomWidth: 2,
-    borderBottomColor: '#FF6B00',
+    borderBottomColor: '#1E9EFF',
     paddingBottom: 12,
   },
   brandName: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#FF6B00',
+    color: '#1E9EFF',
   },
   brandTagline: {
     fontSize: 9,
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     paddingTop: 6,
     marginTop: 4,
     fontWeight: 'bold',
-    color: '#FF6B00',
+    color: '#1E9EFF',
   },
   footer: {
     position: 'absolute',

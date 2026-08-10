@@ -36,7 +36,7 @@ export const Invoices: React.FC<InvoicesProps> = ({ activeUser }) => {
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       {/* Page Header */}
-      <div className="space-y-1 pb-3 border-b border-[#262626]">
+      <div className="space-y-1 pb-3 border-b border-[#1a1a1a]">
         <div className="text-2xl">🧾</div>
         <h1 className="text-xl font-bold text-white tracking-tight">Tax Invoices</h1>
         <p className="text-xs text-[#888888]">
@@ -50,21 +50,21 @@ export const Invoices: React.FC<InvoicesProps> = ({ activeUser }) => {
             setEditingInvoice(undefined);
             setIsModalOpen(true);
           }}
-          className="notion-button bg-[#FF6B00] hover:bg-[#ea580c] text-white font-medium text-xs"
+          className="notion-button bg-[#1E9EFF] hover:bg-[#0A8AE6] text-white font-medium text-xs"
         >
           <Plus className="w-3.5 h-3.5" /> Issue Invoice
         </button>
       </div>
 
       {invoices.length === 0 ? (
-        <div className="p-12 notion-card text-center border-dashed border-[#2d2d2d] space-y-2">
+        <div className="p-12 notion-card text-center border-dashed border-[#151515] space-y-2">
           <p className="text-xs text-[#777777]">No tax invoices created yet.</p>
           <button
             onClick={() => {
               setEditingInvoice(undefined);
               setIsModalOpen(true);
             }}
-            className="text-xs text-white underline hover:text-[#FF6B00]"
+            className="text-xs text-white underline hover:text-[#1E9EFF]"
           >
             + Create your first invoice
           </button>
@@ -72,7 +72,7 @@ export const Invoices: React.FC<InvoicesProps> = ({ activeUser }) => {
       ) : (
         <div className="notion-card overflow-hidden">
           <table className="w-full text-left text-xs">
-            <thead className="bg-[#1c1c1c] border-b border-[#282828] text-[#888888] font-medium">
+            <thead className="bg-[#1c1c1c] border-b border-[#181818] text-[#888888] font-medium">
               <tr>
                 <th className="p-3">Invoice #</th>
                 <th className="p-3">Client</th>
@@ -84,9 +84,9 @@ export const Invoices: React.FC<InvoicesProps> = ({ activeUser }) => {
                 <th className="p-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#242424] text-[#cccccc]">
+            <tbody className="divide-y divide-[#111111] text-[#cccccc]">
               {invoices.map((inv) => (
-                <tr key={inv.id} className="hover:bg-[#242424] transition-colors">
+                <tr key={inv.id} className="hover:bg-[#111111] transition-colors">
                   <td className="p-3 font-mono font-semibold text-white">{inv.invoice_number}</td>
                   <td className="p-3 font-medium text-white">{inv.client_name || 'Client'}</td>
                   <td className="p-3 font-mono">₹{inv.subtotal.toLocaleString('en-IN')}</td>
@@ -98,7 +98,7 @@ export const Invoices: React.FC<InvoicesProps> = ({ activeUser }) => {
                       className={`inline-block text-[10px] font-mono px-2 py-0.5 rounded ${
                         inv.status === 'paid'
                           ? 'bg-emerald-950/40 text-emerald-400 border border-emerald-900/40'
-                          : 'bg-[#282828] text-[#aaaaaa]'
+                          : 'bg-[#181818] text-[#aaaaaa]'
                       }`}
                     >
                       {inv.status}
@@ -107,7 +107,7 @@ export const Invoices: React.FC<InvoicesProps> = ({ activeUser }) => {
                   <td className="p-3 text-right space-x-1.5">
                     <button
                       onClick={() => setPreviewInvoice(inv)}
-                      className="px-2 py-1 bg-[#282828] hover:bg-[#333333] text-[#cccccc] rounded text-[10px]"
+                      className="px-2 py-1 bg-[#181818] hover:bg-[#333333] text-[#cccccc] rounded text-[10px]"
                     >
                       <Eye className="w-3 h-3 inline mr-1" /> PDF Preview
                     </button>
@@ -144,7 +144,7 @@ export const Invoices: React.FC<InvoicesProps> = ({ activeUser }) => {
           maxWidth="2xl"
         >
           <div className="space-y-3">
-            <div className="h-[420px] w-full border border-[#2e2e2e] rounded-lg overflow-hidden bg-[#111111]">
+            <div className="h-[420px] w-full border border-[#1e1e1e] rounded-lg overflow-hidden bg-[#111111]">
               <PDFViewer width="100%" height="100%" showToolbar={false}>
                 <InvoicePDFDocument data={previewInvoice} org={org} type="invoice" />
               </PDFViewer>
@@ -153,7 +153,7 @@ export const Invoices: React.FC<InvoicesProps> = ({ activeUser }) => {
               <PDFDownloadLink
                 document={<InvoicePDFDocument data={previewInvoice} org={org} type="invoice" />}
                 fileName={`Invoice-${previewInvoice.invoice_number}.pdf`}
-                className="notion-button bg-[#FF6B00] text-white text-xs"
+                className="notion-button bg-[#1E9EFF] text-white text-xs"
               >
                 <Download className="w-3.5 h-3.5" /> Download PDF
               </PDFDownloadLink>

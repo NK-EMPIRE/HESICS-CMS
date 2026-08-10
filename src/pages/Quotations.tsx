@@ -48,7 +48,7 @@ export const Quotations: React.FC<QuotationsProps> = ({ activeUser }) => {
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       {/* Page Header */}
-      <div className="space-y-1 pb-3 border-b border-[#262626]">
+      <div className="space-y-1 pb-3 border-b border-[#1a1a1a]">
         <div className="text-2xl">📄</div>
         <h1 className="text-xl font-bold text-white tracking-tight">Quotations</h1>
         <p className="text-xs text-[#888888]">
@@ -62,21 +62,21 @@ export const Quotations: React.FC<QuotationsProps> = ({ activeUser }) => {
             setEditingQuotation(undefined);
             setIsModalOpen(true);
           }}
-          className="notion-button bg-[#FF6B00] hover:bg-[#ea580c] text-white font-medium text-xs"
+          className="notion-button bg-[#1E9EFF] hover:bg-[#0A8AE6] text-white font-medium text-xs"
         >
           <Plus className="w-3.5 h-3.5" /> Create Quotation
         </button>
       </div>
 
       {quotations.length === 0 ? (
-        <div className="p-12 notion-card text-center border-dashed border-[#2d2d2d] space-y-2">
+        <div className="p-12 notion-card text-center border-dashed border-[#151515] space-y-2">
           <p className="text-xs text-[#777777]">No quotations created yet.</p>
           <button
             onClick={() => {
               setEditingQuotation(undefined);
               setIsModalOpen(true);
             }}
-            className="text-xs text-white underline hover:text-[#FF6B00]"
+            className="text-xs text-white underline hover:text-[#1E9EFF]"
           >
             + Build your first quote
           </button>
@@ -84,7 +84,7 @@ export const Quotations: React.FC<QuotationsProps> = ({ activeUser }) => {
       ) : (
         <div className="notion-card overflow-hidden">
           <table className="w-full text-left text-xs">
-            <thead className="bg-[#1c1c1c] border-b border-[#282828] text-[#888888] font-medium">
+            <thead className="bg-[#1c1c1c] border-b border-[#181818] text-[#888888] font-medium">
               <tr>
                 <th className="p-3">Quote #</th>
                 <th className="p-3">Client</th>
@@ -95,23 +95,23 @@ export const Quotations: React.FC<QuotationsProps> = ({ activeUser }) => {
                 <th className="p-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#242424] text-[#cccccc]">
+            <tbody className="divide-y divide-[#111111] text-[#cccccc]">
               {quotations.map((q) => (
-                <tr key={q.id} className="hover:bg-[#242424] transition-colors">
+                <tr key={q.id} className="hover:bg-[#111111] transition-colors">
                   <td className="p-3 font-mono font-semibold text-white">{q.quote_number}</td>
                   <td className="p-3 font-medium text-white">{q.client_name || 'Client'}</td>
                   <td className="p-3 font-mono">₹{q.subtotal.toLocaleString('en-IN')}</td>
                   <td className="p-3 font-mono text-[#888888]">₹{q.tax.toLocaleString('en-IN')}</td>
                   <td className="p-3 font-mono font-bold text-white">₹{q.total.toLocaleString('en-IN')}</td>
                   <td className="p-3">
-                    <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-[#282828] text-[#aaaaaa]">
+                    <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-[#181818] text-[#aaaaaa]">
                       {q.status}
                     </span>
                   </td>
                   <td className="p-3 text-right space-x-1.5">
                     <button
                       onClick={() => setPreviewQuotation(q)}
-                      className="px-2 py-1 bg-[#282828] hover:bg-[#333333] text-[#cccccc] rounded text-[10px]"
+                      className="px-2 py-1 bg-[#181818] hover:bg-[#333333] text-[#cccccc] rounded text-[10px]"
                     >
                       <Eye className="w-3 h-3 inline mr-1" /> PDF Preview
                     </button>
@@ -148,7 +148,7 @@ export const Quotations: React.FC<QuotationsProps> = ({ activeUser }) => {
           maxWidth="2xl"
         >
           <div className="space-y-3">
-            <div className="h-[420px] w-full border border-[#2e2e2e] rounded-lg overflow-hidden bg-[#111111]">
+            <div className="h-[420px] w-full border border-[#1e1e1e] rounded-lg overflow-hidden bg-[#111111]">
               <PDFViewer width="100%" height="100%" showToolbar={false}>
                 <InvoicePDFDocument data={previewQuotation} org={org} type="quotation" />
               </PDFViewer>
@@ -157,7 +157,7 @@ export const Quotations: React.FC<QuotationsProps> = ({ activeUser }) => {
               <PDFDownloadLink
                 document={<InvoicePDFDocument data={previewQuotation} org={org} type="quotation" />}
                 fileName={`Quotation-${previewQuotation.quote_number}.pdf`}
-                className="notion-button bg-[#FF6B00] text-white text-xs"
+                className="notion-button bg-[#1E9EFF] text-white text-xs"
               >
                 <Download className="w-3.5 h-3.5" /> Download PDF
               </PDFDownloadLink>

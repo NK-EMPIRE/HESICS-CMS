@@ -49,30 +49,34 @@ export const AppShell: React.FC<AppShellProps> = ({
   ];
 
   return (
-    <div className="min-h-screen flex bg-[#191919] text-[#d4d4d4] font-sans">
+    <div className="min-h-screen flex bg-[#080808] text-[#d4d4d4] font-sans">
       {/* Sidebar */}
       <aside
         className={`${
           collapsed ? 'w-14' : 'w-60'
-        } transition-all duration-200 border-r border-[#262626] bg-[#1f1f1f] flex flex-col justify-between z-30 sticky top-0 h-screen select-none shrink-0`}
+        } transition-all duration-200 border-r border-[#1a1a1a] bg-[#0d0d0d] flex flex-col justify-between z-30 sticky top-0 h-screen select-none shrink-0`}
       >
         <div>
           {/* Org Header */}
-          <div className="h-12 px-3 flex items-center justify-between border-b border-[#262626]">
+          <div className="h-12 px-3 flex items-center justify-between border-b border-[#1a1a1a]">
             <div className="flex items-center gap-2.5 overflow-hidden">
-              <div className="w-6 h-6 rounded bg-gradient-to-br from-[#FF6B00] to-[#ea580c] flex items-center justify-center font-bold text-xs text-white shrink-0 shadow">
-                H
+              {/* HESICS H-bracket mini mark */}
+              <div className="w-6 h-6 rounded bg-[#0d0d0d] border border-[#1E9EFF]/20 flex items-center justify-center shrink-0">
+                <svg width="14" height="11" viewBox="0 0 28 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M2 2H7V10H13V2H18V20H13V13H7V20H2V2Z" fill="white"/>
+                  <path d="M20 2L24 2L24 20" stroke="#1E9EFF" strokeWidth="2.5" strokeLinecap="round"/>
+                </svg>
               </div>
               {!collapsed && (
                 <div className="truncate">
-                  <h1 className="font-bold text-xs text-white truncate tracking-tight">{org.name}</h1>
-                  <p className="text-[9px] text-[#555555]">Business OS</p>
+                  <h1 className="font-bold text-xs text-white truncate tracking-tight font-display">HESICS</h1>
+                  <p className="text-[9px] text-[#444444]">Make It Simple.</p>
                 </div>
               )}
             </div>
             <button
               onClick={() => setCollapsed(!collapsed)}
-              className="p-1 text-[#666666] hover:text-white hover:bg-[#2a2a2a] rounded transition-colors"
+              className="p-1 text-[#666666] hover:text-white hover:bg-[#161616] rounded transition-colors"
             >
               {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
             </button>
@@ -98,13 +102,13 @@ export const AppShell: React.FC<AppShellProps> = ({
                   title={collapsed ? item.label : undefined}
                   className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${
                     isActive
-                      ? 'bg-[#2d2d2d] text-white font-semibold'
+                      ? 'bg-[#151515] text-white font-semibold'
                       : isAllowed
-                      ? 'text-[#888888] hover:bg-[#252525] hover:text-[#e5e5e5]'
+                      ? 'text-[#888888] hover:bg-[#131313] hover:text-[#e5e5e5]'
                       : 'text-[#3d3d3d] cursor-not-allowed'
                   }`}
                 >
-                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#FF6B00]' : isAllowed ? 'text-[#777777]' : 'text-[#3d3d3d]'}`} />
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#1E9EFF]' : isAllowed ? 'text-[#777777]' : 'text-[#3d3d3d]'}`} />
                   {!collapsed && <span>{item.label}</span>}
                 </button>
               );
@@ -113,7 +117,7 @@ export const AppShell: React.FC<AppShellProps> = ({
         </div>
 
         {/* User Section */}
-        <div className="p-2 border-t border-[#262626] space-y-0.5">
+        <div className="p-2 border-t border-[#1a1a1a] space-y-0.5">
           {!collapsed && (
             <div className="px-2 py-1 text-[10px] font-semibold text-[#555555] uppercase tracking-wider flex items-center justify-between">
               <span>Team</span>
@@ -136,14 +140,14 @@ export const AppShell: React.FC<AppShellProps> = ({
                   title={collapsed ? u.name : undefined}
                   className={`w-full flex items-center gap-2 p-1.5 rounded-md text-left transition-all ${
                     isSelected
-                      ? 'bg-[#2a2a2a] text-white font-medium border border-[#383838]'
+                      ? 'bg-[#161616] text-white font-medium border border-[#383838]'
                       : 'hover:bg-[#222222] text-[#777777]'
                   }`}
                 >
                   <img
                     src={u.avatar_url}
                     alt={u.name}
-                    className={`w-5 h-5 rounded-full bg-[#333333] shrink-0 ${isSelected ? 'ring-1 ring-[#FF6B00]/50' : ''}`}
+                    className={`w-5 h-5 rounded-full bg-[#333333] shrink-0 ${isSelected ? 'ring-1 ring-[#1E9EFF]/50' : ''}`}
                   />
                   {!collapsed && (
                     <div className="truncate flex-1 min-w-0">
@@ -173,7 +177,7 @@ export const AppShell: React.FC<AppShellProps> = ({
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Topbar */}
-        <header className="h-12 px-6 border-b border-[#262626] bg-[#191919] flex items-center justify-between sticky top-0 z-20">
+        <header className="h-12 px-6 border-b border-[#1a1a1a] bg-[#080808] flex items-center justify-between sticky top-0 z-20">
           <div className="flex items-center gap-2 text-xs text-[#666666]">
             <span>{org.name}</span>
             <span>/</span>
@@ -196,7 +200,7 @@ export const AppShell: React.FC<AppShellProps> = ({
             </div>
             <button
               onClick={onLogout}
-              className="p-1.5 text-[#666666] hover:text-white hover:bg-[#262626] rounded transition-colors"
+              className="p-1.5 text-[#666666] hover:text-white hover:bg-[#1a1a1a] rounded transition-colors"
               title="Sign Out"
             >
               <LogOut className="w-3.5 h-3.5" />

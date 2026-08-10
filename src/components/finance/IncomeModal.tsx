@@ -58,7 +58,7 @@ export const IncomeModal: React.FC<IncomeModalProps> = ({
             <select
               value={formData.source_type}
               onChange={(e) => setFormData({ ...formData, source_type: e.target.value as IncomeSourceType })}
-              className="w-full px-3 py-2 bg-[#191919] border border-[#2e2e2e] rounded-md text-white focus:outline-none"
+              className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-md text-white focus:outline-none"
             >
               <option value="invoice">Client Invoice Payment</option>
               <option value="product_sale">Digital Product Sale</option>
@@ -76,7 +76,7 @@ export const IncomeModal: React.FC<IncomeModalProps> = ({
               value={formData.client_name}
               onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
               placeholder="e.g. Anand Kumar"
-              className="w-full px-3 py-2 bg-[#191919] border border-[#2e2e2e] rounded-md text-white focus:outline-none"
+              className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-md text-white focus:outline-none"
             />
           </div>
         </div>
@@ -92,7 +92,7 @@ export const IncomeModal: React.FC<IncomeModalProps> = ({
               required
               value={formData.amount}
               onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
-              className="w-full px-3 py-2 bg-[#191919] border border-[#2e2e2e] rounded-md text-white font-mono focus:outline-none"
+              className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-md text-white font-mono focus:outline-none"
             />
           </div>
 
@@ -105,7 +105,7 @@ export const IncomeModal: React.FC<IncomeModalProps> = ({
               required
               value={formData.received_at}
               onChange={(e) => setFormData({ ...formData, received_at: e.target.value })}
-              className="w-full px-3 py-2 bg-[#191919] border border-[#2e2e2e] rounded-md text-white focus:outline-none"
+              className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-md text-white focus:outline-none"
             />
           </div>
         </div>
@@ -119,11 +119,11 @@ export const IncomeModal: React.FC<IncomeModalProps> = ({
             value={formData.payment_method}
             onChange={(e) => setFormData({ ...formData, payment_method: e.target.value })}
             placeholder="e.g. HDFC Bank IMPS / Razorpay"
-            className="w-full px-3 py-2 bg-[#191919] border border-[#2e2e2e] rounded-md text-white focus:outline-none"
+            className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-md text-white focus:outline-none"
           />
         </div>
 
-        <div className="pt-3 flex justify-end gap-2 border-t border-[#2a2a2a]">
+        <div className="pt-3 flex justify-end gap-2 border-t border-[#161616]">
           <button
             type="button"
             onClick={onClose}
@@ -133,7 +133,7 @@ export const IncomeModal: React.FC<IncomeModalProps> = ({
           </button>
           <button
             type="submit"
-            className="notion-button bg-[#FF6B00] hover:bg-[#ea580c] text-white font-medium text-xs"
+            className="notion-button bg-[#1E9EFF] hover:bg-[#0A8AE6] text-white font-medium text-xs"
           >
             Record Income
           </button>

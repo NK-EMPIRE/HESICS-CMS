@@ -141,7 +141,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
     <div className="space-y-8 max-w-6xl mx-auto">
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 pb-4 border-b border-[#262626]">
+      <div className="flex items-start justify-between gap-4 pb-4 border-b border-[#1a1a1a]">
         <div>
           <div className="text-2xl mb-1">👥</div>
           <h1 className="text-xl font-bold text-white tracking-tight">Team & Permissions</h1>
@@ -152,7 +152,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
         {canManage && (
           <button
             onClick={() => setShowInviteForm(!showInviteForm)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-[#FF6B00] hover:bg-[#ea580c] text-white text-xs font-semibold rounded-lg transition-colors shrink-0"
+            className="flex items-center gap-2 px-3 py-1.5 bg-[#1E9EFF] hover:bg-[#0A8AE6] text-white text-xs font-semibold rounded-lg transition-colors shrink-0"
           >
             <UserPlus className="w-3.5 h-3.5" />
             Add Member
@@ -162,7 +162,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
 
       {/* Invite Form */}
       {showInviteForm && canManage && (
-        <div className="p-5 bg-[#1d1d1d] border border-[#2e2e2e] rounded-xl space-y-4">
+        <div className="p-5 bg-[#0f0f0f] border border-[#1e1e1e] rounded-xl space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-white">Add Team Member</h3>
             <button onClick={() => setShowInviteForm(false)} className="text-[#666666] hover:text-white">
@@ -183,7 +183,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                   value={inviteData.name}
                   onChange={(e) => setInviteData((d) => ({ ...d, name: e.target.value }))}
                   placeholder="e.g. Ravi Kumar"
-                  className="w-full px-3 py-2 bg-[#191919] border border-[#2e2e2e] rounded-lg text-xs text-white placeholder-[#444444] focus:outline-none focus:border-[#555555]"
+                  className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-xs text-white placeholder-[#444444] focus:outline-none focus:border-[#1E9EFF]/40"
                 />
               </div>
               <div>
@@ -194,7 +194,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                   value={inviteData.email}
                   onChange={(e) => setInviteData((d) => ({ ...d, email: e.target.value }))}
                   placeholder="ravi@hesics.com"
-                  className="w-full px-3 py-2 bg-[#191919] border border-[#2e2e2e] rounded-lg text-xs text-white placeholder-[#444444] focus:outline-none focus:border-[#555555]"
+                  className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-xs text-white placeholder-[#444444] focus:outline-none focus:border-[#1E9EFF]/40"
                 />
               </div>
               <div>
@@ -204,7 +204,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                     required
                     value={inviteData.role_id}
                     onChange={(e) => setInviteData((d) => ({ ...d, role_id: e.target.value }))}
-                    className="w-full px-3 py-2 bg-[#191919] border border-[#2e2e2e] rounded-lg text-xs text-white focus:outline-none focus:border-[#555555] appearance-none"
+                    className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-xs text-white focus:outline-none focus:border-[#1E9EFF]/40 appearance-none"
                   >
                     {roles
                       .filter((r) => {
@@ -225,7 +225,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                   value={inviteData.department}
                   onChange={(e) => setInviteData((d) => ({ ...d, department: e.target.value }))}
                   placeholder="e.g. Sales, Design..."
-                  className="w-full px-3 py-2 bg-[#191919] border border-[#2e2e2e] rounded-lg text-xs text-white placeholder-[#444444] focus:outline-none focus:border-[#555555]"
+                  className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-xs text-white placeholder-[#444444] focus:outline-none focus:border-[#1E9EFF]/40"
                 />
               </div>
               <div className="sm:col-span-2 flex justify-end gap-2 pt-1">
@@ -238,7 +238,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 bg-[#FF6B00] hover:bg-[#ea580c] text-white text-xs font-semibold rounded-lg transition-colors"
+                  className="px-4 py-1.5 bg-[#1E9EFF] hover:bg-[#0A8AE6] text-white text-xs font-semibold rounded-lg transition-colors"
                 >
                   Add to Team
                 </button>
@@ -254,7 +254,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
 
         {/* Founder tier */}
         {founders.map((u) => (
-          <div key={u.id} className="p-4 bg-[#1d1d1d] border border-amber-900/30 rounded-xl flex items-center justify-between">
+          <div key={u.id} className="p-4 bg-[#0f0f0f] border border-amber-900/30 rounded-xl flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img src={u.avatar_url} alt={u.name} className="w-9 h-9 rounded-full ring-2 ring-amber-500/30" />
               <div>
@@ -273,7 +273,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
 
         {/* Vertical connector + Admin tier */}
         {admins.length > 0 && (
-          <div className="ml-4 pl-4 border-l border-[#2e2e2e] space-y-2">
+          <div className="ml-4 pl-4 border-l border-[#1e1e1e] space-y-2">
             <p className="text-[10px] text-[#555555] uppercase font-semibold tracking-wider">Admins</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {admins.map((u) => (
@@ -288,7 +288,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
 
         {/* Employees tier */}
         {employees.length > 0 && (
-          <div className="ml-4 pl-4 border-l border-[#2e2e2e] space-y-2">
+          <div className="ml-4 pl-4 border-l border-[#1e1e1e] space-y-2">
             <p className="text-[10px] text-[#555555] uppercase font-semibold tracking-wider">Employees</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {employees.map((u) => (
@@ -303,7 +303,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
 
         {/* Interns tier */}
         {interns.length > 0 && (
-          <div className="ml-8 pl-4 border-l border-[#2e2e2e] space-y-2">
+          <div className="ml-8 pl-4 border-l border-[#1e1e1e] space-y-2">
             <p className="text-[10px] text-[#555555] uppercase font-semibold tracking-wider">Interns</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {interns.map((u) => (
@@ -318,7 +318,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
 
         {/* Empty state */}
         {founders.length === 0 && admins.length === 0 && employees.length === 0 && interns.length === 0 && (
-          <div className="py-12 text-center border border-dashed border-[#2a2a2a] rounded-xl">
+          <div className="py-12 text-center border border-dashed border-[#161616] rounded-xl">
             <p className="text-xs text-[#666666]">No active team members.</p>
           </div>
         )}
@@ -352,7 +352,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="border-b border-[#2a2a2a]">
+              <tr className="border-b border-[#161616]">
                 <th className="py-2 pr-4 text-[10px] font-semibold uppercase tracking-wider text-[#666666] min-w-[160px]">Permission</th>
                 {roleColumns.map((rc) => (
                   <th key={rc.id} className="py-2 px-3 text-center text-[10px] font-semibold uppercase tracking-wider text-[#666666]">
@@ -367,11 +367,11 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                 <React.Fragment key={category}>
                   <tr>
                     <td colSpan={roleColumns.length + 1} className="pt-4 pb-1">
-                      <span className="text-[9px] font-bold uppercase tracking-widest text-[#FF6B00]">{category}</span>
+                      <span className="text-[9px] font-bold uppercase tracking-widest text-[#1E9EFF]">{category}</span>
                     </td>
                   </tr>
                   {ALL_PERMISSIONS.filter((p) => p.category === category).map((p) => (
-                    <tr key={p.key} className="border-b border-[#1e1e1e] hover:bg-[#1f1f1f] transition-colors">
+                    <tr key={p.key} className="border-b border-[#1e1e1e] hover:bg-[#0d0d0d] transition-colors">
                       <td className="py-2 pr-4">
                         <div className="text-[11px] font-medium text-[#cccccc]">{p.title}</div>
                         <div className="text-[9px] font-mono text-[#444444]">{p.key}</div>
@@ -415,7 +415,7 @@ const UserCard: React.FC<{
   const canAct = canManage && !isSelf && canManageUser(activeUser.hierarchy, user.hierarchy);
 
   return (
-    <div className="p-3 bg-[#1d1d1d] border border-[#2a2a2a] rounded-lg flex items-center justify-between hover:border-[#383838] transition-colors relative">
+    <div className="p-3 bg-[#0f0f0f] border border-[#161616] rounded-lg flex items-center justify-between hover:border-[#383838] transition-colors relative">
       <div className="flex items-center gap-2.5">
         <img src={user.avatar_url} alt={user.name} className="w-8 h-8 rounded-full" />
         <div>
@@ -438,7 +438,7 @@ const UserCard: React.FC<{
           <div className="relative">
             <button
               onClick={() => setActiveMenu(activeMenu === user.id ? null : user.id)}
-              className="p-1 text-[#555555] hover:text-white hover:bg-[#2a2a2a] rounded transition-colors"
+              className="p-1 text-[#555555] hover:text-white hover:bg-[#161616] rounded transition-colors"
             >
               <MoreHorizontal className="w-3.5 h-3.5" />
             </button>
@@ -446,13 +446,13 @@ const UserCard: React.FC<{
               <div className="absolute right-0 top-7 z-20 bg-[#1a1a1a] border border-[#333333] rounded-lg shadow-xl shadow-black/50 min-w-[130px] py-1 text-xs">
                 <button
                   onClick={() => onDeactivate(user.id)}
-                  className="w-full flex items-center gap-2 px-3 py-1.5 text-[#aaaaaa] hover:bg-[#2a2a2a] hover:text-white transition-colors text-left"
+                  className="w-full flex items-center gap-2 px-3 py-1.5 text-[#aaaaaa] hover:bg-[#161616] hover:text-white transition-colors text-left"
                 >
                   <UserX className="w-3.5 h-3.5" /> Deactivate
                 </button>
                 <button
                   onClick={() => onRemove(user.id)}
-                  className="w-full flex items-center gap-2 px-3 py-1.5 text-red-400 hover:bg-[#2a2a2a] transition-colors text-left"
+                  className="w-full flex items-center gap-2 px-3 py-1.5 text-red-400 hover:bg-[#161616] transition-colors text-left"
                 >
                   <X className="w-3.5 h-3.5" /> Remove
                 </button>

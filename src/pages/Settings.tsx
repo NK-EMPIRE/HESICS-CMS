@@ -33,7 +33,7 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
     <div className="space-y-6 max-w-3xl mx-auto">
 
       {/* Header */}
-      <div className="space-y-1 pb-4 border-b border-[#262626]">
+      <div className="space-y-1 pb-4 border-b border-[#1a1a1a]">
         <div className="text-2xl">⚙️</div>
         <h1 className="text-xl font-bold text-white tracking-tight">Settings</h1>
         <p className="text-[11px] text-[#666666]">
@@ -42,7 +42,7 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
       </div>
 
       {/* Active User Info */}
-      <div className="p-4 bg-[#1d1d1d] border border-[#2a2a2a] rounded-xl flex items-center gap-3">
+      <div className="p-4 bg-[#0f0f0f] border border-[#161616] rounded-xl flex items-center gap-3">
         <img
           src={activeUser.avatar_url}
           alt={activeUser.name}
@@ -67,23 +67,23 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
       </div>
 
       {/* Database Status */}
-      <div className="p-4 bg-[#1d1d1d] border border-[#2a2a2a] rounded-xl space-y-3">
+      <div className="p-4 bg-[#0f0f0f] border border-[#161616] rounded-xl space-y-3">
         <h3 className="text-xs font-bold text-white flex items-center gap-2">
-          <Database className="w-4 h-4 text-[#FF6B00]" /> Database & Storage Engine
+          <Database className="w-4 h-4 text-[#1E9EFF]" /> Database & Storage Engine
         </h3>
         {isSupabaseConfigured ? (
           <div className="p-3 bg-emerald-950/30 border border-emerald-900/50 rounded-lg flex items-center gap-2 text-xs text-emerald-400 font-semibold">
             <CheckCircle2 className="w-4 h-4" /> Live Supabase PostgreSQL — Connected & Syncing
           </div>
         ) : (
-          <div className="p-3 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg space-y-1.5">
-            <div className="flex items-center gap-2 text-xs font-semibold text-[#FF6B00]">
+          <div className="p-3 bg-[#1a1a1a] border border-[#161616] rounded-lg space-y-1.5">
+            <div className="flex items-center gap-2 text-xs font-semibold text-[#1E9EFF]">
               <CheckCircle2 className="w-3.5 h-3.5" /> Local Storage Store Active — Demo Mode
             </div>
             <p className="text-[11px] text-[#777777]">
               All data persists in browser localStorage. To connect live Supabase, set{' '}
-              <code className="text-[#FF6B00] font-mono">VITE_SUPABASE_URL</code> and{' '}
-              <code className="text-[#FF6B00] font-mono">VITE_SUPABASE_ANON_KEY</code> in your{' '}
+              <code className="text-[#1E9EFF] font-mono">VITE_SUPABASE_URL</code> and{' '}
+              <code className="text-[#1E9EFF] font-mono">VITE_SUPABASE_ANON_KEY</code> in your{' '}
               <code className="text-[#aaaaaa] font-mono">.env</code> file.
             </p>
           </div>
@@ -91,9 +91,9 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
       </div>
 
       {/* Org Profile Form */}
-      <form onSubmit={handleSave} className="p-4 bg-[#1d1d1d] border border-[#2a2a2a] rounded-xl space-y-4">
+      <form onSubmit={handleSave} className="p-4 bg-[#0f0f0f] border border-[#161616] rounded-xl space-y-4">
         <h3 className="text-xs font-bold text-white flex items-center gap-2">
-          <Building className="w-4 h-4 text-[#FF6B00]" /> Organisation Profile
+          <Building className="w-4 h-4 text-[#1E9EFF]" /> Organisation Profile
         </h3>
 
         <div className="space-y-3">
@@ -107,7 +107,7 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
               disabled={!canEdit}
               value={org.name}
               onChange={(e) => setOrg({ ...org, name: e.target.value })}
-              className="w-full px-3 py-2 bg-[#191919] border border-[#2e2e2e] rounded-lg text-white text-xs focus:outline-none focus:border-[#555555] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-white text-xs focus:outline-none focus:border-[#1E9EFF]/40 disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
 
@@ -122,7 +122,7 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
                 value={org.gstin || ''}
                 onChange={(e) => setOrg({ ...org, gstin: e.target.value })}
                 placeholder="33AAAAA0000A1Z5"
-                className="w-full px-3 py-2 bg-[#191919] border border-[#2e2e2e] rounded-lg text-white text-xs font-mono focus:outline-none focus:border-[#555555] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-white text-xs font-mono focus:outline-none focus:border-[#1E9EFF]/40 disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -134,7 +134,7 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
                 disabled={!canEdit}
                 value={org.entity_type || 'pvt_ltd'}
                 onChange={(e) => setOrg({ ...org, entity_type: e.target.value as EntityType })}
-                className="w-full px-3 py-2 bg-[#191919] border border-[#2e2e2e] rounded-lg text-white text-xs focus:outline-none focus:border-[#555555] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-white text-xs focus:outline-none focus:border-[#1E9EFF]/40 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <option value="pvt_ltd">Private Limited (Pvt Ltd)</option>
                 <option value="proprietorship">Sole Proprietorship</option>
@@ -146,7 +146,7 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
         </div>
 
         {canEdit && (
-          <div className="flex items-center justify-between pt-3 border-t border-[#262626]">
+          <div className="flex items-center justify-between pt-3 border-t border-[#1a1a1a]">
             {isSaved ? (
               <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5" /> Settings saved!
@@ -156,7 +156,7 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
             )}
             <button
               type="submit"
-              className="flex items-center gap-2 px-4 py-1.5 bg-[#FF6B00] hover:bg-[#ea580c] text-white font-semibold text-xs rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-1.5 bg-[#1E9EFF] hover:bg-[#0A8AE6] text-white font-semibold text-xs rounded-lg transition-colors"
             >
               <Save className="w-3.5 h-3.5" /> Save Changes
             </button>
@@ -164,7 +164,7 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
         )}
 
         {!canEdit && (
-          <p className="text-[11px] text-[#555555] pt-2 border-t border-[#262626]">
+          <p className="text-[11px] text-[#555555] pt-2 border-t border-[#1a1a1a]">
             Only Founders and Admins can edit organisation settings.
           </p>
         )}
