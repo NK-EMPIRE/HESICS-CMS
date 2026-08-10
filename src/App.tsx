@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { AppShell } from './components/layout/AppShell';
 import { Dashboard } from './pages/Dashboard';
 import { Clients } from './pages/Clients';
@@ -9,17 +9,22 @@ import { Invoices } from './pages/Invoices';
 import { TeamPermissions } from './pages/TeamPermissions';
 import { Settings } from './pages/Settings';
 import { Login } from './pages/Login';
-import { INITIAL_USERS } from './lib/mockData';
+import { db } from './lib/supabase';
 import { User } from './lib/types';
 
-const SESSION_KEY = 'hesics_auth_user_v2';
+const SESSION_KEY = 'hesics_auth_v3';
 
 export function App() {
   const [currentTab, setCurrentTab] = useState('dashboard');
+
   const [activeUser, setActiveUser] = useState<User | null>(() => {
     try {
       const saved = localStorage.getItem(SESSION_KEY);
-      return saved ? JSON.parse(saved) : null;
+      if (!saved) return null;
+      const parsed: User = JSON.parse(saved);
+      // Re-hydrate from db in case user data has changed
+      const fresh = db.getUserById(parsed.id);
+      return fresh || parsed;
     } catch (e) {
       return null;
     }
@@ -37,9 +42,10 @@ export function App() {
   const handleLogout = () => {
     setActiveUser(null);
     localStorage.removeItem(SESSION_KEY);
+    setCurrentTab('dashboard');
   };
 
-  // Guarded Route: Show Login if unauthenticated
+  // Show Login if unauthenticated
   if (!activeUser) {
     return <Login onLogin={handleLogin} />;
   }

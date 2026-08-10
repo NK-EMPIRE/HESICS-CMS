@@ -17,7 +17,7 @@ export const supabase = isSupabaseConfigured
   ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
 
-const STORAGE_PREFIX = 'hesics_v2_';
+const STORAGE_PREFIX = 'hesics_v3_'; // bumped version to migrate clean
 
 const getStorageItem = <T>(key: string, fallback: T): T => {
   try {
@@ -62,8 +62,47 @@ class DataStore {
   getUsers(): User[] {
     return this.users;
   }
+
+  getUserById(id: string): User | undefined {
+    return this.users.find((u) => u.id === id);
+  }
+
+  addUser(user: Omit<User, 'id' | 'org_id' | 'created_at'>): User {
+    const newUser: User = {
+      ...user,
+      id: `usr-${Date.now()}`,
+      org_id: this.org.id,
+      created_at: new Date().toISOString(),
+    };
+    this.users = [...this.users, newUser];
+    setStorageItem('users', this.users);
+    return newUser;
+  }
+
+  updateUser(id: string, updates: Partial<User>): User | undefined {
+    this.users = this.users.map((u) => (u.id === id ? { ...u, ...updates } : u));
+    setStorageItem('users', this.users);
+    return this.users.find((u) => u.id === id);
+  }
+
+  deactivateUser(id: string): void {
+    this.users = this.users.map((u) =>
+      u.id === id ? { ...u, is_active: false } : u
+    );
+    setStorageItem('users', this.users);
+  }
+
+  removeUser(id: string): void {
+    this.users = this.users.filter((u) => u.id !== id);
+    setStorageItem('users', this.users);
+  }
+
   getRoles(): Role[] {
     return this.roles;
+  }
+
+  getRoleById(id: string): Role | undefined {
+    return this.roles.find((r) => r.id === id);
   }
 
   // Clients
@@ -249,6 +288,39 @@ class DataStore {
   deleteExpenseEntry(id: string): void {
     this.expenseEntries = this.expenseEntries.filter((e) => e.id !== id);
     setStorageItem('expense_entries', this.expenseEntries);
+  }
+
+  // Analytics aggregations for admin dashboard
+  getOrgStats() {
+    const activeDeals = this.deals.filter((d) => d.stage !== 'lost' && d.stage !== 'won');
+    const wonDeals = this.deals.filter((d) => d.stage === 'won');
+    const paidInvoices = this.invoices.filter((i) => i.status === 'paid');
+    const overdueInvoices = this.invoices.filter((i) => i.status === 'overdue');
+    const totalIncome = this.incomeEntries.reduce((s, i) => s + Number(i.amount), 0);
+    const totalExpenses = this.expenseEntries.reduce((s, e) => s + Number(e.amount), 0);
+    const netProfit = totalIncome - totalExpenses;
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const overdueActivities = this.activities.filter(
+      (a) => a.follow_up_date && a.follow_up_date < todayStr
+    );
+
+    return {
+      totalClients: this.clients.length,
+      activeClients: this.clients.filter((c) => c.status === 'active').length,
+      leadClients: this.clients.filter((c) => c.status === 'lead').length,
+      totalDeals: this.deals.length,
+      activePipelineValue: activeDeals.reduce((s, d) => s + Number(d.value), 0),
+      wonDealsValue: wonDeals.reduce((s, d) => s + Number(d.value), 0),
+      collectedCash: paidInvoices.reduce((s, i) => s + Number(i.total), 0),
+      outstandingInvoices: overdueInvoices.reduce((s, i) => s + Number(i.total), 0),
+      totalIncome,
+      totalExpenses,
+      netProfit,
+      profitMargin: totalIncome > 0 ? Math.round((netProfit / totalIncome) * 100) : 0,
+      overdueFollowUps: overdueActivities.length,
+      teamSize: this.users.filter((u) => u.is_active).length,
+    };
   }
 
   // Reset database

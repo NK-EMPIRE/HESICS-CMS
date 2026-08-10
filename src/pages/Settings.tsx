@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
-  Settings as SettingsIcon, Building, Database, RefreshCw,
-  CheckCircle2, ShieldAlert, Save
+  Building, Database, RefreshCw,
+  CheckCircle2, Save, Crown, Shield
 } from 'lucide-react';
 import { db, isSupabaseConfigured } from '../lib/supabase';
 import { EntityType, User } from '../lib/types';
@@ -14,6 +14,8 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
   const [org, setOrg] = useState(db.getOrg());
   const [isSaved, setIsSaved] = useState(false);
 
+  const canEdit = activeUser.hierarchy === 'founder' || activeUser.hierarchy === 'admin';
+
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     db.updateOrg(org);
@@ -22,125 +24,170 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
   };
 
   const handleResetData = () => {
-    if (window.confirm('Reset all demo data back to default initial seed?')) {
+    if (window.confirm('Reset all data back to initial seed? This will clear all clients, deals, invoices and finance records.')) {
       db.resetAll();
     }
   };
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto">
-      <div>
-        <h2 className="text-2xl font-bold text-white font-display">Organization & OS Settings</h2>
-        <p className="text-xs text-slate-400 mt-1">
-          Manage business tax parameters, invoice headers, and database connection.
+    <div className="space-y-6 max-w-3xl mx-auto">
+
+      {/* Header */}
+      <div className="space-y-1 pb-4 border-b border-[#262626]">
+        <div className="text-2xl">⚙️</div>
+        <h1 className="text-xl font-bold text-white tracking-tight">Settings</h1>
+        <p className="text-[11px] text-[#666666]">
+          Organisation profile, tax configuration, and system status.
         </p>
       </div>
 
-      {/* Backend Connection Status Card */}
-      <div className="p-6 bg-dark-800 border border-dark-600 rounded-2xl space-y-3">
-        <h3 className="text-base font-bold text-white font-display flex items-center gap-2">
-          <Database className="w-5 h-5 text-brand-500" /> Database & Storage Engine Status
-        </h3>
+      {/* Active User Info */}
+      <div className="p-4 bg-[#1d1d1d] border border-[#2a2a2a] rounded-xl flex items-center gap-3">
+        <img
+          src={activeUser.avatar_url}
+          alt={activeUser.name}
+          className="w-9 h-9 rounded-full"
+        />
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold text-white">{activeUser.name}</span>
+            {activeUser.hierarchy === 'founder' && (
+              <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border text-amber-400 bg-amber-950/40 border-amber-900/50">
+                <Crown className="w-2.5 h-2.5" /> Founder
+              </span>
+            )}
+            {activeUser.hierarchy === 'admin' && (
+              <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border text-blue-400 bg-blue-950/40 border-blue-900/50">
+                <Shield className="w-2.5 h-2.5" /> Admin
+              </span>
+            )}
+          </div>
+          <div className="text-[11px] text-[#666666]">{activeUser.email} · {activeUser.role_name}</div>
+        </div>
+      </div>
 
+      {/* Database Status */}
+      <div className="p-4 bg-[#1d1d1d] border border-[#2a2a2a] rounded-xl space-y-3">
+        <h3 className="text-xs font-bold text-white flex items-center gap-2">
+          <Database className="w-4 h-4 text-[#FF6B00]" /> Database & Storage Engine
+        </h3>
         {isSupabaseConfigured ? (
-          <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center gap-2 text-xs text-emerald-400 font-semibold">
-            <CheckCircle2 className="w-4 h-4" /> Live Supabase PostgreSQL Connected & Syncing
+          <div className="p-3 bg-emerald-950/30 border border-emerald-900/50 rounded-lg flex items-center gap-2 text-xs text-emerald-400 font-semibold">
+            <CheckCircle2 className="w-4 h-4" /> Live Supabase PostgreSQL — Connected & Syncing
           </div>
         ) : (
-          <div className="p-4 bg-brand-500/10 border border-brand-500/30 rounded-xl space-y-2 text-xs">
-            <div className="flex items-center gap-2 font-bold text-brand-400">
-              <CheckCircle2 className="w-4 h-4 text-brand-500" /> Reactive Local Storage Store Active (Demo Mode)
+          <div className="p-3 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg space-y-1.5">
+            <div className="flex items-center gap-2 text-xs font-semibold text-[#FF6B00]">
+              <CheckCircle2 className="w-3.5 h-3.5" /> Local Storage Store Active — Demo Mode
             </div>
-            <p className="text-slate-300">
-              You are currently running with a full-featured local state database with instant persistence.
-              To connect your live Supabase database, set <code className="text-brand-400">VITE_SUPABASE_URL</code> and <code className="text-brand-400">VITE_SUPABASE_ANON_KEY</code> in <code className="text-slate-300">.env</code>.
+            <p className="text-[11px] text-[#777777]">
+              All data persists in browser localStorage. To connect live Supabase, set{' '}
+              <code className="text-[#FF6B00] font-mono">VITE_SUPABASE_URL</code> and{' '}
+              <code className="text-[#FF6B00] font-mono">VITE_SUPABASE_ANON_KEY</code> in your{' '}
+              <code className="text-[#aaaaaa] font-mono">.env</code> file.
             </p>
           </div>
         )}
       </div>
 
       {/* Org Profile Form */}
-      <form onSubmit={handleSave} className="p-6 bg-dark-800 border border-dark-600 rounded-2xl space-y-4">
-        <h3 className="text-base font-bold text-white font-display flex items-center gap-2">
-          <Building className="w-5 h-5 text-brand-500" /> Business Entity Profile
+      <form onSubmit={handleSave} className="p-4 bg-[#1d1d1d] border border-[#2a2a2a] rounded-xl space-y-4">
+        <h3 className="text-xs font-bold text-white flex items-center gap-2">
+          <Building className="w-4 h-4 text-[#FF6B00]" /> Organisation Profile
         </h3>
 
-        <div>
-          <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-            Organization Name
-          </label>
-          <input
-            type="text"
-            required
-            value={org.name}
-            onChange={(e) => setOrg({ ...org, name: e.target.value })}
-            className="w-full px-3 py-2 bg-dark-900 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-              GSTIN (Tax Registration)
+            <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#666666] mb-1.5">
+              Organisation Name
             </label>
             <input
               type="text"
-              value={org.gstin || ''}
-              onChange={(e) => setOrg({ ...org, gstin: e.target.value })}
-              placeholder="33AAAAA0000A1Z5"
-              className="w-full px-3 py-2 bg-dark-900 border border-dark-600 rounded-lg text-white text-sm font-mono focus:outline-none focus:border-brand-500"
+              required
+              disabled={!canEdit}
+              value={org.name}
+              onChange={(e) => setOrg({ ...org, name: e.target.value })}
+              className="w-full px-3 py-2 bg-[#191919] border border-[#2e2e2e] rounded-lg text-white text-xs focus:outline-none focus:border-[#555555] disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-              Legal Entity Type
-            </label>
-            <select
-              value={org.entity_type || 'pvt_ltd'}
-              onChange={(e) => setOrg({ ...org, entity_type: e.target.value as EntityType })}
-              className="w-full px-3 py-2 bg-dark-900 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
-            >
-              <option value="pvt_ltd">Private Limited (Pvt Ltd)</option>
-              <option value="proprietorship">Sole Proprietorship</option>
-              <option value="partnership">Partnership Firm</option>
-              <option value="other">Other</option>
-            </select>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#666666] mb-1.5">
+                GSTIN (Tax Registration)
+              </label>
+              <input
+                type="text"
+                disabled={!canEdit}
+                value={org.gstin || ''}
+                onChange={(e) => setOrg({ ...org, gstin: e.target.value })}
+                placeholder="33AAAAA0000A1Z5"
+                className="w-full px-3 py-2 bg-[#191919] border border-[#2e2e2e] rounded-lg text-white text-xs font-mono focus:outline-none focus:border-[#555555] disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#666666] mb-1.5">
+                Legal Entity Type
+              </label>
+              <select
+                disabled={!canEdit}
+                value={org.entity_type || 'pvt_ltd'}
+                onChange={(e) => setOrg({ ...org, entity_type: e.target.value as EntityType })}
+                className="w-full px-3 py-2 bg-[#191919] border border-[#2e2e2e] rounded-lg text-white text-xs focus:outline-none focus:border-[#555555] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <option value="pvt_ltd">Private Limited (Pvt Ltd)</option>
+                <option value="proprietorship">Sole Proprietorship</option>
+                <option value="partnership">Partnership Firm</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        <div className="pt-4 flex items-center justify-between border-t border-dark-600">
-          {isSaved ? (
-            <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1">
-              <CheckCircle2 className="w-4 h-4" /> Settings updated!
-            </span>
-          ) : (
-            <span />
-          )}
+        {canEdit && (
+          <div className="flex items-center justify-between pt-3 border-t border-[#262626]">
+            {isSaved ? (
+              <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Settings saved!
+              </span>
+            ) : (
+              <span />
+            )}
+            <button
+              type="submit"
+              className="flex items-center gap-2 px-4 py-1.5 bg-[#FF6B00] hover:bg-[#ea580c] text-white font-semibold text-xs rounded-lg transition-colors"
+            >
+              <Save className="w-3.5 h-3.5" /> Save Changes
+            </button>
+          </div>
+        )}
 
-          <button
-            type="submit"
-            className="flex items-center gap-2 px-5 py-2.5 bg-brand-500 hover:bg-brand-600 text-white font-semibold text-xs rounded-xl transition-all shadow-lg shadow-brand-500/20"
-          >
-            <Save className="w-4 h-4" /> Save Settings
-          </button>
-        </div>
+        {!canEdit && (
+          <p className="text-[11px] text-[#555555] pt-2 border-t border-[#262626]">
+            Only Founders and Admins can edit organisation settings.
+          </p>
+        )}
       </form>
 
-      {/* Reset Data Danger Zone */}
-      <div className="p-6 bg-red-500/5 border border-red-500/20 rounded-2xl flex items-center justify-between">
-        <div>
-          <h4 className="text-sm font-bold text-white">Reset Local Database</h4>
-          <p className="text-xs text-slate-400 mt-0.5">Restore all clients, deals, and invoices back to initial seed data.</p>
+      {/* Danger Zone — Founder only */}
+      {activeUser.hierarchy === 'founder' && (
+        <div className="p-4 bg-red-950/10 border border-red-900/30 rounded-xl flex items-center justify-between">
+          <div>
+            <h4 className="text-xs font-bold text-white">Reset Local Database</h4>
+            <p className="text-[11px] text-[#666666] mt-0.5">
+              Clears all clients, deals, invoices, income, and expenses. Users are preserved.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleResetData}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-red-950/30 hover:bg-red-950/50 text-red-400 border border-red-900/40 text-xs font-semibold rounded-lg transition-colors"
+          >
+            <RefreshCw className="w-3.5 h-3.5" /> Reset
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={handleResetData}
-          className="flex items-center gap-1.5 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 text-xs font-semibold rounded-xl transition-all"
-        >
-          <RefreshCw className="w-4 h-4" /> Reset Seed Data
-        </button>
-      </div>
+      )}
     </div>
   );
 };

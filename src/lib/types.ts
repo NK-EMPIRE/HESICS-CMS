@@ -9,12 +9,20 @@ export interface Organization {
   created_at: string;
 }
 
+// Hierarchy: founder > admin > employee > intern
+export type UserHierarchy = 'founder' | 'admin' | 'employee' | 'intern';
+
 export interface User {
   id: string;
   org_id: string;
   name: string;
   email: string;
   avatar_url?: string;
+  hierarchy: UserHierarchy;   // org-level access tier
+  role_id: string;            // maps to a Role
+  role_name?: string;         // display name, derived from roles
+  department?: string;
+  is_active: boolean;
   created_at: string;
 }
 
@@ -22,6 +30,8 @@ export interface Role {
   id: string;
   org_id: string;
   name: string;
+  description?: string;
+  hierarchy_level: UserHierarchy;
 }
 
 export type PermissionKey =
@@ -34,7 +44,9 @@ export type PermissionKey =
   | 'invoices:write'
   | 'finance:read'
   | 'finance:write'
-  | 'team:manage';
+  | 'team:manage'
+  | 'team:invite'
+  | 'org:admin';
 
 export interface Permission {
   id: string;
