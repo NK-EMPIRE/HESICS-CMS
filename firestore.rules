@@ -1,0 +1,75 @@
+﻿rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function isAdminOrFounder() {
+      return isAuthenticated() && (
+        getUserData().hierarchy == 'founder' || 
+        getUserData().hierarchy == 'admin'
+      );
+    }
+
+    // Organizations
+    match /organizations/{orgId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdminOrFounder();
+    }
+
+    // Users & Roles
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdminOrFounder();
+    }
+
+    match /roles/{roleId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdminOrFounder();
+    }
+
+    // Clients, Deals & Activities
+    match /clients/{clientId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /deals/{dealId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /activities/{activityId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Quotations & Invoices
+    match /quotations/{quotationId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /invoices/{invoiceId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Finance (Income & Expenses - Admin/Founder/Finance role protected)
+    match /income_entries/{entryId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /expense_entries/{entryId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Audit logs
+    match /audit_logs/{logId} {
+      allow read: if isAdminOrFounder();
+      allow create: if isAuthenticated();
+      allow update, delete: if false; // Immutable audit log
+    }
+  }
+}

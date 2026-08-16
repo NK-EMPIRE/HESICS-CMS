@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   Building, Database, RefreshCw,
-  CheckCircle2, Save, Crown, Shield, History, Trash2
+  CheckCircle2, Save, Crown, Shield, History, Trash2, Cloud, UploadCloud, Server
 } from 'lucide-react';
-import { db, isSupabaseConfigured } from '../lib/supabase';
+import { db } from '../lib/firebaseDb';
+import { isFirebaseConfigured, firebaseConfig } from '../lib/firebase';
 import { EntityType, User } from '../lib/types';
 import { getAuditLog, formatAuditAction, clearAuditLog } from '../lib/auditLog';
 
@@ -14,6 +15,8 @@ interface SettingsProps {
 export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
   const [org, setOrg] = useState(db.getOrg());
   const [isSaved, setIsSaved] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
+  const [seedSuccess, setSeedSuccess] = useState(false);
   const [auditLogs, setAuditLogs] = useState(() => getAuditLog());
 
   const canEdit = activeUser.hierarchy === 'founder' || activeUser.hierarchy === 'admin';
@@ -25,8 +28,20 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
     setTimeout(() => setIsSaved(false), 3000);
   };
 
+  const handleSeedFirestore = async () => {
+    if (!isFirebaseConfigured) {
+      alert('Please configure your Firebase credentials in .env first.');
+      return;
+    }
+    setIsSeeding(true);
+    await db.seedInitialFirestore();
+    setIsSeeding(false);
+    setSeedSuccess(true);
+    setTimeout(() => setSeedSuccess(false), 4000);
+  };
+
   const handleResetData = () => {
-    if (window.confirm('Reset all data back to initial seed? This will clear all clients, deals, invoices and finance records.')) {
+    if (window.confirm('Reset all data back to initial seed? This will reset all clients, deals, invoices and finance records.')) {
       db.resetAll();
     }
   };
@@ -44,9 +59,9 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
       {/* Header */}
       <div className="space-y-1 pb-4 border-b border-[#1a1a1a]">
         <div className="text-2xl">⚙️</div>
-        <h1 className="text-xl font-bold text-white tracking-tight">Settings & Security</h1>
+        <h1 className="text-xl font-bold text-white tracking-tight font-display">Settings & Infrastructure</h1>
         <p className="text-[11px] text-[#666666]">
-          Organisation profile, tax parameters, engine status, and audit log.
+          Firebase Backend & Database, Organization parameters, tax configuration, and audit logs.
         </p>
       </div>
 
@@ -55,14 +70,14 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
         <img
           src={activeUser.avatar_url}
           alt={activeUser.name}
-          className="w-9 h-9 rounded-full"
+          className="w-9 h-9 rounded-full ring-1 ring-[#1E9EFF]/30"
         />
         <div>
           <div className="flex items-center gap-2">
             <span className="text-sm font-bold text-white">{activeUser.name}</span>
             {activeUser.hierarchy === 'founder' && (
               <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border text-amber-400 bg-amber-950/40 border-amber-900/50">
-                <Crown className="w-2.5 h-2.5" /> Founder
+                <Crown className="w-2.5 h-2.5" /> Founder & Owner
               </span>
             )}
             {activeUser.hierarchy === 'admin' && (
@@ -71,36 +86,81 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
               </span>
             )}
           </div>
-          <div className="text-[11px] text-[#666666]">{activeUser.email} · {activeUser.role_name}</div>
+          <div className="text-[11px] text-[#666666]">{activeUser.email} · {activeUser.role_name || activeUser.hierarchy}</div>
         </div>
       </div>
 
-      {/* Database Status */}
-      <div className="p-4 bg-[#0f0f0f] border border-[#161616] rounded-xl space-y-3">
-        <h3 className="text-xs font-bold text-white flex items-center gap-2">
-          <Database className="w-4 h-4 text-[#1E9EFF]" /> Database & Storage Engine
-        </h3>
-        {isSupabaseConfigured ? (
-          <div className="p-3 bg-emerald-950/30 border border-emerald-900/50 rounded-lg flex items-center gap-2 text-xs text-emerald-400 font-semibold">
-            <CheckCircle2 className="w-4 h-4" /> Live Supabase PostgreSQL — Connected & Syncing
+      {/* Firebase Backend & Database Status Card */}
+      <div className="p-5 bg-[#0f0f0f] border border-[#161616] rounded-xl space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-bold text-white flex items-center gap-2">
+            <Cloud className="w-4 h-4 text-[#1E9EFF]" /> Firebase Cloud Infrastructure & Database
+          </h3>
+          {isFirebaseConfigured && (
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950/40 text-emerald-400 border border-emerald-900/40">
+              Project: {firebaseConfig.projectId}
+            </span>
+          )}
+        </div>
+
+        {isFirebaseConfigured ? (
+          <div className="space-y-3">
+            <div className="p-3 bg-emerald-950/30 border border-emerald-900/50 rounded-lg flex items-center justify-between text-xs text-emerald-400 font-semibold">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <span>Google Firebase Auth & Cloud Firestore Connected in Realtime</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleSeedFirestore}
+                disabled={isSeeding}
+                className="flex items-center gap-1 px-2.5 py-1 bg-[#1E9EFF] hover:bg-[#0A8AE6] text-white text-[10px] font-semibold rounded transition-colors"
+              >
+                <UploadCloud className="w-3 h-3" />
+                {isSeeding ? 'Syncing...' : 'Sync Local to Firestore'}
+              </button>
+            </div>
+            {seedSuccess && (
+              <p className="text-[10px] text-emerald-400">All local collections synced to Cloud Firestore.</p>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[11px] pt-1">
+              <div className="p-2.5 bg-[#080808] border border-[#141414] rounded-lg">
+                <div className="text-[#555555] text-[10px] uppercase font-semibold">Database</div>
+                <div className="text-white font-mono mt-0.5">Cloud Firestore</div>
+              </div>
+              <div className="p-2.5 bg-[#080808] border border-[#141414] rounded-lg">
+                <div className="text-[#555555] text-[10px] uppercase font-semibold">Authentication</div>
+                <div className="text-white font-mono mt-0.5">Firebase Auth + Google</div>
+              </div>
+              <div className="p-2.5 bg-[#080808] border border-[#141414] rounded-lg">
+                <div className="text-[#555555] text-[10px] uppercase font-semibold">Storage Engine</div>
+                <div className="text-white font-mono mt-0.5">Firebase Cloud Storage</div>
+              </div>
+            </div>
           </div>
         ) : (
-          <div className="p-3 bg-[#1a1a1a] border border-[#161616] rounded-lg space-y-1.5">
+          <div className="p-4 bg-[#141414] border border-[#1e1e1e] rounded-lg space-y-2.5">
             <div className="flex items-center gap-2 text-xs font-semibold text-[#1E9EFF]">
-              <CheckCircle2 className="w-3.5 h-3.5" /> Local Storage Store Active — Demo Mode
+              <Server className="w-4 h-4 text-[#1E9EFF]" />
+              <span>Production Engine Active — Ready for Firebase Credentials</span>
             </div>
-            <p className="text-[11px] text-[#777777]">
-              All data persists in browser localStorage. To connect live Supabase, set{' '}
-              <code className="text-[#1E9EFF] font-mono">VITE_SUPABASE_URL</code> and{' '}
-              <code className="text-[#1E9EFF] font-mono">VITE_SUPABASE_ANON_KEY</code> in your{' '}
-              <code className="text-[#aaaaaa] font-mono">.env</code> file.
+            <p className="text-[11px] text-[#777777] leading-relaxed">
+              Your HESICS OS architecture is fully wired to Firebase. To connect your live Firebase project, create a <code className="text-[#1E9EFF] font-mono">.env</code> file in the project root with your Firebase web configuration keys:
             </p>
+            <div className="p-3 bg-[#080808] border border-[#1a1a1a] rounded-md font-mono text-[10px] text-[#aaaaaa] space-y-1 overflow-x-auto">
+              <div>VITE_FIREBASE_API_KEY=AIzaSy...</div>
+              <div>VITE_FIREBASE_AUTH_DOMAIN=hesics-os.firebaseapp.com</div>
+              <div>VITE_FIREBASE_PROJECT_ID=hesics-os</div>
+              <div>VITE_FIREBASE_STORAGE_BUCKET=hesics-os.firebasestorage.app</div>
+              <div>VITE_FIREBASE_MESSAGING_SENDER_ID=1234567890</div>
+              <div>VITE_FIREBASE_APP_ID=1:1234567890:web:abcdef</div>
+            </div>
           </div>
         )}
       </div>
 
       {/* Org Profile Form */}
-      <form onSubmit={handleSave} className="p-4 bg-[#0f0f0f] border border-[#161616] rounded-xl space-y-4">
+      <form onSubmit={handleSave} className="p-5 bg-[#0f0f0f] border border-[#161616] rounded-xl space-y-4">
         <h3 className="text-xs font-bold text-white flex items-center gap-2">
           <Building className="w-4 h-4 text-[#1E9EFF]" /> Organisation Profile
         </h3>
@@ -158,14 +218,14 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
           <div className="flex items-center justify-between pt-3 border-t border-[#1a1a1a]">
             {isSaved ? (
               <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Settings saved!
+                <CheckCircle2 className="w-3.5 h-3.5" /> Settings saved and synced to database!
               </span>
             ) : (
               <span />
             )}
             <button
               type="submit"
-              className="flex items-center gap-2 px-4 py-1.5 bg-[#1E9EFF] hover:bg-[#0A8AE6] text-white font-semibold text-xs rounded-lg transition-colors"
+              className="flex items-center gap-2 px-4 py-1.5 bg-[#1E9EFF] hover:bg-[#0A8AE6] text-white font-semibold text-xs rounded-lg transition-colors shadow-lg shadow-[#1E9EFF]/10"
             >
               <Save className="w-3.5 h-3.5" /> Save Changes
             </button>
@@ -173,9 +233,9 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
         )}
       </form>
 
-      {/* Audit Trail Section (Founders & Admins) */}
+      {/* Audit Trail Section */}
       {canEdit && (
-        <div className="p-4 bg-[#0f0f0f] border border-[#161616] rounded-xl space-y-3">
+        <div className="p-5 bg-[#0f0f0f] border border-[#161616] rounded-xl space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold text-white flex items-center gap-2">
               <History className="w-4 h-4 text-[#1E9EFF]" /> Security Audit Log
@@ -190,21 +250,21 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
             )}
           </div>
 
-          <div className="space-y-1.5 max-h-60 overflow-y-auto">
+          <div className="space-y-1.5 max-h-60 overflow-y-auto pr-1">
             {auditLogs.length === 0 ? (
               <div className="py-6 text-center text-[10px] text-[#444444]">
-                No security audit records yet. All team actions will be logged here.
+                No security audit records yet. All team writes are logged here in real-time.
               </div>
             ) : (
               auditLogs.map((log) => (
-                <div key={log.id} className="p-2 bg-[#080808] border border-[#141414] rounded-lg flex items-center justify-between text-xs">
+                <div key={log.id} className="p-2.5 bg-[#080808] border border-[#141414] rounded-lg flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-bold text-white font-mono">{log.user_name}</span>
-                    <span className="text-[10px] text-[#1E9EFF] bg-[#1E9EFF]/10 px-1.5 py-0.2 rounded">
+                    <span className="text-[10px] text-[#1E9EFF] bg-[#1E9EFF]/10 px-1.5 py-0.2 rounded font-medium">
                       {formatAuditAction(log.action)}
                     </span>
                     {log.entity_label && (
-                      <span className="text-[10px] text-[#666666] font-mono">"{log.entity_label}"</span>
+                      <span className="text-[10px] text-[#666666] font-mono truncate max-w-[200px]">"{log.entity_label}"</span>
                     )}
                   </div>
                   <span className="text-[9px] text-[#444444] font-mono">
@@ -223,7 +283,7 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
           <div>
             <h4 className="text-xs font-bold text-white">Reset Local Database</h4>
             <p className="text-[11px] text-[#666666] mt-0.5">
-              Clears all clients, deals, invoices, income, and expenses. Users are preserved.
+              Clears all clients, deals, invoices, income, and expenses. Users and credentials are preserved.
             </p>
           </div>
           <button
