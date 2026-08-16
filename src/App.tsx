@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { AppShell } from './components/layout/AppShell';
 import { Dashboard } from './pages/Dashboard';
 import { Clients } from './pages/Clients';
@@ -9,31 +9,27 @@ import { Invoices } from './pages/Invoices';
 import { TeamPermissions } from './pages/TeamPermissions';
 import { Settings } from './pages/Settings';
 import { Login } from './pages/Login';
-import { db } from './lib/supabase';
+import { db } from './lib/firebaseDb';
+import { getLocalSession, setLocalSession, signOut, onAuthStateChange } from './lib/firebaseAuth';
 import { User } from './lib/types';
-
-const SESSION_KEY = 'hesics_auth_v3';
 
 export function App() {
   const [currentTab, setCurrentTab] = useState('dashboard');
+  const [activeUser, setActiveUser] = useState<User | null>(() => getLocalSession());
 
-  const [activeUser, setActiveUser] = useState<User | null>(() => {
-    try {
-      const saved = localStorage.getItem(SESSION_KEY);
-      if (!saved) return null;
-      const parsed: User = JSON.parse(saved);
-      // Re-hydrate from db in case user data has changed
-      const fresh = db.getUserById(parsed.id);
-      return fresh || parsed;
-    } catch (e) {
-      return null;
-    }
-  });
+  // Listen for real-time auth state changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChange((user) => {
+      if (user) {
+        setActiveUser(user);
+      }
+    });
+    return unsubscribe;
+  }, []);
 
   // Keyboard shortcuts (c = clients, d = deals, f = finance, q = quotations)
-  React.useEffect(() => {
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if inside input/textarea/select
       const activeEl = document.activeElement;
       if (activeEl && ['INPUT', 'TEXTAREA', 'SELECT'].includes(activeEl.tagName)) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -51,16 +47,12 @@ export function App() {
 
   const handleLogin = (user: User) => {
     setActiveUser(user);
-    try {
-      localStorage.setItem(SESSION_KEY, JSON.stringify(user));
-    } catch (e) {
-      console.error('Session write error:', e);
-    }
+    setLocalSession(user);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await signOut();
     setActiveUser(null);
-    localStorage.removeItem(SESSION_KEY);
     setCurrentTab('dashboard');
   };
 

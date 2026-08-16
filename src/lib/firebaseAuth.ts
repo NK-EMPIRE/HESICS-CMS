@@ -1,18 +1,21 @@
 ﻿import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
   sendSignInLinkToEmail,
   isSignInWithEmailLink,
   signInWithEmailLink,
   signInWithPopup,
   GoogleAuthProvider,
+  updateProfile,
+  updatePassword,
   signOut as fbSignOut,
   onAuthStateChanged as fbOnAuthStateChanged,
   User as FirebaseUser
 } from 'firebase/auth';
 import { auth, isFirebaseConfigured } from './firebase';
 import { db } from './firebaseDb';
-import type { User } from './types';
+import type { User, UserHierarchy } from './types';
 
 export interface AuthSession {
   user: User;
@@ -21,6 +24,68 @@ export interface AuthSession {
 }
 
 const SESSION_KEY = 'hesics_auth_v3';
+
+/**
+ * Sign Up / Register new account with Firebase Auth & link with HESICS Directory
+ */
+export async function signUpWithPassword(
+  name: string,
+  email: string,
+  password: string,
+  hierarchy: UserHierarchy = 'employee',
+  department?: string
+): Promise<{ user: User | null; error: string | null }> {
+  if (!isFirebaseConfigured || !auth) {
+    // Local demo registration
+    const existing = db.getUserByEmail(email);
+    if (existing) {
+      return { user: null, error: 'An account with this email already exists.' };
+    }
+    const roleId = hierarchy === 'founder' ? 'role-founder' : hierarchy === 'admin' ? 'role-admin' : 'role-sales';
+    const roleName = hierarchy === 'founder' ? 'Founder' : hierarchy === 'admin' ? 'Admin' : 'Sales Lead';
+
+    const newUser = db.addUser({
+      name,
+      email,
+      hierarchy,
+      role_id: roleId,
+      role_name: roleName,
+      department: department || 'Operations',
+      is_active: true,
+      avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`,
+    });
+    setLocalSession(newUser);
+    return { user: newUser, error: null };
+  }
+
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    await updateProfile(cred.user, { displayName: name });
+
+    // Check if user already in directory, or create new directory entry
+    let matched = db.getUserByEmail(email);
+    if (!matched) {
+      const roleId = hierarchy === 'founder' ? 'role-founder' : hierarchy === 'admin' ? 'role-admin' : 'role-sales';
+      const roleName = hierarchy === 'founder' ? 'Founder' : hierarchy === 'admin' ? 'Admin' : 'Sales Lead';
+
+      matched = db.addUser({
+        name,
+        email,
+        hierarchy,
+        role_id: roleId,
+        role_name: roleName,
+        department: department || 'Operations',
+        is_active: true,
+        avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`,
+      });
+    }
+
+    setLocalSession(matched);
+    return { user: matched, error: null };
+  } catch (err: any) {
+    return { user: null, error: err?.message || 'Failed to create account.' };
+  }
+}
 
 /**
  * Sign in using Firebase Email & Password
@@ -33,14 +98,23 @@ export async function signInWithPassword(email: string, password: string): Promi
       setLocalSession(matched);
       return { user: matched, error: null };
     }
-    return { user: null, error: 'User not found in team directory' };
+    return { user: null, error: 'User not found in team directory.' };
   }
 
   try {
     const cred = await signInWithEmailAndPassword(auth, email, password);
-    const matched = db.getUserByEmail(cred.user.email || '');
+    let matched = db.getUserByEmail(cred.user.email || '');
     if (!matched) {
-      return { user: null, error: 'Authenticated with Firebase, but your email is not in the HESICS team directory.' };
+      // Create user entry if newly authenticated
+      matched = db.addUser({
+        name: cred.user.displayName || email.split('@')[0],
+        email: cred.user.email || email,
+        hierarchy: 'employee',
+        role_id: 'role-sales',
+        role_name: 'Team Member',
+        is_active: true,
+        avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(email)}`,
+      });
     }
     if (!matched.is_active) {
       await fbSignOut(auth);
@@ -49,7 +123,31 @@ export async function signInWithPassword(email: string, password: string): Promi
     setLocalSession(matched);
     return { user: matched, error: null };
   } catch (err: any) {
+    const code = err?.code;
+    if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
+      return { user: null, error: 'Invalid email or password. Please check your credentials or reset your password.' };
+    }
     return { user: null, error: err?.message || 'Authentication failed' };
+  }
+}
+
+/**
+ * Send Password Reset Email via Firebase
+ */
+export async function sendPasswordReset(email: string): Promise<{ success: boolean; error: string | null }> {
+  if (!isFirebaseConfigured || !auth) {
+    const matched = db.getUserByEmail(email);
+    if (matched) {
+      return { success: true, error: null };
+    }
+    return { success: false, error: 'Email not found in HESICS team directory.' };
+  }
+
+  try {
+    await sendPasswordResetEmail(auth, email);
+    return { success: true, error: null };
+  } catch (err: any) {
+    return { success: false, error: err?.message || 'Failed to send password reset email.' };
   }
 }
 
@@ -66,11 +164,19 @@ export async function signInWithGoogle(): Promise<{ user: User | null; error: st
     provider.setCustomParameters({ prompt: 'select_account' });
     const result = await signInWithPopup(auth, provider);
     const email = result.user.email || '';
-    const matched = db.getUserByEmail(email);
+    let matched = db.getUserByEmail(email);
 
     if (!matched) {
-      await fbSignOut(auth);
-      return { user: null, error: `Google account (${email}) is not registered in the HESICS team directory.` };
+      // Create user entry in HESICS directory on first Google Sign-In
+      matched = db.addUser({
+        name: result.user.displayName || email.split('@')[0],
+        email: email,
+        hierarchy: 'employee',
+        role_id: 'role-sales',
+        role_name: 'Team Member',
+        is_active: true,
+        avatar_url: result.user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(email)}`,
+      });
     }
     if (!matched.is_active) {
       await fbSignOut(auth);
