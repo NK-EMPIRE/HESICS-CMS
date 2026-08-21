@@ -1,4 +1,4 @@
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -12,9 +12,11 @@
     --border:       #1D1D22;
     --border-light: #2A2A32;
 
-    --accent:       #1E9EFF;
-    --accent-hover: #0A8AE6;
-    --accent-glow:  rgba(30, 158, 255, 0.12);
+    /* Titanium Luxury Accent */
+    --accent:       #77727E;
+    --accent-hover: #8E8896;
+    --accent-active:#605C66;
+    --accent-glow:  rgba(119, 114, 126, 0.18);
 
     --text-primary:   #F4F4F6;
     --text-secondary: #94949E;
@@ -42,7 +44,7 @@
     letter-spacing: -0.01em;
   }
 
-  /* Refined Luxury Scrollbar */
+  /* Refined Luxury Titanium Scrollbar */
   ::-webkit-scrollbar {
     width: 5px;
     height: 5px;
@@ -66,32 +68,32 @@
 @layer components {
   /* Minimalist Luxury Cards */
   .hesics-card {
-    @apply bg-[#0D0D10] border border-[#1C1C21] rounded-xl transition-colors;
+    @apply bg-[#0D0D10] border border-[#1C1C21] rounded-2xl transition-colors;
   }
 
   .hesics-card:hover {
-    @apply border-[#282830];
+    @apply border-[#2A2A33];
   }
 
-  /* Refined Input Fields */
+  /* Refined Titanium Input Fields */
   .hesics-input {
-    @apply w-full px-3 py-2 bg-[#08080A] border border-[#1C1C22] rounded-lg text-xs text-[#F4F4F6] placeholder-[#484854] focus:outline-none focus:border-[#1E9EFF]/60 focus:ring-1 focus:ring-[#1E9EFF]/20 transition-all;
+    @apply w-full px-3.5 py-2.5 bg-[#08080A] border border-[#1F1F26] rounded-xl text-xs text-[#F4F4F6] placeholder-[#50505D] focus:outline-none focus:border-[#77727E]/80 focus:ring-2 focus:ring-[#77727E]/20 transition-all;
   }
 
   .hesics-label {
-    @apply block text-[10px] font-semibold uppercase tracking-wider text-[#686875] mb-1.5;
+    @apply block text-[10.5px] font-semibold uppercase tracking-wider text-[#7A7A88] mb-2;
   }
 
-  /* Refined Action Buttons */
+  /* Refined Titanium Action Buttons */
   .hesics-btn-primary {
-    @apply flex items-center justify-center gap-2 px-3.5 py-2 bg-[#1E9EFF] hover:bg-[#0A8AE6] active:scale-[0.98] text-white font-semibold text-xs rounded-lg transition-all shadow-md shadow-[#1E9EFF]/15 cursor-pointer;
+    @apply flex items-center justify-center gap-2 px-4 py-2.5 bg-[#77727E] hover:bg-[#8E8896] active:bg-[#605C66] active:scale-[0.98] text-white font-semibold text-xs rounded-xl transition-all shadow-lg shadow-[#77727E]/20 hover:shadow-[#77727E]/30 cursor-pointer;
   }
 
   .hesics-btn-secondary {
-    @apply flex items-center justify-center gap-1.5 px-3 py-2 bg-[#121216] hover:bg-[#18181F] active:scale-[0.98] border border-[#202028] hover:border-[#2D2D38] text-[#D4D4D8] hover:text-white text-xs font-medium rounded-lg transition-all cursor-pointer;
+    @apply flex items-center justify-center gap-2 px-3.5 py-2.5 bg-[#121216] hover:bg-[#1A1A22] active:scale-[0.98] border border-[#22222B] hover:border-[#353542] text-[#D4D4D8] hover:text-white text-xs font-medium rounded-xl transition-all cursor-pointer;
   }
 
   .hesics-btn-ghost {
-    @apply flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-[#888896] hover:text-white hover:bg-[#16161C] rounded-lg transition-colors cursor-pointer;
+    @apply flex items-center gap-2 px-3 py-2 text-xs text-[#888896] hover:text-white hover:bg-[#16161D] rounded-xl transition-colors cursor-pointer;
   }
 }

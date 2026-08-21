@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+﻿import React, { useState, useRef, useEffect } from 'react';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 interface DatePickerProps {
@@ -26,7 +26,6 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Parse initial selected date or default to current date
   const parsedDate = value ? new Date(value) : new Date();
   const [viewYear, setViewYear] = useState(
     isNaN(parsedDate.getTime()) ? new Date().getFullYear() : parsedDate.getFullYear()
@@ -35,7 +34,6 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     isNaN(parsedDate.getTime()) ? new Date().getMonth() : parsedDate.getMonth()
   );
 
-  // Close when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -46,7 +44,6 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Update view when value changes
   useEffect(() => {
     if (value) {
       const d = new Date(value);
@@ -102,14 +99,11 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     setIsOpen(false);
   };
 
-  // Generate days in month
   const firstDayOfWeek = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const daysInPrevMonth = new Date(viewYear, viewMonth, 0).getDate();
-
   const todayStr = new Date().toISOString().split('T')[0];
 
-  // Format label for display
   const formatDisplay = (val: string) => {
     if (!val) return '';
     try {
@@ -129,15 +123,15 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       {/* Trigger Button */}
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full px-3 py-2 bg-[#08080A] border rounded-lg text-xs flex items-center justify-between cursor-pointer transition-all ${
+        className={`w-full px-3.5 py-2.5 bg-[#08080A] border rounded-xl text-xs flex items-center justify-between cursor-pointer transition-all ${
           isOpen
-            ? 'border-[#1E9EFF] ring-1 ring-[#1E9EFF]/30 bg-[#0C0C10]'
-            : 'border-[#1C1C22] hover:border-[#282832]'
+            ? 'border-[#77727E] ring-2 ring-[#77727E]/25 bg-[#0D0D12]'
+            : 'border-[#1F1F26] hover:border-[#32323E]'
         }`}
       >
-        <div className="flex items-center gap-2 min-w-0">
-          <CalendarIcon className="w-3.5 h-3.5 text-[#1E9EFF] shrink-0" />
-          <span className={`truncate font-mono ${value ? 'text-[#F4F4F6]' : 'text-[#484854]'}`}>
+        <div className="flex items-center gap-2.5 min-w-0">
+          <CalendarIcon className="w-3.5 h-3.5 text-[#77727E] shrink-0" />
+          <span className={`truncate font-mono ${value ? 'text-[#F4F4F6]' : 'text-[#505060]'}`}>
             {value ? formatDisplay(value) : placeholder}
           </span>
         </div>
@@ -150,11 +144,10 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             <X className="w-3 h-3" />
           </button>
         ) : (
-          <span className="text-[10px] text-[#404050] font-mono">📅</span>
+          <span className="text-[10px] text-[#505060] font-mono">📅</span>
         )}
       </div>
 
-      {/* Hidden input for form validation */}
       {required && (
         <input
           type="text"
@@ -168,51 +161,46 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 
       {/* Dropdown Calendar Popover */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1.5 z-50 w-64 bg-[#0D0D11] border border-[#202028] rounded-xl p-3 shadow-2xl space-y-2.5 animate-slide-up backdrop-blur-md">
-          {/* Header Month / Year controls */}
+        <div className="absolute top-full left-0 mt-2 z-50 w-72 bg-[#0D0D12] border border-[#262632] rounded-2xl p-4 shadow-2xl space-y-3 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-100">
           <div className="flex items-center justify-between text-xs font-semibold text-[#F4F4F6]">
             <button
               type="button"
               onClick={handlePrevMonth}
-              className="p-1 text-[#808090] hover:text-white hover:bg-[#16161D] rounded transition-colors"
+              className="p-1.5 text-[#808090] hover:text-white hover:bg-[#16161E] rounded-lg transition-colors"
             >
-              <ChevronLeft className="w-3.5 h-3.5" />
+              <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="font-display tracking-tight text-xs">
+            <span className="font-display tracking-tight text-xs font-bold">
               {MONTHS[viewMonth]} {viewYear}
             </span>
             <button
               type="button"
               onClick={handleNextMonth}
-              className="p-1 text-[#808090] hover:text-white hover:bg-[#16161D] rounded transition-colors"
+              className="p-1.5 text-[#808090] hover:text-white hover:bg-[#16161E] rounded-lg transition-colors"
             >
-              <ChevronRight className="w-3.5 h-3.5" />
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Days of Week Header */}
-          <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-semibold text-[#505060]">
+          <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-semibold text-[#606070]">
             {DAYS.map((d) => (
               <div key={d} className="py-0.5">{d}</div>
             ))}
           </div>
 
-          {/* Days Matrix */}
           <div className="grid grid-cols-7 gap-1 text-xs">
-            {/* Trailing days of previous month */}
             {Array.from({ length: firstDayOfWeek }).map((_, i) => {
               const day = daysInPrevMonth - firstDayOfWeek + i + 1;
               return (
                 <div
                   key={`prev-${i}`}
-                  className="h-7 flex items-center justify-center text-[11px] text-[#303038] font-mono"
+                  className="h-8 flex items-center justify-center text-[11px] text-[#303038] font-mono"
                 >
                   {day}
                 </div>
               );
             })}
 
-            {/* Current month days */}
             {Array.from({ length: daysInMonth }).map((_, i) => {
               const day = i + 1;
               const mm = String(viewMonth + 1).padStart(2, '0');
@@ -226,12 +214,12 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                   key={day}
                   type="button"
                   onClick={() => handleSelectDay(day)}
-                  className={`h-7 w-7 mx-auto rounded-lg flex items-center justify-center text-[11px] font-mono transition-all ${
+                  className={`h-8 w-8 mx-auto rounded-xl flex items-center justify-center text-[11px] font-mono transition-all ${
                     isSelected
-                      ? 'bg-[#1E9EFF] text-white font-bold shadow-md shadow-[#1E9EFF]/30 scale-105'
+                      ? 'bg-[#77727E] text-white font-bold shadow-lg shadow-[#77727E]/30 scale-105'
                       : isToday
-                      ? 'border border-[#1E9EFF]/50 text-[#1E9EFF] hover:bg-[#1E9EFF]/10'
-                      : 'text-[#D4D4D8] hover:bg-[#1A1A22] hover:text-white'
+                      ? 'border border-[#77727E]/60 text-[#D4D4D8] hover:bg-[#77727E]/15'
+                      : 'text-[#D4D4D8] hover:bg-[#1A1A24] hover:text-white'
                   }`}
                 >
                   {day}
@@ -240,19 +228,18 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             })}
           </div>
 
-          {/* Footer Quick Actions */}
-          <div className="flex items-center justify-between pt-2 border-t border-[#181820] text-[11px]">
+          <div className="flex items-center justify-between pt-2.5 border-t border-[#1C1C26] text-[11px]">
             <button
               type="button"
               onClick={handleClear}
-              className="text-[#606070] hover:text-[#9090A0] transition-colors"
+              className="text-[#707080] hover:text-[#A0A0B0] transition-colors"
             >
               Clear
             </button>
             <button
               type="button"
               onClick={handleSetToday}
-              className="text-[#1E9EFF] font-semibold hover:underline"
+              className="text-[#D4D4D8] hover:text-white font-semibold hover:underline"
             >
               Today
             </button>

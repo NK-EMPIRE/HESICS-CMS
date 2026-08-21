@@ -1,13 +1,13 @@
-export interface EmailPayload {
+﻿export interface EmailPayload {
   to: string;
   subject: string;
   html: string;
   text?: string;
-  category?: 'invitation' | 'task_assignment' | 'quotation' | 'invoice' | 'password_reset' | 'activity_log';
+  category?: 'invitation' | 'task_assignment' | 'quotation' | 'invoice' | 'password_reset' | 'activity_log' | 'custom';
 }
 
 /**
- * Base Brand HTML Email Template Wrapper
+ * Base Brand HTML Email Template Wrapper with Titanium Accent #77727E
  */
 export function wrapBrandEmailTemplate(title: string, contentHtml: string, actionButton?: { text: string; url: string }): string {
   return `
@@ -27,19 +27,19 @@ export function wrapBrandEmailTemplate(title: string, contentHtml: string, actio
           
           <!-- Header Banner -->
           <tr>
-            <td style="padding: 32px 36px 24px; border-bottom: 1px solid #181820; background: linear-gradient(180deg, #121218 0%, #0D0D11 100%);">
+            <td style="padding: 32px 36px 24px; border-bottom: 1px solid #181820; background: linear-gradient(180deg, #14141A 0%, #0D0D11 100%);">
               <table width="100%" border="0" cellspacing="0" cellpadding="0">
                 <tr>
                   <td>
                     <div style="font-size: 20px; font-weight: 800; letter-spacing: -0.02em; color: #FFFFFF;">
-                      HESICS<span style="color: #1E9EFF;">.</span>
+                      HESICS<span style="color: #77727E;">.</span>
                     </div>
-                    <div style="font-size: 10px; font-weight: 600; color: #707080; text-transform: uppercase; letter-spacing: 0.15em; margin-top: 2px;">
+                    <div style="font-size: 10px; font-weight: 600; color: #808090; text-transform: uppercase; letter-spacing: 0.15em; margin-top: 2px;">
                       Business Operating System
                     </div>
                   </td>
                   <td align="right">
-                    <span style="display: inline-block; padding: 4px 10px; background-color: rgba(30, 158, 255, 0.1); border: 1px solid rgba(30, 158, 255, 0.3); border-radius: 20px; font-size: 10px; font-weight: 600; color: #1E9EFF; text-transform: uppercase; letter-spacing: 0.05em;">
+                    <span style="display: inline-block; padding: 4px 10px; background-color: rgba(119, 114, 126, 0.15); border: 1px solid rgba(119, 114, 126, 0.35); border-radius: 20px; font-size: 10px; font-weight: 600; color: #D4D4D8; text-transform: uppercase; letter-spacing: 0.05em;">
                       Make It Simple
                     </span>
                   </td>
@@ -55,7 +55,7 @@ export function wrapBrandEmailTemplate(title: string, contentHtml: string, actio
 
               ${actionButton ? `
               <div style="margin-top: 32px; text-align: center;">
-                <a href="${actionButton.url}" target="_blank" style="display: inline-block; padding: 12px 28px; background-color: #1E9EFF; color: #FFFFFF; font-size: 13px; font-weight: 600; text-decoration: none; border-radius: 10px; box-shadow: 0 4px 14px rgba(30, 158, 255, 0.35); text-transform: none;">
+                <a href="${actionButton.url}" target="_blank" style="display: inline-block; padding: 12px 28px; background-color: #77727E; color: #FFFFFF; font-size: 13px; font-weight: 600; text-decoration: none; border-radius: 10px; box-shadow: 0 4px 14px rgba(119, 114, 126, 0.35); text-transform: none;">
                   ${actionButton.text} →
                 </a>
               </div>
@@ -65,10 +65,10 @@ export function wrapBrandEmailTemplate(title: string, contentHtml: string, actio
 
           <!-- Footer -->
           <tr>
-            <td style="padding: 24px 36px; border-top: 1px solid #181820; background-color: #09090C; text-align: center; font-size: 11px; color: #505060; line-height: 1.5;">
+            <td style="padding: 24px 36px; border-top: 1px solid #181820; background-color: #09090C; text-align: center; font-size: 11px; color: #606070; line-height: 1.5;">
               <div>This is an automated operational notification from <strong>HESICS OS</strong>.</div>
-              <div style="margin-top: 4px;">Direct queries to <a href="mailto:hesics1@gmail.com" style="color: #1E9EFF; text-decoration: none;">hesics1@gmail.com</a></div>
-              <div style="margin-top: 12px; font-size: 10px; color: #353540;">© ${new Date().getFullYear()} HESICS. All rights reserved.</div>
+              <div style="margin-top: 4px;">Direct queries to <a href="mailto:hesics1@gmail.com" style="color: #77727E; text-decoration: none;">hesics1@gmail.com</a></div>
+              <div style="margin-top: 12px; font-size: 10px; color: #404050;">© ${new Date().getFullYear()} HESICS. All rights reserved.</div>
             </td>
           </tr>
 
@@ -99,147 +99,186 @@ export async function sendEmail(payload: EmailPayload): Promise<{ success: boole
 
     return { success: true };
   } catch (err: any) {
-    console.error('Email sending error:', err);
-    return { success: false, error: err.message || 'Network error while dispatching email.' };
+    console.error('Email Dispatch Failure:', err);
+    return { success: false, error: err?.message || 'Network error while attempting to send email.' };
   }
 }
 
-// ─── High-Ticket Email Template Generators ──────────────────────────────────────
+export async function sendCustomEmail(params: {
+  to: string;
+  subject: string;
+  html: string;
+  text?: string;
+}): Promise<{ success: boolean; error?: string }> {
+  return sendEmail({
+    to: params.to,
+    subject: params.subject,
+    html: params.html,
+    text: params.text,
+    category: 'custom',
+  });
+}
 
 /**
- * 1. Team Member Invitation / Account Provisioning
+ * 1. Provision Team Member Invitation Email
  */
 export async function sendInvitationEmail(params: {
   to: string;
   recipientName: string;
   roleName: string;
-  department?: string;
-  loginUrl?: string;
+  department: string;
 }) {
-  const loginUrl = params.loginUrl || window.location.origin;
-  const content = `
-    <h2 style="font-size: 18px; font-weight: 700; color: #FFFFFF; margin: 0 0 16px;">Welcome to HESICS, ${params.recipientName}</h2>
-    <p style="margin: 0 0 16px;">You have been officially invited and provisioned into the <strong>HESICS Business Operating System</strong>.</p>
-    
-    <div style="background-color: #08080B; border: 1px solid #1A1A22; border-radius: 12px; padding: 18px; margin: 20px 0;">
-      <table width="100%" border="0" cellspacing="0" cellpadding="4" style="font-size: 13px;">
-        <tr>
-          <td style="color: #707080; width: 120px;">Role Assigned:</td>
-          <td style="color: #1E9EFF; font-weight: 600;">${params.roleName}</td>
-        </tr>
-        <tr>
-          <td style="color: #707080;">Department:</td>
-          <td style="color: #FFFFFF;">${params.department || 'Operations'}</td>
-        </tr>
-        <tr>
-          <td style="color: #707080;">Authorized Email:</td>
-          <td style="color: #FFFFFF; font-family: monospace;">${params.to}</td>
-        </tr>
-      </table>
+  const htmlContent = `
+    <div style="margin-bottom: 24px;">
+      <h2 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 700; color: #FFFFFF;">
+        You've Been Added to HESICS
+      </h2>
+      <p style="margin: 0; color: #A0A0B0; font-size: 13px;">
+        Welcome aboard. Your enterprise account credentials and authorizations have been provisioned.
+      </p>
     </div>
 
-    <p style="margin: 0 0 8px; font-size: 13px; color: #9090A0;">You can sign in directly using Google Single Sign-On or request a passwordless Magic Link with your authorized work email.</p>
+    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #121217; border: 1px solid #1C1C24; border-radius: 12px; margin-bottom: 24px;">
+      <tr>
+        <td style="padding: 16px; border-bottom: 1px solid #1C1C24; font-size: 12px; color: #707080;">Authorized Role</td>
+        <td style="padding: 16px; border-bottom: 1px solid #1C1C24; font-size: 12px; color: #77727E; font-weight: 600;">${params.roleName}</td>
+      </tr>
+      <tr>
+        <td style="padding: 16px; border-bottom: 1px solid #1C1C24; font-size: 12px; color: #707080;">Department</td>
+        <td style="padding: 16px; border-bottom: 1px solid #1C1C24; font-size: 12px; color: #FFFFFF; font-weight: 500;">${params.department}</td>
+      </tr>
+      <tr>
+        <td style="padding: 16px; font-size: 12px; color: #707080;">Work Email</td>
+        <td style="padding: 16px; font-size: 12px; color: #FFFFFF; font-family: monospace;">${params.to}</td>
+      </tr>
+    </table>
+
+    <p style="font-size: 13px; color: #A0A0B0; margin: 0;">
+      You can sign in securely with your Google Work Account or request a Magic Sign-In link at our portal.
+    </p>
   `;
+
+  const finalHtml = wrapBrandEmailTemplate(
+    'Welcome to HESICS OS',
+    htmlContent,
+    { text: 'Access HESICS Portal', url: 'https://hesics-cms.vercel.app' }
+  );
 
   return sendEmail({
     to: params.to,
-    subject: `Welcome to HESICS — You're invited to join as ${params.roleName}`,
-    html: wrapBrandEmailTemplate('Welcome to HESICS', content, { text: 'Enter Workspace', url: loginUrl }),
+    subject: 'Welcome to HESICS — Organization Access Granted',
+    html: finalHtml,
     category: 'invitation',
   });
 }
 
 /**
- * 2. Task / Activity Assigned Notification
+ * 2. Task & Client Touchpoint Follow-Up Assignment
  */
 export async function sendTaskAssignmentEmail(params: {
   to: string;
   recipientName: string;
   taskTitle: string;
   clientName?: string;
-  dueDate?: string;
+  dueDate: string;
   activityType: string;
   outcomeNotes?: string;
-  taskUrl?: string;
 }) {
-  const url = params.taskUrl || `${window.location.origin}`;
-  const content = `
-    <h2 style="font-size: 18px; font-weight: 700; color: #FFFFFF; margin: 0 0 16px;">New Scheduled Action Assigned</h2>
-    <p style="margin: 0 0 16px;">Hi ${params.recipientName}, a new client action has been logged in HESICS requiring your attention.</p>
-    
-    <div style="background-color: #08080B; border: 1px solid #1A1A22; border-radius: 12px; padding: 18px; margin: 20px 0;">
-      <table width="100%" border="0" cellspacing="0" cellpadding="4" style="font-size: 13px;">
-        <tr>
-          <td style="color: #707080; width: 120px;">Activity Type:</td>
-          <td style="color: #1E9EFF; font-weight: 600; text-transform: uppercase;">${params.activityType}</td>
-        </tr>
-        ${params.clientName ? `
-        <tr>
-          <td style="color: #707080;">Client Account:</td>
-          <td style="color: #FFFFFF; font-weight: 600;">${params.clientName}</td>
-        </tr>` : ''}
-        ${params.dueDate ? `
-        <tr>
-          <td style="color: #707080;">Follow-Up Due:</td>
-          <td style="color: #FBBF24; font-family: monospace;">${params.dueDate}</td>
-        </tr>` : ''}
-        ${params.outcomeNotes ? `
-        <tr>
-          <td style="color: #707080; vertical-align: top;">Notes:</td>
-          <td style="color: #D4D4D8;">${params.outcomeNotes}</td>
-        </tr>` : ''}
-      </table>
+  const htmlContent = `
+    <div style="margin-bottom: 24px;">
+      <h2 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 700; color: #FFFFFF;">
+        New Action Follow-up Assigned
+      </h2>
+      <p style="margin: 0; color: #A0A0B0; font-size: 13px;">
+        A scheduled action requires your attention.
+      </p>
     </div>
+
+    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #121217; border: 1px solid #1C1C24; border-radius: 12px; margin-bottom: 20px;">
+      <tr>
+        <td style="padding: 14px 16px; border-bottom: 1px solid #1C1C24; font-size: 12px; color: #707080;">Action Type</td>
+        <td style="padding: 14px 16px; border-bottom: 1px solid #1C1C24; font-size: 12px; color: #77727E; font-weight: 600; text-transform: uppercase;">${params.activityType}</td>
+      </tr>
+      <tr>
+        <td style="padding: 14px 16px; border-bottom: 1px solid #1C1C24; font-size: 12px; color: #707080;">Client Account</td>
+        <td style="padding: 14px 16px; border-bottom: 1px solid #1C1C24; font-size: 12px; color: #FFFFFF; font-weight: 500;">${params.clientName || 'General'}</td>
+      </tr>
+      <tr>
+        <td style="padding: 14px 16px; border-bottom: 1px solid #1C1C24; font-size: 12px; color: #707080;">Target Due Date</td>
+        <td style="padding: 14px 16px; border-bottom: 1px solid #1C1C24; font-size: 12px; color: #E5A83B; font-weight: 600; font-family: monospace;">${params.dueDate}</td>
+      </tr>
+    </table>
+
+    ${params.outcomeNotes ? `
+    <div style="background-color: #08080A; border: 1px solid #181820; border-radius: 8px; padding: 14px; margin-bottom: 20px; font-size: 13px; color: #C0C0D0; font-style: italic;">
+      "${params.outcomeNotes}"
+    </div>
+    ` : ''}
   `;
+
+  const finalHtml = wrapBrandEmailTemplate(
+    'Task Assignment Notification',
+    htmlContent,
+    { text: 'View in Pipeline', url: 'https://hesics-cms.vercel.app' }
+  );
 
   return sendEmail({
     to: params.to,
-    subject: `[Action Required] ${params.activityType.toUpperCase()}: ${params.clientName || 'Client Follow-Up'}`,
-    html: wrapBrandEmailTemplate('Task Assignment', content, { text: 'View in HESICS', url }),
+    subject: `[Action Required] ${params.taskTitle} — Due ${params.dueDate}`,
+    html: finalHtml,
     category: 'task_assignment',
   });
 }
 
 /**
- * 3. Quotation Issued to Client
+ * 3. Commercial Quotation Issued
  */
 export async function sendQuotationEmail(params: {
   to: string;
   clientName: string;
   quoteNumber: string;
   totalAmount: number;
-  validUntil?: string;
-  quoteUrl?: string;
+  validUntil: string;
 }) {
-  const url = params.quoteUrl || window.location.origin;
-  const content = `
-    <h2 style="font-size: 18px; font-weight: 700; color: #FFFFFF; margin: 0 0 16px;">Price Quotation & Scope Estimate</h2>
-    <p style="margin: 0 0 16px;">Dear ${params.clientName},</p>
-    <p style="margin: 0 0 16px;">Thank you for your interest in partnering with HESICS. Your formal quotation <strong>#${params.quoteNumber}</strong> is ready for review.</p>
-    
-    <div style="background-color: #08080B; border: 1px solid #1A1A22; border-radius: 12px; padding: 20px; margin: 20px 0; text-align: center;">
-      <div style="font-size: 11px; color: #707080; text-transform: uppercase; letter-spacing: 0.1em;">Total Estimate</div>
-      <div style="font-size: 28px; font-weight: 800; color: #1E9EFF; margin: 6px 0; font-family: monospace;">
-        ₹${params.totalAmount.toLocaleString('en-IN')}
-      </div>
-      ${params.validUntil ? `
-      <div style="font-size: 11px; color: #9090A0;">Valid until ${params.validUntil}</div>
-      ` : ''}
+  const formattedAmount = `₹${params.totalAmount.toLocaleString('en-IN')}`;
+
+  const htmlContent = `
+    <div style="margin-bottom: 24px;">
+      <h2 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 700; color: #FFFFFF;">
+        Commercial Quotation Issued
+      </h2>
+      <p style="margin: 0; color: #A0A0B0; font-size: 13px;">
+        Formal quotation <strong>#${params.quoteNumber}</strong> prepared for ${params.clientName}.
+      </p>
     </div>
 
-    <p style="margin: 0; font-size: 13px; color: #9090A0;">Our team is available to discuss milestones and address any technical specifications.</p>
+    <div style="background-color: #121218; border: 1px solid #1E1E26; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 24px;">
+      <div style="font-size: 11px; text-transform: uppercase; color: #707080; letter-spacing: 0.1em; font-weight: 600;">Total Estimate</div>
+      <div style="font-size: 28px; font-weight: 800; color: #77727E; margin: 6px 0; font-family: monospace;">${formattedAmount}</div>
+      <div style="font-size: 11px; color: #808090;">Valid until ${params.validUntil}</div>
+    </div>
+
+    <p style="font-size: 13px; color: #A0A0B0; line-height: 1.6; margin: 0;">
+      Please review the itemized scope and milestones. You may access your portal to accept the proposal or contact our executive team for commercial alignments.
+    </p>
   `;
+
+  const finalHtml = wrapBrandEmailTemplate(
+    'Commercial Quotation',
+    htmlContent,
+    { text: 'Review Quotation Online', url: 'https://hesics-cms.vercel.app' }
+  );
 
   return sendEmail({
     to: params.to,
-    subject: `Quotation #${params.quoteNumber} from HESICS — ₹${params.totalAmount.toLocaleString('en-IN')}`,
-    html: wrapBrandEmailTemplate('Quotation Issued', content, { text: 'Review Quotation', url }),
+    subject: `Commercial Quotation #${params.quoteNumber} from HESICS`,
+    html: finalHtml,
     category: 'quotation',
   });
 }
 
 /**
- * 4. Tax Invoice Notification
+ * 4. Formal Tax Invoice Issued
  */
 export async function sendInvoiceEmail(params: {
   to: string;
@@ -247,29 +286,40 @@ export async function sendInvoiceEmail(params: {
   invoiceNumber: string;
   totalAmount: number;
   dueDate: string;
-  invoiceUrl?: string;
 }) {
-  const url = params.invoiceUrl || window.location.origin;
-  const content = `
-    <h2 style="font-size: 18px; font-weight: 700; color: #FFFFFF; margin: 0 0 16px;">Tax Invoice Issued</h2>
-    <p style="margin: 0 0 16px;">Dear ${params.clientName},</p>
-    <p style="margin: 0 0 16px;">Please find below the billing details for Tax Invoice <strong>#${params.invoiceNumber}</strong>.</p>
-    
-    <div style="background-color: #08080B; border: 1px solid #1A1A22; border-radius: 12px; padding: 20px; margin: 20px 0; text-align: center;">
-      <div style="font-size: 11px; color: #707080; text-transform: uppercase; letter-spacing: 0.1em;">Total Amount Due</div>
-      <div style="font-size: 28px; font-weight: 800; color: #1E9EFF; margin: 6px 0; font-family: monospace;">
-        ₹${params.totalAmount.toLocaleString('en-IN')}
-      </div>
-      <div style="font-size: 12px; color: #F87171; font-weight: 600; margin-top: 4px;">Payment Due: ${params.dueDate}</div>
+  const formattedAmount = `₹${params.totalAmount.toLocaleString('en-IN')}`;
+
+  const htmlContent = `
+    <div style="margin-bottom: 24px;">
+      <h2 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 700; color: #FFFFFF;">
+        Tax Invoice Issued
+      </h2>
+      <p style="margin: 0; color: #A0A0B0; font-size: 13px;">
+        Invoice <strong>#${params.invoiceNumber}</strong> issued for ${params.clientName}.
+      </p>
     </div>
 
-    <p style="margin: 0; font-size: 13px; color: #9090A0;">Thank you for your business. Please remit payment via direct bank transfer as specified in your invoice document.</p>
+    <div style="background-color: #121218; border: 1px solid #1E1E26; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 24px;">
+      <div style="font-size: 11px; text-transform: uppercase; color: #707080; letter-spacing: 0.1em; font-weight: 600;">Total Payable</div>
+      <div style="font-size: 28px; font-weight: 800; color: #77727E; margin: 6px 0; font-family: monospace;">${formattedAmount}</div>
+      <div style="font-size: 11px; color: #E5A83B; font-weight: 600;">Payment Due Date: ${params.dueDate}</div>
+    </div>
+
+    <p style="font-size: 13px; color: #A0A0B0; line-height: 1.6; margin: 0;">
+      Please find the commercial particulars recorded. Electronic remittance details are listed on the document.
+    </p>
   `;
+
+  const finalHtml = wrapBrandEmailTemplate(
+    'Tax Invoice',
+    htmlContent,
+    { text: 'Pay / View Invoice Online', url: 'https://hesics-cms.vercel.app' }
+  );
 
   return sendEmail({
     to: params.to,
-    subject: `Tax Invoice #${params.invoiceNumber} from HESICS — ₹${params.totalAmount.toLocaleString('en-IN')}`,
-    html: wrapBrandEmailTemplate('Tax Invoice Issued', content, { text: 'View & Download Invoice', url }),
+    subject: `Tax Invoice #${params.invoiceNumber} from HESICS — Due ${params.dueDate}`,
+    html: finalHtml,
     category: 'invoice',
   });
 }

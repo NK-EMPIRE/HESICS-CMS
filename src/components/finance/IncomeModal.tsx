@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { X, DollarSign, Tag, User } from 'lucide-react';
+﻿import React, { useState } from 'react';
+import { X, DollarSign } from 'lucide-react';
 import { db } from '../../lib/firebaseDb';
-import { IncomeSourceType, User as UserType } from '../../lib/types';
+import { User as UserType } from '../../lib/types';
 import { DatePicker } from '../common/DatePicker';
+import { CustomSelect, Option } from '../common/CustomSelect';
 
 interface IncomeModalProps {
   isOpen: boolean;
@@ -10,6 +11,13 @@ interface IncomeModalProps {
   onSuccess: () => void;
   activeUser: UserType;
 }
+
+const PAYMENT_METHODS: Option[] = [
+  { value: 'Bank Transfer (NEFT/RTGS/IMPS)', label: 'Bank Transfer (NEFT / RTGS / IMPS)', badge: 'Bank', badgeColor: 'text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30' },
+  { value: 'Corporate Wire / SWIFT', label: 'Corporate Wire / SWIFT (USD/EUR)', badge: 'Wire', badgeColor: 'text-indigo-300 bg-indigo-950/40 border-indigo-800/50' },
+  { value: 'UPI / Commercial QR', label: 'UPI / Commercial QR Payment', badge: 'UPI', badgeColor: 'text-emerald-400 bg-emerald-950/40 border-emerald-800/50' },
+  { value: 'Cheque / Commercial Draft', label: 'Cheque / Demand Draft', badge: 'Draft', badgeColor: 'text-[#808090] bg-[#14141A] border-[#202028]' },
+];
 
 export const IncomeModal: React.FC<IncomeModalProps> = ({
   isOpen,
@@ -19,9 +27,9 @@ export const IncomeModal: React.FC<IncomeModalProps> = ({
 }) => {
   const [clientName, setClientName] = useState('');
   const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState('Client Retainer');
+  const [category, setCategory] = useState('Enterprise Retainer');
   const [receivedAt, setReceivedAt] = useState(new Date().toISOString().split('T')[0]);
-  const [paymentMethod, setPaymentMethod] = useState('Bank Transfer (NEFT/RTGS/IMPS)');
+  const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS[0].value);
   const [notes, setNotes] = useState('');
 
   if (!isOpen) return null;
@@ -47,30 +55,42 @@ export const IncomeModal: React.FC<IncomeModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-[#0D0D11] border border-[#1E1E26] rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-        <div className="flex items-center justify-between border-b border-[#1A1A22] pb-3">
-          <h2 className="text-sm font-bold text-[#F4F4F6]">Record Inflow / Revenue</h2>
-          <button onClick={onClose} className="text-[#606070] hover:text-white p-1 rounded">
+    <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+      <div className="bg-[#0D0D11] border border-[#22222B] rounded-3xl w-full max-w-2xl max-h-[92vh] overflow-y-auto p-8 space-y-6 shadow-2xl shadow-black/80">
+        <div className="flex items-center justify-between border-b border-[#1C1C26] pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-[#77727E]/15 border border-[#77727E]/30 flex items-center justify-center">
+              <DollarSign className="w-4 h-4 text-[#77727E]" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-[#F4F4F6] tracking-tight font-display">
+                Record Revenue Inflow
+              </h2>
+              <p className="text-xs text-[#808090]">
+                Log direct payments, client milestones, and banking remittances.
+              </p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-[#606070] hover:text-white p-1.5 rounded-lg hover:bg-[#16161D]">
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3.5">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="hesics-label">Client / Source Name</label>
+            <label className="hesics-label">Client / Commercial Source</label>
             <input
               type="text"
               value={clientName}
               onChange={(e) => setClientName(e.target.value)}
-              placeholder="e.g. Apex Global Technologies"
-              className="hesics-input"
+              placeholder="e.g. Apex Global Technologies Ltd"
+              className="hesics-input text-xs"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label className="hesics-label">Amount Received (₹) *</label>
+              <label className="hesics-label">Amount Received (₹ INR) *</label>
               <input
                 type="number"
                 required
@@ -78,7 +98,7 @@ export const IncomeModal: React.FC<IncomeModalProps> = ({
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="100000"
-                className="hesics-input font-mono"
+                className="hesics-input text-xs font-mono font-semibold"
               />
             </div>
             <div>
@@ -91,50 +111,44 @@ export const IncomeModal: React.FC<IncomeModalProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label className="hesics-label">Category</label>
+              <label className="hesics-label">Revenue Classification</label>
               <input
                 type="text"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                placeholder="e.g. Retainer, Project Milestone"
-                className="hesics-input"
+                placeholder="e.g. Enterprise Retainer / Milestone"
+                className="hesics-input text-xs"
               />
             </div>
             <div>
-              <label className="hesics-label">Payment Method</label>
-              <input
-                type="text"
+              <label className="hesics-label">Payment Channel</label>
+              <CustomSelect
                 value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-                placeholder="e.g. UPI, Bank Transfer"
-                className="hesics-input"
+                onChange={setPaymentMethod}
+                options={PAYMENT_METHODS}
               />
             </div>
           </div>
 
           <div>
-            <label className="hesics-label">Notes & Reference #</label>
+            <label className="hesics-label">Notes & UTR / Banking Reference</label>
             <textarea
-              rows={2}
+              rows={3}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="UTR reference or payment memo..."
-              className="hesics-input resize-none"
+              placeholder="Banking UTR reference or remittance notes..."
+              className="hesics-input text-xs resize-none leading-relaxed"
             />
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="hesics-btn-ghost"
-            >
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#1A1A22]">
+            <button type="button" onClick={onClose} className="hesics-btn-ghost">
               Cancel
             </button>
-            <button type="submit" className="hesics-btn-primary">
-              Record Income
+            <button type="submit" className="hesics-btn-primary px-6">
+              Record Inflow
             </button>
           </div>
         </form>

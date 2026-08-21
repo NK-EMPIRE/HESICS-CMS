@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import {
   ArrowRight, ShieldCheck, Mail, CheckCircle2, Loader2, AlertCircle,
   Lock, Sparkles, KeyRound, ArrowLeft, Building2
@@ -122,18 +122,18 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center p-4 font-sans selection:bg-[#1E9EFF]/20">
+    <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center p-4 font-sans selection:bg-[#77727E]/20">
 
       {/* Ambient Electric Glow */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[420px] bg-[#1E9EFF]/5 rounded-full blur-[140px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[420px] bg-[#77727E]/5 rounded-full blur-[140px]" />
       </div>
 
       <div className="w-full max-w-[360px] space-y-5 relative z-10">
 
         {/* HESICS Brand Emblem */}
         <div className="text-center space-y-2.5">
-          <div className="w-14 h-14 rounded-2xl bg-[#09090C] border border-[#1E9EFF]/30 flex items-center justify-center mx-auto shadow-2xl shadow-[#1E9EFF]/15 overflow-hidden p-2">
+          <div className="w-14 h-14 rounded-2xl bg-[#09090C] border border-[#77727E]/30 flex items-center justify-center mx-auto shadow-2xl shadow-[#77727E]/15 overflow-hidden p-2">
             <HesicsLogo size={40} variant="glow" />
           </div>
           <div>
@@ -148,7 +148,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
           {/* Card Header */}
           <div className="flex items-center justify-between border-b border-[#181820] pb-3 text-xs">
             <span className="font-semibold text-[#F4F4F6] flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-[#1E9EFF]" />
+              <ShieldCheck className="w-3.5 h-3.5 text-[#77727E]" />
               {authView === 'signin' && 'Sign In to Workspace'}
               {authView === 'forgot_password' && 'Password Recovery'}
               {authView === 'magic_link' && 'Magic Link Access'}
@@ -208,7 +208,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                       clearMessages();
                       setAuthView('forgot_password');
                     }}
-                    className="text-[10px] text-[#707080] hover:text-[#1E9EFF] transition-colors"
+                    className="text-[10px] text-[#707080] hover:text-[#77727E] transition-colors"
                   >
                     Forgot?
                   </button>

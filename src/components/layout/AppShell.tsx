@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   LayoutDashboard, Users, Kanban, DollarSign, FileText, Receipt,
   ShieldCheck, Settings, LogOut, ChevronLeft, ChevronRight,
@@ -22,7 +22,7 @@ const HierarchyIcon: React.FC<{ h: UserHierarchy }> = ({ h }) => {
   switch (h) {
     case 'founder':
     case 'admin':
-      return <Shield className="w-3 h-3 text-[#1E9EFF]" />;
+      return <Shield className="w-3 h-3 text-[#77727E]" />;
     case 'officer':
       return <Briefcase className="w-3 h-3 text-indigo-400" />;
     default:
@@ -85,7 +85,7 @@ export const AppShell: React.FC<AppShellProps> = ({
           <div className="h-12 px-3 border-b border-[#191920] flex items-center justify-between">
             {!collapsed ? (
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-7 h-7 rounded-lg bg-[#050505] border border-[#1E9EFF]/30 flex items-center justify-center shrink-0 p-1">
+                <div className="w-7 h-7 rounded-lg bg-[#050505] border border-[#77727E]/30 flex items-center justify-center shrink-0 p-1">
                   <HesicsLogo size={20} variant="glow" />
                 </div>
                 <div className="truncate min-w-0">
@@ -98,7 +98,7 @@ export const AppShell: React.FC<AppShellProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="w-7 h-7 rounded-lg bg-[#050505] border border-[#1E9EFF]/30 flex items-center justify-center mx-auto p-1">
+              <div className="w-7 h-7 rounded-lg bg-[#050505] border border-[#77727E]/30 flex items-center justify-center mx-auto p-1">
                 <HesicsLogo size={20} variant="glow" />
               </div>
             )}
@@ -125,13 +125,13 @@ export const AppShell: React.FC<AppShellProps> = ({
                   title={collapsed ? item.label : undefined}
                   className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-all ${
                     isActive
-                      ? 'bg-[#1E9EFF]/15 text-[#1E9EFF] border border-[#1E9EFF]/30'
+                      ? 'bg-[#77727E]/15 text-[#77727E] border border-[#77727E]/30'
                       : isAllowed
                       ? 'text-[#888896] hover:text-[#F4F4F6] hover:bg-[#14141A]'
                       : 'text-[#353540] cursor-not-allowed opacity-40'
                   }`}
                 >
-                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#1E9EFF]' : isAllowed ? 'text-[#707080]' : 'text-[#353540]'}`} />
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#77727E]' : isAllowed ? 'text-[#707080]' : 'text-[#353540]'}`} />
                   {!collapsed && (
                     <div className="flex items-center justify-between flex-1 min-w-0">
                       <span className="truncate">{item.label}</span>
@@ -158,7 +158,7 @@ export const AppShell: React.FC<AppShellProps> = ({
                 <img
                   src={activeUser.avatar_url}
                   alt={activeUser.name}
-                  className="w-7 h-7 rounded-full bg-[#14141A] ring-1 ring-[#1E9EFF]/40 shrink-0"
+                  className="w-7 h-7 rounded-full bg-[#14141A] ring-1 ring-[#77727E]/40 shrink-0"
                 />
                 <div className="truncate min-w-0">
                   <div className="text-xs font-semibold text-[#F4F4F6] truncate leading-tight">
@@ -208,7 +208,7 @@ export const AppShell: React.FC<AppShellProps> = ({
               <img
                 src={activeUser.avatar_url}
                 alt={activeUser.name}
-                className="w-6 h-6 rounded-full ring-1 ring-[#1E9EFF]/30"
+                className="w-6 h-6 rounded-full ring-1 ring-[#77727E]/30"
               />
               <div className="hidden sm:block">
                 <span className="text-xs font-medium text-[#F4F4F6]">{activeUser.name}</span>

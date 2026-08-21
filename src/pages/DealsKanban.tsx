@@ -25,7 +25,7 @@ const STAGE_MOVE_OPTIONS: Option[] = STAGES.map((s) => ({
   value: s.id,
   label: `Move: ${s.label}`,
   badge: s.label,
-  badgeColor: 'text-[#1E9EFF] bg-[#1E9EFF]/10 border-[#1E9EFF]/30',
+  badgeColor: 'text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30',
 }));
 
 export const DealsKanban: React.FC<DealsKanbanProps> = ({ activeUser }) => {
@@ -68,7 +68,7 @@ export const DealsKanban: React.FC<DealsKanbanProps> = ({ activeUser }) => {
         <div>
           <h1 className="text-xl font-bold text-[#F4F4F6] tracking-tight font-display">Revenue Pipeline</h1>
           <p className="text-xs text-[#828290] mt-1">
-            Active pipeline velocity: <span className="font-mono text-[#1E9EFF] font-semibold">{fmt(totalPipeline)}</span> • Won Revenue: <span className="font-mono text-emerald-400 font-semibold">{fmt(totalWon)}</span>
+            Active velocity: <span className="font-mono text-[#F4F4F6] font-semibold">{fmt(totalPipeline)}</span> • Won Revenue: <span className="font-mono text-emerald-400 font-semibold">{fmt(totalWon)}</span>
           </p>
         </div>
 
@@ -94,7 +94,7 @@ export const DealsKanban: React.FC<DealsKanbanProps> = ({ activeUser }) => {
           return (
             <div
               key={stage.id}
-              className="bg-[#09090C] border border-[#181820] rounded-xl p-3 space-y-3 min-h-[450px] flex flex-col"
+              className="bg-[#09090C] border border-[#181820] rounded-2xl p-3.5 space-y-3 min-h-[480px] flex flex-col"
             >
               {/* Column Header */}
               <div className="flex items-center justify-between pb-2.5 border-b border-[#16161E]">
@@ -102,30 +102,30 @@ export const DealsKanban: React.FC<DealsKanbanProps> = ({ activeUser }) => {
                   <span className={`w-2 h-2 rounded-full ${stage.dotColor}`} />
                   <h3 className="text-xs font-bold text-[#F4F4F6] tracking-tight font-display">{stage.label}</h3>
                 </div>
-                <span className="text-[10px] text-[#606070] font-mono px-1.5 py-0.5 bg-[#121218] rounded">
+                <span className="text-[10px] text-[#707080] font-mono px-2 py-0.5 bg-[#121218] rounded-md">
                   {stageDeals.length}
                 </span>
               </div>
 
-              {/* Total Value pill */}
+              {/* Total Value */}
               <div className="text-[11px] font-mono text-[#808090] font-medium">
                 Total: <span className="text-[#D4D4D8]">{fmt(stageTotal)}</span>
               </div>
 
               {/* Deal Cards Container */}
-              <div className="space-y-2.5 flex-1">
+              <div className="space-y-3 flex-1">
                 {stageDeals.length === 0 ? (
-                  <div className="h-28 border border-dashed border-[#16161E] rounded-lg flex items-center justify-center text-[11px] text-[#404050]">
+                  <div className="h-28 border border-dashed border-[#16161E] rounded-xl flex items-center justify-center text-[11px] text-[#404050]">
                     No active deals
                   </div>
                 ) : (
                   stageDeals.map((deal) => (
                     <div
                       key={deal.id}
-                      className="p-3 bg-[#0D0D11] border border-[#1C1C22] hover:border-[#1E9EFF]/40 rounded-xl space-y-2 transition-all shadow-md group"
+                      className="p-3.5 bg-[#0D0D11] border border-[#1C1C22] hover:border-[#77727E]/50 rounded-2xl space-y-2.5 transition-all shadow-md group"
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <h4 className="text-xs font-semibold text-[#F4F4F6] leading-tight group-hover:text-[#1E9EFF] transition-colors">
+                        <h4 className="text-xs font-semibold text-[#F4F4F6] leading-tight group-hover:text-white transition-colors">
                           {deal.title}
                         </h4>
                         {canWrite && (
@@ -157,11 +157,11 @@ export const DealsKanban: React.FC<DealsKanbanProps> = ({ activeUser }) => {
                         </div>
                       )}
 
-                      <div className="flex items-center justify-between text-xs pt-1 border-t border-[#181822]">
-                        <span className="font-bold text-[#1E9EFF] font-mono">{fmt(deal.value)}</span>
+                      <div className="flex items-center justify-between text-xs pt-1.5 border-t border-[#181822]">
+                        <span className="font-bold text-[#F4F4F6] font-mono">{fmt(deal.value)}</span>
                         {deal.expected_close_date && (
                           <span className="text-[10px] text-[#606070] flex items-center gap-1 font-mono">
-                            <Calendar className="w-2.5 h-2.5" />
+                            <Calendar className="w-2.5 h-2.5 text-[#77727E]" />
                             {deal.expected_close_date.split('T')[0]}
                           </span>
                         )}

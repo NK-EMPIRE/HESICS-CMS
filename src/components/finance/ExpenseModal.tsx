@@ -1,5 +1,5 @@
 ﻿import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Receipt } from 'lucide-react';
 import { db } from '../../lib/firebaseDb';
 import { ExpenseCategory, User as UserType } from '../../lib/types';
 import { DatePicker } from '../common/DatePicker';
@@ -13,13 +13,13 @@ interface ExpenseModalProps {
 }
 
 const CATEGORY_OPTIONS: Option[] = [
-  { value: 'software', label: 'Software, Servers & Cloud (AWS/GCP)', badge: 'Tech', badgeColor: 'text-[#1E9EFF] bg-[#1E9EFF]/10 border-[#1E9EFF]/30' },
-  { value: 'salary', label: 'Executive & Team Payroll', badge: 'Payroll', badgeColor: 'text-emerald-400 bg-emerald-950/30 border-emerald-900/40' },
-  { value: 'marketing', label: 'Marketing, PR & Campaigns', badge: 'Growth', badgeColor: 'text-indigo-400 bg-indigo-950/30 border-indigo-900/40' },
-  { value: 'rent', label: 'Corporate Office & Real Estate', badge: 'Facility', badgeColor: 'text-amber-400 bg-amber-950/30 border-amber-900/40' },
-  { value: 'travel', label: 'Client Meetings & Executive Travel', badge: 'Travel', badgeColor: 'text-purple-400 bg-purple-950/30 border-purple-900/40' },
-  { value: 'legal', label: 'Legal, Audit & Professional Fees', badge: 'Legal', badgeColor: 'text-rose-400 bg-rose-950/30 border-rose-900/40' },
-  { value: 'other', label: 'Other Operational Expenses', badge: 'General', badgeColor: 'text-[#707080] bg-[#14141A] border-[#202028]' },
+  { value: 'software', label: 'Software, Servers & Cloud Infrastructure', badge: 'Tech', badgeColor: 'text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30' },
+  { value: 'salary', label: 'Executive & Team Payroll', badge: 'Payroll', badgeColor: 'text-emerald-300 bg-emerald-950/40 border-emerald-800/50' },
+  { value: 'marketing', label: 'Marketing, PR & Strategic Campaigns', badge: 'Growth', badgeColor: 'text-indigo-300 bg-indigo-950/40 border-indigo-800/50' },
+  { value: 'rent', label: 'Corporate Office & Real Estate', badge: 'Facility', badgeColor: 'text-amber-300 bg-amber-950/40 border-amber-800/50' },
+  { value: 'travel', label: 'Client Meetings & Executive Travel', badge: 'Travel', badgeColor: 'text-purple-300 bg-purple-950/40 border-purple-800/50' },
+  { value: 'legal', label: 'Legal, Audit & Professional Compliance', badge: 'Legal', badgeColor: 'text-rose-300 bg-rose-950/40 border-rose-800/50' },
+  { value: 'other', label: 'Other Operational Expenditures', badge: 'General', badgeColor: 'text-[#707080] bg-[#14141A] border-[#202028]' },
 ];
 
 export const ExpenseModal: React.FC<ExpenseModalProps> = ({
@@ -57,30 +57,42 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-[#0D0D11] border border-[#1E1E26] rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-        <div className="flex items-center justify-between border-b border-[#1A1A22] pb-3">
-          <h2 className="text-sm font-bold text-[#F4F4F6]">Record Expenditure</h2>
-          <button onClick={onClose} className="text-[#606070] hover:text-white p-1 rounded">
+    <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+      <div className="bg-[#0D0D11] border border-[#22222B] rounded-3xl w-full max-w-2xl max-h-[92vh] overflow-y-auto p-8 space-y-6 shadow-2xl shadow-black/80">
+        <div className="flex items-center justify-between border-b border-[#1C1C26] pb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-[#77727E]/15 border border-[#77727E]/30 flex items-center justify-center">
+              <Receipt className="w-4 h-4 text-[#77727E]" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-[#F4F4F6] tracking-tight font-display">
+                Record Expenditure
+              </h2>
+              <p className="text-xs text-[#808090]">
+                Log operational outlays, vendor purchases, and tax credits.
+              </p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-[#606070] hover:text-white p-1.5 rounded-lg hover:bg-[#16161D]">
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3.5">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="hesics-label">Vendor / Service Provider</label>
+            <label className="hesics-label">Vendor / Service Entity</label>
             <input
               type="text"
               value={vendor}
               onChange={(e) => setVendor(e.target.value)}
-              placeholder="e.g. Amazon Web Services / Google Cloud"
-              className="hesics-input"
+              placeholder="e.g. Amazon Web Services / Google Cloud / Vercel"
+              className="hesics-input text-xs"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label className="hesics-label">Total Amount (₹) *</label>
+              <label className="hesics-label">Total Outlay Amount (₹ INR) *</label>
               <input
                 type="number"
                 required
@@ -88,25 +100,25 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="25000"
-                className="hesics-input font-mono"
+                className="hesics-input text-xs font-mono font-semibold"
               />
             </div>
             <div>
-              <label className="hesics-label">GST Paid (₹)</label>
+              <label className="hesics-label">GST Input Tax Credit Paid (₹)</label>
               <input
                 type="number"
                 min="0"
                 value={gstPaid}
                 onChange={(e) => setGstPaid(e.target.value)}
                 placeholder="4500"
-                className="hesics-input font-mono"
+                className="hesics-input text-xs font-mono"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label className="hesics-label">Category</label>
+              <label className="hesics-label">Expense Category</label>
               <CustomSelect
                 value={category}
                 onChange={(v) => setCategory(v as ExpenseCategory)}
@@ -114,7 +126,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
               />
             </div>
             <div>
-              <label className="hesics-label">Expense Date *</label>
+              <label className="hesics-label">Transaction Date *</label>
               <DatePicker
                 value={spentAt}
                 onChange={setSpentAt}
@@ -124,22 +136,22 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           </div>
 
           <div>
-            <label className="hesics-label">Notes & Invoicing Memo</label>
+            <label className="hesics-label">Invoicing Memo & Business Purpose</label>
             <textarea
-              rows={2}
+              rows={3}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Business purpose, invoice reference..."
-              className="hesics-input resize-none"
+              placeholder="Business justification, invoice voucher numbers, or payment notes..."
+              className="hesics-input text-xs resize-none leading-relaxed"
             />
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-2">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#1A1A22]">
             <button type="button" onClick={onClose} className="hesics-btn-ghost">
               Cancel
             </button>
-            <button type="submit" className="hesics-btn-primary">
-              Record Expense
+            <button type="submit" className="hesics-btn-primary px-6">
+              Record Outflow
             </button>
           </div>
         </form>

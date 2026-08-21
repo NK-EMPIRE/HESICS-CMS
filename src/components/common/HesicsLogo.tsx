@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 
 interface HesicsLogoProps {
   className?: string;
@@ -16,7 +16,7 @@ export const HesicsLogo: React.FC<HesicsLogoProps> = ({
   return (
     <div
       className={`relative inline-flex items-center justify-center shrink-0 ${
-        variant === 'glow' ? 'drop-shadow-[0_0_12px_rgba(30,158,255,0.4)]' : ''
+        variant === 'glow' ? 'drop-shadow-[0_0_12px_rgba(119,114,126,0.5)]' : ''
       } ${className}`}
       style={{ width: numericSize, height: numericSize }}
     >

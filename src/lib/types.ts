@@ -1,12 +1,26 @@
 ﻿export type EntityType = 'proprietorship' | 'partnership' | 'llp' | 'pvt_ltd' | 'other';
 
+export interface CustomTemplate {
+  id: string;
+  name: string;
+  type: 'invoice' | 'quotation';
+  file_name: string;
+  data_url?: string;
+  created_at: string;
+}
+
 export interface Organization {
   id: string;
   name: string;
   tagline?: string;
   email?: string;
+  phone?: string;
   address?: string;
   gstin?: string;
+  is_tax_enabled?: boolean;
+  default_invoice_template?: string;
+  default_quotation_template?: string;
+  custom_templates?: CustomTemplate[];
   entity_type?: EntityType;
   logo_url?: string;
   created_at: string;
@@ -145,6 +159,7 @@ export interface Quotation {
   deal_id?: string;
   quote_number?: string;
   quotation_number?: string;
+  template_id?: string;
   issue_date?: string;
   expiry_date?: string;
   valid_until?: string;
@@ -172,6 +187,7 @@ export interface Invoice {
   quotation_id?: string;
   deal_id?: string;
   invoice_number: string;
+  template_id?: string;
   issue_date?: string;
   due_date: string;
   paid_at?: string;

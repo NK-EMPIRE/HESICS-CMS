@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   Plus, Search, Building2, Mail, Phone,
   Clock, Calendar, CheckCircle2,
@@ -15,8 +15,8 @@ interface ClientsProps {
 }
 
 const statusBadge: Record<ClientStatus, string> = {
-  lead: 'text-[#1E9EFF] bg-[#1E9EFF]/10 border-[#1E9EFF]/30',
-  active: 'text-emerald-400 bg-emerald-950/30 border-emerald-900/40',
+  lead: 'text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30',
+  active: 'text-emerald-400 bg-emerald-950/40 border-emerald-800/50',
   churned: 'text-[#707080] bg-[#18181E] border-[#22222A]',
 };
 
@@ -79,8 +79,7 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
   };
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
-
+    <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1A1A20]">
         <div>
@@ -106,24 +105,24 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
       {/* Search & Filter Toolbar */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[240px]">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#585866]" />
+          <Search className="w-3.5 h-3.5 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#585866]" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search clients by name, company, or email..."
-            className="hesics-input pl-9"
+            className="hesics-input pl-10"
           />
         </div>
 
-        <div className="flex items-center gap-1 bg-[#09090C] border border-[#1C1C22] p-1 rounded-lg">
+        <div className="flex items-center gap-1.5 bg-[#09090C] border border-[#1C1C22] p-1 rounded-xl">
           {(['all', 'lead', 'active', 'churned'] as const).map((st) => (
             <button
               key={st}
               onClick={() => setSelectedStatus(st)}
-              className={`px-3 py-1 text-xs rounded-md capitalize font-medium transition-all ${
+              className={`px-3.5 py-1.5 text-xs rounded-lg capitalize font-medium transition-all ${
                 selectedStatus === st
-                  ? 'bg-[#1E9EFF] text-white'
+                  ? 'bg-[#77727E] text-white font-semibold shadow-md'
                   : 'text-[#707080] hover:text-[#D4D4D8]'
               }`}
             >
@@ -135,7 +134,6 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
 
       {/* Main Two-Column View */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-
         {/* Client Roster List */}
         <div className="hesics-card overflow-hidden lg:col-span-2">
           <div className="divide-y divide-[#17171E]">
@@ -157,7 +155,7 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
                     <div className="space-y-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-xs text-[#F4F4F6] truncate">{c.name}</span>
-                        <span className={`text-[9px] font-bold uppercase px-1.5 py-0.2 rounded border ${statusBadge[c.status]}`}>
+                        <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-md border ${statusBadge[c.status]}`}>
                           {c.status}
                         </span>
                       </div>
@@ -200,13 +198,13 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
         </div>
 
         {/* Selected Client Detail Panel */}
-        <div className="hesics-card p-5 space-y-4">
+        <div className="hesics-card p-6 space-y-5">
           {selectedClient ? (
             <div className="space-y-4">
-              <div className="border-b border-[#1A1A22] pb-3 space-y-1">
+              <div className="border-b border-[#1A1A22] pb-3.5 space-y-1">
                 <div className="flex items-center justify-between">
                   <h2 className="text-sm font-bold text-[#F4F4F6]">{selectedClient.name}</h2>
-                  <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded border ${statusBadge[selectedClient.status]}`}>
+                  <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-md border ${statusBadge[selectedClient.status]}`}>
                     {selectedClient.status}
                   </span>
                 </div>
@@ -219,13 +217,13 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
               <div className="space-y-2 text-xs">
                 {selectedClient.email && (
                   <div className="flex items-center gap-2 text-[#9090A0]">
-                    <Mail className="w-3.5 h-3.5 text-[#585868]" />
+                    <Mail className="w-3.5 h-3.5 text-[#77727E]" />
                     <span>{selectedClient.email}</span>
                   </div>
                 )}
                 {selectedClient.phone && (
                   <div className="flex items-center gap-2 text-[#9090A0]">
-                    <Phone className="w-3.5 h-3.5 text-[#585868]" />
+                    <Phone className="w-3.5 h-3.5 text-[#77727E]" />
                     <span>{selectedClient.phone}</span>
                   </div>
                 )}
@@ -254,7 +252,6 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
             </div>
           )}
         </div>
-
       </div>
 
       {/* Client Modal */}
@@ -281,7 +278,6 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
           activeUser={activeUser}
         />
       )}
-
     </div>
   );
 };

@@ -17,6 +17,7 @@ import { sendInvitationEmail } from '../lib/emailService';
 interface TeamPermissionsProps {
   activeUser: User;
 }
+
 const ALL_PERMISSIONS_CATALOG: { key: PermissionKey; title: string; category: string; description: string }[] = [
   { key: 'clients:read', title: 'View Clients Directory', category: 'CRM & Pipeline', description: 'Access organization client accounts, histories, and contact points' },
   { key: 'clients:write', title: 'Create & Edit Clients', category: 'CRM & Pipeline', description: 'Provision new client accounts and modify contact parameters' },
@@ -40,17 +41,18 @@ const PREDEFINED_DEPARTMENTS: Option[] = [
   { value: 'Product & Technology Operations', label: 'Product & Technology Operations', sublabel: 'Engineering & systems infrastructure' },
   { value: 'Legal & Corporate Affairs', label: 'Legal & Corporate Affairs', sublabel: 'Contracts, NDAs & corporate governance' },
 ];
+
 const HierarchyIcon: React.FC<{ h: UserHierarchy; className?: string }> = ({ h, className = 'w-3.5 h-3.5' }) => {
-  if (h === 'founder' || h === 'admin') return <Shield className={`${className} text-[#1E9EFF]`} />;
-  if (h === 'officer') return <Briefcase className={`${className} text-indigo-400`} />;
+  if (h === 'founder' || h === 'admin') return <Shield className={`${className} text-[#D4D4D8]`} />;
+  if (h === 'officer') return <Briefcase className={`${className} text-indigo-300`} />;
   return <UserCheck className={`${className} text-emerald-400`} />;
 };
 
 const hierarchyBadge: Record<UserHierarchy, string> = {
-  founder: 'text-[#1E9EFF] bg-[#1E9EFF]/10 border-[#1E9EFF]/30',
-  admin: 'text-[#1E9EFF] bg-[#1E9EFF]/10 border-[#1E9EFF]/30',
-  officer: 'text-indigo-400 bg-indigo-950/30 border-indigo-900/40',
-  employee: 'text-emerald-400 bg-emerald-950/30 border-emerald-900/40',
+  founder: 'text-[#D4D4D8] bg-[#77727E]/20 border-[#77727E]/40',
+  admin: 'text-[#D4D4D8] bg-[#77727E]/20 border-[#77727E]/40',
+  officer: 'text-indigo-300 bg-indigo-950/40 border-indigo-800/50',
+  employee: 'text-emerald-300 bg-emerald-950/40 border-emerald-800/50',
   intern: 'text-[#808090] bg-[#14141A] border-[#202028]',
 };
 
@@ -61,7 +63,6 @@ const hierarchyDisplayName: Record<UserHierarchy, string> = {
   employee: 'Employee',
   intern: 'Intern',
 };
-
 export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) => {
   const [users, setUsers] = useState(() => db.getUsers(activeUser.email));
   const roles = db.getRoles();
@@ -100,6 +101,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
     badge: hierarchyDisplayName[r.hierarchy_level] || r.hierarchy_level,
     badgeColor: hierarchyBadge[r.hierarchy_level],
   }));
+
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
@@ -199,7 +201,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
     }
   };
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
+    <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1A1A20]">
         <div>
@@ -210,12 +212,12 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
         </div>
 
         {canManage && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <button
               onClick={() => setShowCreateRoleForm(true)}
               className="hesics-btn-secondary"
             >
-              <Plus className="w-3.5 h-3.5 text-[#1E9EFF]" /> Create Custom Role
+              <Plus className="w-3.5 h-3.5 text-[#77727E]" /> Create Custom Role
             </button>
             <button
               onClick={() => setShowInviteForm(true)}
@@ -229,55 +231,67 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
 
       {/* Provision Team Member Modal */}
       {showInviteForm && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0D0D11] border border-[#1E1E26] rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[#1A1A22] pb-3">
-              <h2 className="text-sm font-bold text-[#F4F4F6] flex items-center gap-2">
-                <UserPlus className="w-4 h-4 text-[#1E9EFF]" /> Provision Team Member
-              </h2>
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0D0D11] border border-[#22222B] rounded-3xl w-full max-w-2xl max-h-[92vh] overflow-y-auto p-8 space-y-6 shadow-2xl shadow-black/80">
+            <div className="flex items-center justify-between border-b border-[#1C1C26] pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#77727E]/15 border border-[#77727E]/30 flex items-center justify-center">
+                  <UserPlus className="w-4 h-4 text-[#77727E]" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-[#F4F4F6] tracking-tight font-display">
+                    Provision Team Member
+                  </h2>
+                  <p className="text-xs text-[#808090]">
+                    Authorize corporate credentials and send official onboarding invite.
+                  </p>
+                </div>
+              </div>
               <button
                 onClick={() => setShowInviteForm(false)}
-                className="text-[#606070] hover:text-white p-1 rounded"
+                className="text-[#606070] hover:text-white p-1.5 rounded-lg hover:bg-[#16161D]"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {errorMessage && (
-              <div className="p-3 bg-rose-950/20 border border-rose-900/40 rounded-xl text-xs text-rose-300">
+              <div className="p-3.5 bg-rose-950/20 border border-rose-900/40 rounded-xl text-xs text-rose-300">
                 {errorMessage}
               </div>
             )}
             {inviteSuccess && (
-              <div className="p-3 bg-emerald-950/20 border border-emerald-900/40 rounded-xl text-xs text-emerald-300 flex items-center gap-2">
+              <div className="p-3.5 bg-emerald-950/20 border border-emerald-900/40 rounded-xl text-xs text-emerald-300 flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                 <span className="leading-relaxed">{inviteSuccess}</span>
               </div>
             )}
 
-            <form onSubmit={handleInvite} className="space-y-3.5">
-              <div>
-                <label className="hesics-label">Full Legal / Team Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={inviteName}
-                  onChange={(e) => setInviteName(e.target.value)}
-                  placeholder="e.g. Sheik Mydeen"
-                  className="hesics-input"
-                />
-              </div>
+            <form onSubmit={handleInvite} className="space-y-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                  <label className="hesics-label">Full Legal / Team Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={inviteName}
+                    onChange={(e) => setInviteName(e.target.value)}
+                    placeholder="e.g. Sheik Mydeen"
+                    className="hesics-input text-xs"
+                  />
+                </div>
 
-              <div>
-                <label className="hesics-label">Authorized Work Email *</label>
-                <input
-                  type="email"
-                  required
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  placeholder="name@hesics.com"
-                  className="hesics-input"
-                />
+                <div>
+                  <label className="hesics-label">Authorized Work Email *</label>
+                  <input
+                    type="email"
+                    required
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    placeholder="name@hesics.com"
+                    className="hesics-input text-xs font-mono"
+                  />
+                </div>
               </div>
 
               <div>
@@ -294,14 +308,14 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
               <div>
                 <label className="hesics-label">Assigned Department</label>
                 {isInviteRoleAdmin ? (
-                  <div className="p-2.5 bg-[#09090C] border border-[#1C1C22] rounded-lg text-xs text-[#9090A0] flex items-center justify-between">
+                  <div className="p-3 bg-[#09090C] border border-[#1F1F28] rounded-xl text-xs text-[#9090A0] flex items-center justify-between">
                     <span className="font-medium text-[#F4F4F6]">Executive Operations</span>
-                    <span className="text-[9px] uppercase font-mono px-2 py-0.5 rounded bg-[#1E9EFF]/10 text-[#1E9EFF] border border-[#1E9EFF]/20">
+                    <span className="text-[9px] uppercase font-mono px-2 py-0.5 rounded-md bg-[#77727E]/15 text-[#D4D4D8] border border-[#77727E]/30">
                       Org-Wide Admin
                     </span>
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-2.5">
                     {!isCustomDept ? (
                       <CustomSelect
                         value={inviteDepartment}
@@ -316,7 +330,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                         value={customDeptText}
                         onChange={(e) => setCustomDeptText(e.target.value)}
                         placeholder="Enter custom department name..."
-                        className="hesics-input"
+                        className="hesics-input text-xs"
                         autoFocus
                       />
                     )}
@@ -325,7 +339,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                       <button
                         type="button"
                         onClick={() => setIsCustomDept(!isCustomDept)}
-                        className="text-[11px] text-[#1E9EFF] hover:underline"
+                        className="text-[11px] text-[#D4D4D8] hover:underline"
                       >
                         {isCustomDept ? '← Choose predefined department' : '+ Or type custom department'}
                       </button>
@@ -334,7 +348,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                 )}
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#1A1A22]">
                 <button
                   type="button"
                   onClick={() => setShowInviteForm(false)}
@@ -345,7 +359,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                 <button
                   type="submit"
                   disabled={isSendingInvite}
-                  className="hesics-btn-primary"
+                  className="hesics-btn-primary px-6"
                 >
                   {isSendingInvite ? (
                     <span>Dispatching Invite...</span>
@@ -363,21 +377,31 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
       )}
       {/* Create Custom Role Modal */}
       {showCreateRoleForm && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0D0D11] border border-[#1E1E26] rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[#1A1A22] pb-3">
-              <h2 className="text-sm font-bold text-[#F4F4F6] flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-[#1E9EFF]" /> Create Custom Role
-              </h2>
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0D0D11] border border-[#22222B] rounded-3xl w-full max-w-2xl max-h-[92vh] overflow-y-auto p-8 space-y-6 shadow-2xl shadow-black/80">
+            <div className="flex items-center justify-between border-b border-[#1C1C26] pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#77727E]/15 border border-[#77727E]/30 flex items-center justify-center">
+                  <ShieldCheck className="w-4 h-4 text-[#77727E]" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-[#F4F4F6] tracking-tight font-display">
+                    Create Custom Role
+                  </h2>
+                  <p className="text-xs text-[#808090]">
+                    Define specific operational tiers and organizational responsibilities.
+                  </p>
+                </div>
+              </div>
               <button
                 onClick={() => setShowCreateRoleForm(false)}
-                className="text-[#606070] hover:text-white p-1 rounded"
+                className="text-[#606070] hover:text-white p-1.5 rounded-lg hover:bg-[#16161D]"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateCustomRole} className="space-y-3.5">
+            <form onSubmit={handleCreateCustomRole} className="space-y-5">
               <div>
                 <label className="hesics-label">Role Title *</label>
                 <input
@@ -386,7 +410,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                   value={newRoleName}
                   onChange={(e) => setNewRoleName(e.target.value)}
                   placeholder="e.g. Senior Commercial Director"
-                  className="hesics-input"
+                  className="hesics-input text-xs"
                 />
               </div>
 
@@ -405,17 +429,17 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
               </div>
 
               <div>
-                <label className="hesics-label">Operational Scope</label>
+                <label className="hesics-label">Operational Scope & Boundaries</label>
                 <input
                   type="text"
                   value={newRoleDesc}
                   onChange={(e) => setNewRoleDesc(e.target.value)}
-                  placeholder="Responsibilities, pipeline authority, and deliverables"
-                  className="hesics-input"
+                  placeholder="Responsibilities, pipeline authority, and deliverables..."
+                  className="hesics-input text-xs"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#1A1A22]">
                 <button
                   type="button"
                   onClick={() => setShowCreateRoleForm(false)}
@@ -425,7 +449,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                 </button>
                 <button
                   type="submit"
-                  className="hesics-btn-primary"
+                  className="hesics-btn-primary px-6"
                 >
                   Create Role
                 </button>
@@ -437,56 +461,56 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
 
       {/* Role Detailed Capability Drawer / Modal */}
       {selectedRoleForDetail && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0D0D11] border border-[#1E1E26] rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-6 space-y-4 shadow-2xl">
-            <div className="flex items-start justify-between border-b border-[#1A1A22] pb-3">
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0D0D11] border border-[#22222B] rounded-3xl w-full max-w-3xl max-h-[92vh] overflow-y-auto p-8 space-y-6 shadow-2xl shadow-black/80">
+            <div className="flex items-start justify-between border-b border-[#1C1C26] pb-4">
               <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-base font-bold text-[#F4F4F6]">{selectedRoleForDetail.name}</h2>
-                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${hierarchyBadge[selectedRoleForDetail.hierarchy_level]}`}>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-lg font-bold text-[#F4F4F6]">{selectedRoleForDetail.name}</h2>
+                  <span className={`text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-md border ${hierarchyBadge[selectedRoleForDetail.hierarchy_level]}`}>
                     {hierarchyDisplayName[selectedRoleForDetail.hierarchy_level]} Tier
                   </span>
                 </div>
-                <p className="text-xs text-[#808090] mt-1">
+                <p className="text-xs text-[#808090] mt-1.5 leading-relaxed">
                   {selectedRoleForDetail.description || 'Configured operational boundaries and authorizations.'}
                 </p>
               </div>
               <button
                 onClick={() => setSelectedRoleForDetail(null)}
-                className="text-[#606070] hover:text-white p-1 rounded"
+                className="text-[#606070] hover:text-white p-1.5 rounded-lg hover:bg-[#16161D]"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Authorized Operations Breakdown */}
-            <div className="space-y-3">
-              <h3 className="text-xs font-bold text-[#F4F4F6] flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-[#1E9EFF]" />
+            <div className="space-y-4">
+              <h3 className="text-xs font-bold text-[#F4F4F6] flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-[#77727E]" />
                 Authorized Operations ({getPermissionsForRole(selectedRoleForDetail.id).length})
               </h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 {ALL_PERMISSIONS_CATALOG.map((perm) => {
                   const isGranted = getPermissionsForRole(selectedRoleForDetail.id).includes(perm.key);
                   return (
                     <div
                       key={perm.key}
-                      className={`p-3 rounded-xl border text-xs space-y-1 transition-colors ${
+                      className={`p-3.5 rounded-2xl border text-xs space-y-1.5 transition-colors ${
                         isGranted
-                          ? 'bg-[#0E1520] border-[#1E9EFF]/30 text-[#F4F4F6]'
-                          : 'bg-[#08080A] border-[#16161D] text-[#454555]'
+                          ? 'bg-[#121217] border-[#77727E]/40 text-[#F4F4F6]'
+                          : 'bg-[#08080A] border-[#181820] text-[#454555]'
                       }`}
                     >
                       <div className="flex items-center justify-between font-semibold">
                         <span className="truncate">{perm.title}</span>
                         {isGranted ? (
-                          <Check className="w-3.5 h-3.5 text-[#1E9EFF] shrink-0" />
+                          <Check className="w-4 h-4 text-[#77727E] shrink-0" />
                         ) : (
-                          <span className="text-[9px] uppercase font-mono text-[#353540]">Denied</span>
+                          <span className="text-[9px] uppercase font-mono text-[#404050]">Denied</span>
                         )}
                       </div>
-                      <p className="text-[10px] leading-relaxed line-clamp-2" style={{ color: isGranted ? '#8AAAC8' : '#303038' }}>
+                      <p className="text-[10.5px] leading-relaxed line-clamp-2" style={{ color: isGranted ? '#A0A0B0' : '#353540' }}>
                         {perm.description}
                       </p>
                     </div>
@@ -496,20 +520,20 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
             </div>
 
             {/* Active Members with this Role */}
-            <div className="pt-3 border-t border-[#1A1A22] space-y-2">
-              <h3 className="text-xs font-bold text-[#F4F4F6] flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5 text-indigo-400" />
+            <div className="pt-4 border-t border-[#1C1C26] space-y-3">
+              <h3 className="text-xs font-bold text-[#F4F4F6] flex items-center gap-2">
+                <Users className="w-4 h-4 text-indigo-400" />
                 Active Assigned Members ({users.filter((u) => u.role_id === selectedRoleForDetail.id).length})
               </h3>
 
-              <div className="space-y-1.5 max-h-36 overflow-y-auto">
+              <div className="space-y-2 max-h-40 overflow-y-auto">
                 {users.filter((u) => u.role_id === selectedRoleForDetail.id).length === 0 ? (
-                  <div className="p-3 text-center text-xs text-[#505060]">No members currently hold this role.</div>
+                  <div className="p-3.5 text-center text-xs text-[#505060]">No members currently hold this role.</div>
                 ) : (
                   users.filter((u) => u.role_id === selectedRoleForDetail.id).map((u) => (
-                    <div key={u.id} className="p-2 bg-[#08080B] border border-[#16161D] rounded-lg flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2">
-                        <img src={u.avatar_url} alt={u.name} className="w-5 h-5 rounded-full bg-[#15151C]" />
+                    <div key={u.id} className="p-2.5 bg-[#08080B] border border-[#181822] rounded-xl flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2.5">
+                        <img src={u.avatar_url} alt={u.name} className="w-6 h-6 rounded-full bg-[#15151C]" />
                         <span className="font-medium text-[#F4F4F6]">{u.name}</span>
                         <span className="text-[10px] text-[#606070] font-mono">({u.email})</span>
                       </div>
@@ -534,21 +558,21 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
       {/* Team Roster Table */}
       <div className="hesics-card overflow-hidden">
         <div className="p-4 border-b border-[#181820] flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Users className="w-4 h-4 text-[#1E9EFF]" />
+          <div className="flex items-center gap-2.5">
+            <Users className="w-4 h-4 text-[#77727E]" />
             <h2 className="text-xs font-bold text-[#F4F4F6]">Organization Members ({users.length})</h2>
           </div>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-[#09090C] text-[#606070] border-b border-[#181820] uppercase text-[10px] font-semibold tracking-wider">
+            <thead className="bg-[#09090C] text-[#707080] border-b border-[#181820] uppercase text-[10px] font-semibold tracking-wider">
               <tr>
-                <th className="p-3.5">Member</th>
-                <th className="p-3.5">Role</th>
-                <th className="p-3.5">Department</th>
-                <th className="p-3.5">Status</th>
-                <th className="p-3.5 text-right">Actions</th>
+                <th className="p-4">Member</th>
+                <th className="p-4">Role</th>
+                <th className="p-4">Department</th>
+                <th className="p-4">Status</th>
+                <th className="p-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#15151C]">
@@ -565,7 +589,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
 
                   return (
                     <tr key={u.id} className="hover:bg-[#111116] transition-colors">
-                      <td className="p-3.5">
+                      <td className="p-4">
                         <div className="flex items-center gap-3">
                           <img
                             src={u.avatar_url}
@@ -576,7 +600,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                             <div className="font-semibold text-[#F4F4F6] flex items-center gap-1.5">
                               {u.name}
                               {isSelf && (
-                                <span className="text-[9px] text-[#1E9EFF] font-normal font-mono">(You)</span>
+                                <span className="text-[9px] text-[#77727E] font-normal font-mono">(You)</span>
                               )}
                             </div>
                             <div className="text-[11px] text-[#707080]">{u.email}</div>
@@ -584,18 +608,18 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                         </div>
                       </td>
 
-                      <td className="p-3.5">
-                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${hierarchyBadge[u.hierarchy]}`}>
+                      <td className="p-4">
+                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${hierarchyBadge[u.hierarchy]}`}>
                           <HierarchyIcon h={u.hierarchy} />
                           {u.role_name || hierarchyDisplayName[u.hierarchy]}
                         </span>
                       </td>
 
-                      <td className="p-3.5 text-[#808090] font-mono text-[11px]">
+                      <td className="p-4 text-[#808090] font-mono text-[11px]">
                         {u.department || 'Executive Operations'}
                       </td>
 
-                      <td className="p-3.5">
+                      <td className="p-4">
                         {u.is_active ? (
                           <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-400 bg-emerald-950/30 px-2 py-0.5 rounded-full border border-emerald-900/40">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Active
@@ -607,16 +631,16 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                         )}
                       </td>
 
-                      <td className="p-3.5 text-right">
+                      <td className="p-4 text-right">
                         {isManageable && !isSelf ? (
-                          <div className="inline-flex items-center gap-1.5">
+                          <div className="inline-flex items-center gap-2">
                             {u.is_active ? (
                               <button
                                 onClick={() => handleDeactivate(u)}
                                 className="p-1.5 text-[#707080] hover:text-amber-400 hover:bg-amber-950/20 rounded transition-colors"
                                 title="Deactivate Account"
                               >
-                                <UserX className="w-3.5 h-3.5" />
+                                <UserX className="w-4 h-4" />
                               </button>
                             ) : (
                               <button
@@ -624,7 +648,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                                 className="p-1.5 text-[#707080] hover:text-emerald-400 hover:bg-emerald-950/20 rounded transition-colors"
                                 title="Reactivate Account"
                               >
-                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <CheckCircle2 className="w-4 h-4" />
                               </button>
                             )}
                             <button
@@ -632,7 +656,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                               className="p-1.5 text-[#707080] hover:text-rose-400 hover:bg-rose-950/20 rounded transition-colors"
                               title="Permanently Delete User"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
                         ) : (
@@ -649,11 +673,11 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
       </div>
 
       {/* Interactive Role Capability Matrix */}
-      <div className="hesics-card p-5 space-y-4">
+      <div className="hesics-card p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xs font-bold text-[#F4F4F6] flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-[#1E9EFF]" /> Role Capability Matrix
+              <ShieldCheck className="w-4 h-4 text-[#77727E]" /> Role Capability Matrix
             </h2>
             <p className="text-xs text-[#707080] mt-0.5">
               Click any role card to view full authorized operations, capability scopes, and member allocations.
@@ -661,30 +685,30 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
           {roles.map((r) => {
             const perms = getPermissionsForRole(r.id);
             return (
               <div
                 key={r.id}
                 onClick={() => setSelectedRoleForDetail(r)}
-                className="p-4 bg-[#08080B] border border-[#181820] hover:border-[#1E9EFF]/50 rounded-xl space-y-2.5 cursor-pointer transition-all hover:scale-[1.01] shadow-lg group"
+                className="p-4 bg-[#08080B] border border-[#181820] hover:border-[#77727E]/60 rounded-2xl space-y-3 cursor-pointer transition-all hover:scale-[1.01] shadow-lg group"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#F4F4F6] group-hover:text-[#1E9EFF] transition-colors">
+                  <span className="text-xs font-bold text-[#F4F4F6] group-hover:text-white transition-colors">
                     {r.name}
                   </span>
-                  <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${hierarchyBadge[r.hierarchy_level]}`}>
+                  <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-md border ${hierarchyBadge[r.hierarchy_level]}`}>
                     {hierarchyDisplayName[r.hierarchy_level] || r.hierarchy_level}
                   </span>
                 </div>
-                <p className="text-[10px] text-[#707080] min-h-[28px] leading-relaxed">
+                <p className="text-[10.5px] text-[#707080] min-h-[30px] leading-relaxed">
                   {r.description || 'Standard enterprise operational capability boundary.'}
                 </p>
                 <div className="pt-2 border-t border-[#14141A] text-[10px] text-[#808090] flex items-center justify-between">
                   <span>Authorized Actions:</span>
-                  <span className="font-mono text-[#1E9EFF] font-semibold flex items-center gap-1">
-                    {perms.length} <span className="text-[8px] text-[#505060]">View →</span>
+                  <span className="font-mono text-[#D4D4D8] font-semibold flex items-center gap-1">
+                    {perms.length} <span className="text-[8px] text-[#606070]">View →</span>
                   </span>
                 </div>
               </div>

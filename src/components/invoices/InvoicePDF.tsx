@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Document, Page, Text, View, StyleSheet, pdf } from '@react-pdf/renderer';
 import { Invoice, Quotation, Organization } from '../../lib/types';
 
@@ -15,13 +15,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 24,
     borderBottomWidth: 2,
-    borderBottomColor: '#1E9EFF',
+    borderBottomColor: '#77727E',
     paddingBottom: 12,
   },
   brandName: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#1E9EFF',
+    color: '#77727E',
   },
   brandTagline: {
     fontSize: 9,
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   },
   grandTotal: {
     borderTopWidth: 2,
-    borderTopColor: '#1E9EFF',
+    borderTopColor: '#77727E',
     borderBottomWidth: 0,
     paddingTop: 6,
     marginTop: 4,
