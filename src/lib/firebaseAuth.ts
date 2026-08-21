@@ -103,6 +103,12 @@ export async function signInWithPassword(email: string, password: string): Promi
     }
 
     const code = err?.code;
+    if (code === 'auth/unauthorized-domain') {
+      return {
+        user: null,
+        error: `Domain Authorization Needed: Please add "${window.location.hostname}" to Firebase Console -> Authentication -> Settings -> Authorized Domains.`
+      };
+    }
     if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
       return { user: null, error: 'Invalid email or password. Please verify your credentials or reset your password.' };
     }
@@ -146,6 +152,16 @@ export async function signInWithGoogle(): Promise<{ user: User | null; error: st
     setLocalSession(matched);
     return { user: matched, error: null };
   } catch (err: any) {
+    const code = err?.code;
+    if (code === 'auth/unauthorized-domain') {
+      return {
+        user: null,
+        error: `Domain Authorization Needed: Please add "${window.location.hostname}" to Firebase Console -> Authentication -> Settings -> Authorized Domains.`
+      };
+    }
+    if (code === 'auth/popup-closed-by-user') {
+      return { user: null, error: 'Sign-in popup was cancelled.' };
+    }
     return { user: null, error: err?.message || 'Google sign in failed' };
   }
 }
@@ -200,6 +216,13 @@ export async function sendPasswordReset(email: string): Promise<{ success: boole
     await sendPasswordResetEmail(auth, normalizedEmail);
     return { success: true, error: null };
   } catch (err: any) {
+    const code = err?.code;
+    if (code === 'auth/unauthorized-domain') {
+      return {
+        success: false,
+        error: `Please add "${window.location.hostname}" to Firebase Console -> Authentication -> Settings -> Authorized Domains.`
+      };
+    }
     return { success: false, error: err?.message || 'Failed to send password reset email.' };
   }
 }
@@ -229,6 +252,13 @@ export async function sendEmailLink(email: string): Promise<{ success: boolean; 
     window.localStorage.setItem('emailForSignIn', normalizedEmail);
     return { success: true, error: null };
   } catch (err: any) {
+    const code = err?.code;
+    if (code === 'auth/unauthorized-domain') {
+      return {
+        success: false,
+        error: `Please add "${window.location.hostname}" to Firebase Console -> Authentication -> Settings -> Authorized Domains.`
+      };
+    }
     return { success: false, error: err?.message || 'Failed to send login link' };
   }
 }
