@@ -1,11 +1,9 @@
 ﻿import React, { useState, useEffect } from 'react';
 import {
-  ArrowRight, ShieldCheck, Crown, Shield, UserCheck,
-  Mail, CheckCircle2, Loader2, AlertCircle, Lock, User as UserIcon,
-  Sparkles, KeyRound, ArrowLeft
+  ArrowRight, ShieldCheck, Mail, CheckCircle2, Loader2, AlertCircle,
+  Lock, User as UserIcon, Sparkles, KeyRound, ArrowLeft
 } from 'lucide-react';
 import { User, UserHierarchy } from '../lib/types';
-import { db } from '../lib/firebaseDb';
 import { isFirebaseConfigured } from '../lib/firebase';
 import {
   signInWithPassword,
@@ -21,34 +19,9 @@ interface LoginProps {
   onLogin: (user: User) => void;
 }
 
-const hierarchyConfig: Record<UserHierarchy, { label: string; color: string; icon: React.ReactNode }> = {
-  founder: {
-    label: 'Founder',
-    color: 'text-amber-400 bg-amber-950/40 border-amber-900/50',
-    icon: <Crown className="w-3 h-3" />,
-  },
-  admin: {
-    label: 'Admin',
-    color: 'text-[#1E9EFF] bg-[#1E9EFF]/10 border-[#1E9EFF]/30',
-    icon: <Shield className="w-3 h-3" />,
-  },
-  employee: {
-    label: 'Employee',
-    color: 'text-emerald-400 bg-emerald-950/40 border-emerald-900/50',
-    icon: <UserCheck className="w-3 h-3" />,
-  },
-  intern: {
-    label: 'Intern',
-    color: 'text-slate-500 bg-slate-900/40 border-slate-800/50',
-    icon: <UserCheck className="w-3 h-3" />,
-  },
-};
-
 type AuthView = 'signin' | 'signup' | 'forgot_password' | 'magic_link';
 
 export const Login: React.FC<LoginProps> = ({ onLogin }) => {
-  const users = db.getUsers().filter((u) => u.is_active);
-
   const [authView, setAuthView] = useState<AuthView>('signin');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -79,7 +52,10 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    if (!email.trim() || !password.trim()) {
+      setErrorMsg('Please enter both your email and password.');
+      return;
+    }
 
     setLoading(true);
     clearMessages();
@@ -96,7 +72,10 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !name.trim() || !password.trim()) return;
+    if (!email.trim() || !name.trim() || !password.trim()) {
+      setErrorMsg('Please complete all required fields.');
+      return;
+    }
 
     if (password.length < 6) {
       setErrorMsg('Password must be at least 6 characters.');
@@ -118,7 +97,10 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    if (!email.trim()) {
+      setErrorMsg('Please enter your email address.');
+      return;
+    }
 
     setLoading(true);
     clearMessages();
@@ -135,7 +117,10 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
   const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    if (!email.trim()) {
+      setErrorMsg('Please enter your work email.');
+      return;
+    }
 
     setLoading(true);
     clearMessages();
@@ -172,12 +157,12 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-[#1E9EFF]/5 rounded-full blur-[140px]" />
       </div>
 
-      <div className="w-full max-w-[400px] space-y-5 relative z-10">
+      <div className="w-full max-w-[390px] space-y-6 relative z-10">
 
         {/* HESICS Brand Header */}
         <div className="text-center space-y-2.5">
-          <div className="w-13 h-13 rounded-2xl bg-[#0d0d0d] border border-[#1E9EFF]/25 flex items-center justify-center mx-auto shadow-2xl shadow-[#1E9EFF]/10">
-            <svg width="30" height="23" viewBox="0 0 28 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <div className="w-14 h-14 rounded-2xl bg-[#0d0d0d] border border-[#1E9EFF]/25 flex items-center justify-center mx-auto shadow-2xl shadow-[#1E9EFF]/10">
+            <svg width="32" height="25" viewBox="0 0 28 22" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M2 2H7V10H13V2H18V20H13V13H7V20H2V2Z" fill="white"/>
               <path d="M20 2L24 2L24 20" stroke="#1E9EFF" strokeWidth="2.5" strokeLinecap="round"/>
             </svg>
@@ -189,25 +174,31 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
           </div>
         </div>
 
-        {/* Main Auth Box */}
-        <div className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-2xl p-5 space-y-4 shadow-2xl">
+        {/* Main Auth Card */}
+        <div className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-2xl p-6 space-y-5 shadow-2xl">
 
           {/* Navigation Sub-Tabs */}
           <div className="flex items-center justify-between border-b border-[#161616] pb-3 text-xs">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <button
                 type="button"
                 onClick={() => { setAuthView('signin'); clearMessages(); }}
-                className={`font-semibold transition-colors ${authView === 'signin' ? 'text-[#1E9EFF]' : 'text-[#666666] hover:text-white'}`}
+                className={`font-semibold transition-colors relative py-1 ${authView === 'signin' ? 'text-[#1E9EFF]' : 'text-[#666666] hover:text-white'}`}
               >
                 Sign In
+                {authView === 'signin' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#1E9EFF] rounded-full" />
+                )}
               </button>
               <button
                 type="button"
                 onClick={() => { setAuthView('signup'); clearMessages(); }}
-                className={`font-semibold transition-colors ${authView === 'signup' ? 'text-[#1E9EFF]' : 'text-[#666666] hover:text-white'}`}
+                className={`font-semibold transition-colors relative py-1 ${authView === 'signup' ? 'text-[#1E9EFF]' : 'text-[#666666] hover:text-white'}`}
               >
                 Create Account
+                {authView === 'signup' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#1E9EFF] rounded-full" />
+                )}
               </button>
             </div>
 
@@ -222,14 +213,14 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             )}
           </div>
 
-          {/* Google Sign-In */}
+          {/* One-Click Google Sign-In */}
           {isFirebaseConfigured && authView !== 'forgot_password' && (
             <div className="space-y-3">
               <button
                 type="button"
                 onClick={handleGoogleSignIn}
                 disabled={loading}
-                className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 bg-[#121212] hover:bg-[#181818] border border-[#1e1e1e] text-white text-xs font-medium rounded-lg transition-colors"
+                className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 bg-[#121212] hover:bg-[#181818] border border-[#1e1e1e] hover:border-[#333333] text-white text-xs font-medium rounded-lg transition-colors"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -264,7 +255,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
           {/* View 1: Sign In with Email & Password */}
           {authView === 'signin' && (
-            <form onSubmit={handleSignIn} className="space-y-3">
+            <form onSubmit={handleSignIn} className="space-y-3.5">
               <div>
                 <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#555555] mb-1">
                   Work Email
@@ -298,7 +289,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 <div className="relative">
                   <input
                     type="password"
-                    required={isFirebaseConfigured}
+                    required
                     value={password}
                     onChange={(e) => { setPassword(e.target.value); clearMessages(); }}
                     placeholder="••••••••"
@@ -345,7 +336,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     required
                     value={name}
                     onChange={(e) => { setName(e.target.value); clearMessages(); }}
-                    placeholder="e.g. Sheik Mydeen"
+                    placeholder="e.g. Peer Sheik Mydeen"
                     className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-xs text-white placeholder-[#333333] focus:outline-none focus:border-[#1E9EFF]/40 transition-colors pr-9"
                   />
                   <UserIcon className="absolute right-3 top-2.5 w-3.5 h-3.5 text-[#333333]" />
@@ -396,10 +387,10 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     onChange={(e) => setHierarchy(e.target.value as UserHierarchy)}
                     className="w-full px-2.5 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-xs text-white focus:outline-none focus:border-[#1E9EFF]/40"
                   >
+                    <option value="founder">Founder</option>
+                    <option value="admin">Admin</option>
                     <option value="employee">Employee</option>
                     <option value="intern">Intern</option>
-                    <option value="admin">Admin</option>
-                    <option value="founder">Founder</option>
                   </select>
                 </div>
 
@@ -411,7 +402,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     type="text"
                     value={department}
                     onChange={(e) => setDepartment(e.target.value)}
-                    placeholder="Sales, Tech..."
+                    placeholder="Operations, Sales..."
                     className="w-full px-2.5 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-xs text-white focus:outline-none focus:border-[#1E9EFF]/40"
                   />
                 </div>
@@ -423,7 +414,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1E9EFF] hover:bg-[#0A8AE6] disabled:opacity-60 text-white font-semibold text-xs rounded-lg transition-colors shadow-lg shadow-[#1E9EFF]/10 mt-2"
               >
                 {loading ? (
-                  <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Registering...</>
+                  <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Creating Account...</>
                 ) : (
                   <>Create Account <ArrowRight className="w-3.5 h-3.5" /></>
                 )}
@@ -433,7 +424,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
           {/* View 3: Forgot Password */}
           {authView === 'forgot_password' && (
-            <form onSubmit={handleForgotPassword} className="space-y-3">
+            <form onSubmit={handleForgotPassword} className="space-y-3.5">
               <div className="space-y-1">
                 <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
                   <KeyRound className="w-3.5 h-3.5 text-[#1E9EFF]" /> Reset Password
@@ -476,7 +467,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
           {/* View 4: Magic Link */}
           {authView === 'magic_link' && (
-            <form onSubmit={handleMagicLink} className="space-y-3">
+            <form onSubmit={handleMagicLink} className="space-y-3.5">
               <div className="space-y-1">
                 <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-[#1E9EFF]" /> Passwordless Magic Link
@@ -516,62 +507,17 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
               </button>
             </form>
           )}
-
-          {/* Divider */}
-          <div className="flex items-center gap-3 pt-1">
-            <div className="flex-1 h-px bg-[#161616]" />
-            <span className="text-[10px] text-[#444444] uppercase font-semibold tracking-wider whitespace-nowrap">
-              team quick select
-            </span>
-            <div className="flex-1 h-px bg-[#161616]" />
-          </div>
-
-          {/* Team direct select list */}
-          <div className="space-y-1.5">
-            {users.map((u) => {
-              const cfg = hierarchyConfig[u.hierarchy] || hierarchyConfig.intern;
-              return (
-                <button
-                  key={u.id}
-                  onClick={() => onLogin(u)}
-                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-[#0a0a0a] border border-[#141414] hover:border-[#222222] hover:bg-[#111111] transition-all text-left group"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <img
-                      src={u.avatar_url}
-                      alt={u.name}
-                      className="w-7 h-7 rounded-full bg-[#1a1a1a]"
-                    />
-                    <div>
-                      <div className="text-xs font-semibold text-white leading-tight">{u.name}</div>
-                      <div className="text-[10px] text-[#444444] mt-0.5">{u.email}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${cfg.color}`}>
-                      {cfg.icon}{cfg.label}
-                    </span>
-                    <ArrowRight className="w-3 h-3 text-[#333333] group-hover:text-[#666666] transition-colors" />
-                  </div>
-                </button>
-              );
-            })}
-          </div>
         </div>
 
         {/* Security badge & status */}
         <div className="text-center text-[10px] text-[#3a3a3a] flex items-center justify-center gap-2">
-          <ShieldCheck className="w-3 h-3 text-[#1E9EFF]" />
+          <ShieldCheck className="w-3.5 h-3.5 text-[#1E9EFF]" />
           <span>Firebase Authentication & Role-Based Access Control</span>
         </div>
 
-        <div className={`mx-auto w-fit flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full border ${
-          isFirebaseConfigured
-            ? 'text-emerald-400 bg-emerald-950/30 border-emerald-900/40'
-            : 'text-[#555555] bg-[#111111] border-[#1a1a1a]'
-        }`}>
-          <div className={`w-1.5 h-1.5 rounded-full ${isFirebaseConfigured ? 'bg-emerald-400 animate-pulse' : 'bg-[#444444]'}`} />
-          {isFirebaseConfigured ? 'Live Firebase Authentication Active' : 'Offline/Local Auth Active'}
+        <div className="mx-auto w-fit flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full border text-emerald-400 bg-emerald-950/30 border-emerald-900/40">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span>Firebase Production Authentication Active</span>
         </div>
 
       </div>

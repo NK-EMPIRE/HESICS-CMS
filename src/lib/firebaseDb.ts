@@ -82,6 +82,14 @@ export class FirebaseDataStore {
         }
       }, (err) => console.warn('Firestore Users listener notice:', err));
 
+      // Subscribe to Roles
+      onSnapshot(collection(firestore, 'roles'), (snapshot) => {
+        if (!snapshot.empty) {
+          this.roles = snapshot.docs.map(d => d.data() as Role);
+          setStorageItem('roles', this.roles);
+        }
+      }, (err) => console.warn('Firestore Roles listener notice:', err));
+
       // Subscribe to Clients
       onSnapshot(collection(firestore, 'clients'), (snapshot) => {
         if (!snapshot.empty) {
@@ -143,7 +151,7 @@ export class FirebaseDataStore {
   }
 
   /**
-   * Automatically seeds initial documents to Cloud Firestore on first setup
+   * Automatically seeds initial organization settings & roles to Cloud Firestore on first setup
    */
   public async seedInitialFirestore() {
     const firestore = dbInstance;
@@ -159,23 +167,8 @@ export class FirebaseDataStore {
         batch.set(doc(firestore, 'roles', r.id), r);
       });
 
-      // Users
-      INITIAL_USERS.forEach((u) => {
-        batch.set(doc(firestore, 'users', u.id), u);
-      });
-
-      // Clients
-      INITIAL_CLIENTS.forEach((c) => {
-        batch.set(doc(firestore, 'clients', c.id), c);
-      });
-
-      // Deals
-      INITIAL_DEALS.forEach((d) => {
-        batch.set(doc(firestore, 'deals', d.id), d);
-      });
-
       await batch.commit();
-      console.log('Firebase Firestore initialized with default workspace entities.');
+      console.log('Firebase Firestore initialized with organization settings & roles.');
     } catch (e) {
       console.warn('Firestore seed notice:', e);
     }

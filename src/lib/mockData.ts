@@ -1,4 +1,4 @@
-import { Organization, User, Role, Client, Deal, Activity, Quotation, Invoice } from './types';
+﻿import { Organization, User, Role, Client, Deal, Activity, Quotation, Invoice } from './types';
 
 export const INITIAL_ORG: Organization = {
   id: 'org-hesics-001',
@@ -55,41 +55,8 @@ export const INITIAL_ROLES: Role[] = [
   },
 ];
 
-// Org Hierarchy:
-// Peer Sheik Mydeen → Founder (owns the org)
-// Naveen Karthick (NK) → Admin (co-admin)
-// Employees/Interns can be added under them
-
-export const INITIAL_USERS: User[] = [
-  {
-    id: 'usr-founder-01',
-    org_id: 'org-hesics-001',
-    name: 'Peer Sheik Mydeen',
-    email: 'peer@hesics.com',
-    avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=PeerSheik',
-    hierarchy: 'founder',
-    role_id: 'role-founder',
-    role_name: 'Founder & Owner',
-    department: 'Leadership',
-    is_active: true,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 'usr-admin-02',
-    org_id: 'org-hesics-001',
-    name: 'Naveen Karthick (NK)',
-    email: 'nk@hesics.com',
-    avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=NaveenNK',
-    hierarchy: 'admin',
-    role_id: 'role-admin',
-    role_name: 'Admin',
-    department: 'Operations',
-    is_active: true,
-    created_at: new Date().toISOString(),
-  },
-];
-
-// Clean empty collections — zero fake dummy data
+// Clean empty collections — zero mock users, zero fake dummy data
+export const INITIAL_USERS: User[] = [];
 export const INITIAL_CLIENTS: Client[] = [];
 export const INITIAL_DEALS: Deal[] = [];
 export const INITIAL_ACTIVITIES: Activity[] = [];
