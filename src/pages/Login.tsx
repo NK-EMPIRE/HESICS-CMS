@@ -1,13 +1,12 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ArrowRight, ShieldCheck, Mail, CheckCircle2, Loader2, AlertCircle,
-  Lock, User as UserIcon, Sparkles, KeyRound, ArrowLeft
+  Lock, Sparkles, KeyRound, ArrowLeft, Building2
 } from 'lucide-react';
-import { User, UserHierarchy } from '../lib/types';
+import { User } from '../lib/types';
 import { isFirebaseConfigured } from '../lib/firebase';
 import {
   signInWithPassword,
-  signUpWithPassword,
   sendPasswordReset,
   signInWithGoogle,
   sendEmailLink,
@@ -19,15 +18,12 @@ interface LoginProps {
   onLogin: (user: User) => void;
 }
 
-type AuthView = 'signin' | 'signup' | 'forgot_password' | 'magic_link';
+type AuthView = 'signin' | 'forgot_password' | 'magic_link';
 
 export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [authView, setAuthView] = useState<AuthView>('signin');
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [hierarchy, setHierarchy] = useState<UserHierarchy>('employee');
-  const [department, setDepartment] = useState('Operations');
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -53,7 +49,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password.trim()) {
-      setErrorMsg('Please enter both your email and password.');
+      setErrorMsg('Please enter both your work email and password.');
       return;
     }
 
@@ -70,35 +66,10 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     }
   };
 
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim() || !name.trim() || !password.trim()) {
-      setErrorMsg('Please complete all required fields.');
-      return;
-    }
-
-    if (password.length < 6) {
-      setErrorMsg('Password must be at least 6 characters.');
-      return;
-    }
-
-    setLoading(true);
-    clearMessages();
-
-    const res = await signUpWithPassword(name, email, password, hierarchy, department);
-    setLoading(false);
-
-    if (res.error) {
-      setErrorMsg(res.error);
-    } else if (res.user) {
-      onLogin(res.user);
-    }
-  };
-
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) {
-      setErrorMsg('Please enter your email address.');
+      setErrorMsg('Please enter your work email address.');
       return;
     }
 
@@ -154,10 +125,10 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
       {/* Ambient electric blue glow */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-[#1E9EFF]/5 rounded-full blur-[140px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#1E9EFF]/5 rounded-full blur-[140px]" />
       </div>
 
-      <div className="w-full max-w-[390px] space-y-6 relative z-10">
+      <div className="w-full max-w-[380px] space-y-5 relative z-10">
 
         {/* HESICS Brand Header */}
         <div className="text-center space-y-2.5">
@@ -175,32 +146,15 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         </div>
 
         {/* Main Auth Card */}
-        <div className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-2xl p-6 space-y-5 shadow-2xl">
+        <div className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-2xl p-6 space-y-4 shadow-2xl">
 
-          {/* Navigation Sub-Tabs */}
+          {/* Header row */}
           <div className="flex items-center justify-between border-b border-[#161616] pb-3 text-xs">
-            <div className="flex items-center gap-4">
-              <button
-                type="button"
-                onClick={() => { setAuthView('signin'); clearMessages(); }}
-                className={`font-semibold transition-colors relative py-1 ${authView === 'signin' ? 'text-[#1E9EFF]' : 'text-[#666666] hover:text-white'}`}
-              >
-                Sign In
-                {authView === 'signin' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#1E9EFF] rounded-full" />
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={() => { setAuthView('signup'); clearMessages(); }}
-                className={`font-semibold transition-colors relative py-1 ${authView === 'signup' ? 'text-[#1E9EFF]' : 'text-[#666666] hover:text-white'}`}
-              >
-                Create Account
-                {authView === 'signup' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#1E9EFF] rounded-full" />
-                )}
-              </button>
-            </div>
+            <span className="font-semibold text-white">
+              {authView === 'signin' && 'Sign in to your Organization'}
+              {authView === 'forgot_password' && 'Reset Password'}
+              {authView === 'magic_link' && 'Passwordless Sign In'}
+            </span>
 
             {authView !== 'signin' && (
               <button
@@ -214,7 +168,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
           </div>
 
           {/* One-Click Google Sign-In */}
-          {isFirebaseConfigured && authView !== 'forgot_password' && (
+          {isFirebaseConfigured && authView === 'signin' && (
             <div className="space-y-3">
               <button
                 type="button"
@@ -241,14 +195,14 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
           {/* Feedback Messages */}
           {errorMsg && (
-            <div className="flex items-center gap-2 p-3 bg-red-950/30 border border-red-900/40 rounded-lg">
-              <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+            <div className="flex items-start gap-2 p-3 bg-red-950/30 border border-red-900/40 rounded-lg">
+              <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
               <p className="text-[11px] text-red-400 leading-tight">{errorMsg}</p>
             </div>
           )}
           {successMsg && (
-            <div className="flex items-center gap-2 p-3 bg-emerald-950/30 border border-emerald-900/40 rounded-lg">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <div className="flex items-start gap-2 p-3 bg-emerald-950/30 border border-emerald-900/40 rounded-lg">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
               <p className="text-[11px] text-emerald-400 leading-tight">{successMsg}</p>
             </div>
           )}
@@ -299,7 +253,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-1">
+              <div className="flex items-center justify-between pt-0.5">
                 <button
                   type="button"
                   onClick={() => { setAuthView('magic_link'); clearMessages(); }}
@@ -323,106 +277,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </form>
           )}
 
-          {/* View 2: Sign Up / Register Team Member */}
-          {authView === 'signup' && (
-            <form onSubmit={handleSignUp} className="space-y-3">
-              <div>
-                <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#555555] mb-1">
-                  Full Name *
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    required
-                    value={name}
-                    onChange={(e) => { setName(e.target.value); clearMessages(); }}
-                    placeholder="e.g. Peer Sheik Mydeen"
-                    className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-xs text-white placeholder-[#333333] focus:outline-none focus:border-[#1E9EFF]/40 transition-colors pr-9"
-                  />
-                  <UserIcon className="absolute right-3 top-2.5 w-3.5 h-3.5 text-[#333333]" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#555555] mb-1">
-                  Work Email *
-                </label>
-                <div className="relative">
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => { setEmail(e.target.value); clearMessages(); }}
-                    placeholder="name@hesics.com"
-                    className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-xs text-white placeholder-[#333333] focus:outline-none focus:border-[#1E9EFF]/40 transition-colors pr-9"
-                  />
-                  <Mail className="absolute right-3 top-2.5 w-3.5 h-3.5 text-[#333333]" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#555555] mb-1">
-                  Create Password *
-                </label>
-                <div className="relative">
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => { setPassword(e.target.value); clearMessages(); }}
-                    placeholder="Minimum 6 characters"
-                    className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-xs text-white placeholder-[#333333] focus:outline-none focus:border-[#1E9EFF]/40 transition-colors pr-9"
-                  />
-                  <Lock className="absolute right-3 top-2.5 w-3.5 h-3.5 text-[#333333]" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                <div>
-                  <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#555555] mb-1">
-                    Role Tier
-                  </label>
-                  <select
-                    value={hierarchy}
-                    onChange={(e) => setHierarchy(e.target.value as UserHierarchy)}
-                    className="w-full px-2.5 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-xs text-white focus:outline-none focus:border-[#1E9EFF]/40"
-                  >
-                    <option value="founder">Founder</option>
-                    <option value="admin">Admin</option>
-                    <option value="employee">Employee</option>
-                    <option value="intern">Intern</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#555555] mb-1">
-                    Department
-                  </label>
-                  <input
-                    type="text"
-                    value={department}
-                    onChange={(e) => setDepartment(e.target.value)}
-                    placeholder="Operations, Sales..."
-                    className="w-full px-2.5 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-xs text-white focus:outline-none focus:border-[#1E9EFF]/40"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1E9EFF] hover:bg-[#0A8AE6] disabled:opacity-60 text-white font-semibold text-xs rounded-lg transition-colors shadow-lg shadow-[#1E9EFF]/10 mt-2"
-              >
-                {loading ? (
-                  <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Creating Account...</>
-                ) : (
-                  <>Create Account <ArrowRight className="w-3.5 h-3.5" /></>
-                )}
-              </button>
-            </form>
-          )}
-
-          {/* View 3: Forgot Password */}
+          {/* View 2: Forgot Password */}
           {authView === 'forgot_password' && (
             <form onSubmit={handleForgotPassword} className="space-y-3.5">
               <div className="space-y-1">
@@ -430,7 +285,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   <KeyRound className="w-3.5 h-3.5 text-[#1E9EFF]" /> Reset Password
                 </h3>
                 <p className="text-[11px] text-[#666666]">
-                  Enter your registered work email to receive a password reset link.
+                  Enter your registered work email to receive a secure password reset link.
                 </p>
               </div>
 
@@ -465,7 +320,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </form>
           )}
 
-          {/* View 4: Magic Link */}
+          {/* View 3: Magic Link */}
           {authView === 'magic_link' && (
             <form onSubmit={handleMagicLink} className="space-y-3.5">
               <div className="space-y-1">
@@ -473,7 +328,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   <Sparkles className="w-3.5 h-3.5 text-[#1E9EFF]" /> Passwordless Magic Link
                 </h3>
                 <p className="text-[11px] text-[#666666]">
-                  Receive a secure instant sign-in link directly in your inbox.
+                  Receive an instant sign-in link in your registered inbox.
                 </p>
               </div>
 
@@ -507,17 +362,20 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
               </button>
             </form>
           )}
+
+          {/* Admin Managed Note */}
+          <div className="p-3 bg-[#0a0a0a] border border-[#161616] rounded-xl flex items-start gap-2.5">
+            <Building2 className="w-4 h-4 text-[#555555] shrink-0 mt-0.5" />
+            <p className="text-[10px] text-[#555555] leading-relaxed">
+              <strong className="text-[#888888]">Invitation Only:</strong> New accounts can only be provisioned by organization administrators. Contact your admin if you need access.
+            </p>
+          </div>
         </div>
 
         {/* Security badge & status */}
         <div className="text-center text-[10px] text-[#3a3a3a] flex items-center justify-center gap-2">
-          <ShieldCheck className="w-3.5 h-3.5 text-[#1E9EFF]" />
-          <span>Firebase Authentication & Role-Based Access Control</span>
-        </div>
-
-        <div className="mx-auto w-fit flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full border text-emerald-400 bg-emerald-950/30 border-emerald-900/40">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span>Firebase Production Authentication Active</span>
+          <ShieldCheck className="w-3 h-3 text-[#1E9EFF]" />
+          <span>Firebase Authentication & Admin-Controlled Provisioning</span>
         </div>
 
       </div>

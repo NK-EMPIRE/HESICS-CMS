@@ -1,4 +1,4 @@
-﻿import {
+import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
@@ -8,7 +8,6 @@
   signInWithPopup,
   GoogleAuthProvider,
   updateProfile,
-  updatePassword,
   signOut as fbSignOut,
   onAuthStateChanged as fbOnAuthStateChanged,
   User as FirebaseUser
@@ -26,133 +25,74 @@ export interface AuthSession {
 const SESSION_KEY = 'hesics_auth_v3';
 
 /**
- * Sign Up / Register new account with Firebase Auth & link with HESICS Directory
- */
-export async function signUpWithPassword(
-  name: string,
-  email: string,
-  password: string,
-  hierarchy: UserHierarchy = 'employee',
-  department?: string
-): Promise<{ user: User | null; error: string | null }> {
-  if (!isFirebaseConfigured || !auth) {
-    // Local demo registration
-    const existing = db.getUserByEmail(email);
-    if (existing) {
-      return { user: null, error: 'An account with this email already exists.' };
-    }
-    const roleId = hierarchy === 'founder' ? 'role-founder' : hierarchy === 'admin' ? 'role-admin' : 'role-sales';
-    const roleName = hierarchy === 'founder' ? 'Founder' : hierarchy === 'admin' ? 'Admin' : 'Sales Lead';
-
-    const newUser = db.addUser({
-      name,
-      email,
-      hierarchy,
-      role_id: roleId,
-      role_name: roleName,
-      department: department || 'Operations',
-      is_active: true,
-      avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`,
-    });
-    setLocalSession(newUser);
-    return { user: newUser, error: null };
-  }
-
-  try {
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
-    await updateProfile(cred.user, { displayName: name });
-
-    // Check if user already in directory, or create new directory entry
-    let matched = db.getUserByEmail(email);
-    if (!matched) {
-      const roleId = hierarchy === 'founder' ? 'role-founder' : hierarchy === 'admin' ? 'role-admin' : 'role-sales';
-      const roleName = hierarchy === 'founder' ? 'Founder' : hierarchy === 'admin' ? 'Admin' : 'Sales Lead';
-
-      matched = db.addUser({
-        name,
-        email,
-        hierarchy,
-        role_id: roleId,
-        role_name: roleName,
-        department: department || 'Operations',
-        is_active: true,
-        avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`,
-      });
-    }
-
-    setLocalSession(matched);
-    return { user: matched, error: null };
-  } catch (err: any) {
-    return { user: null, error: err?.message || 'Failed to create account.' };
-  }
-}
-
-/**
  * Sign in using Firebase Email & Password
+ * Only registered accounts authorized by an Admin/Founder can log in.
  */
 export async function signInWithPassword(email: string, password: string): Promise<{ user: User | null; error: string | null }> {
+  const normalizedEmail = email.trim().toLowerCase();
+
   if (!isFirebaseConfigured || !auth) {
-    // Fallback in demo mode
-    const matched = db.getUserByEmail(email);
-    if (matched && matched.is_active) {
-      setLocalSession(matched);
-      return { user: matched, error: null };
+    const matched = db.getUserByEmail(normalizedEmail);
+    if (!matched) {
+      return { user: null, error: 'Access Denied: This account is not registered in HESICS. Only administrators can add team members.' };
     }
-    return { user: null, error: 'User not found in team directory.' };
+    if (!matched.is_active) {
+      return { user: null, error: 'Your team account has been deactivated. Please contact your administrator.' };
+    }
+    setLocalSession(matched);
+    return { user: matched, error: null };
   }
 
   try {
-    const cred = await signInWithEmailAndPassword(auth, email, password);
-    let matched = db.getUserByEmail(cred.user.email || '');
+    const cred = await signInWithEmailAndPassword(auth, normalizedEmail, password);
+    const matched = db.getUserByEmail(cred.user.email || normalizedEmail);
+
     if (!matched) {
-      // Create user entry if newly authenticated
-      matched = db.addUser({
-        name: cred.user.displayName || email.split('@')[0],
-        email: cred.user.email || email,
-        hierarchy: 'employee',
-        role_id: 'role-sales',
-        role_name: 'Team Member',
-        is_active: true,
-        avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(email)}`,
-      });
+      // User is authenticated in Firebase Auth, but not in HESICS roster
+      // We check if this is the first owner/admin setup or if it should be rejected
+      const allUsers = db.getUsers();
+      if (allUsers.length === 0) {
+        // First account setup: automatically provision as Founder
+        const firstUser = db.addUser({
+          name: cred.user.displayName || normalizedEmail.split('@')[0],
+          email: normalizedEmail,
+          hierarchy: 'founder',
+          role_id: 'role-founder',
+          role_name: 'Founder & Owner',
+          department: 'Leadership',
+          is_active: true,
+          avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(normalizedEmail)}`,
+        });
+        setLocalSession(firstUser);
+        return { user: firstUser, error: null };
+      }
+
+      await fbSignOut(auth);
+      return {
+        user: null,
+        error: 'Access Denied: Your email is not registered in the HESICS team directory. Please contact your organization administrator to add your account.'
+      };
     }
+
     if (!matched.is_active) {
       await fbSignOut(auth);
-      return { user: null, error: 'Your team account has been deactivated. Contact the Founder.' };
+      return { user: null, error: 'Your team account has been deactivated. Please contact your administrator.' };
     }
+
     setLocalSession(matched);
     return { user: matched, error: null };
   } catch (err: any) {
     const code = err?.code;
     if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
-      return { user: null, error: 'Invalid email or password. Please check your credentials or reset your password.' };
+      return { user: null, error: 'Invalid email or password. Please verify your credentials or reset your password.' };
     }
     return { user: null, error: err?.message || 'Authentication failed' };
   }
 }
 
 /**
- * Send Password Reset Email via Firebase
- */
-export async function sendPasswordReset(email: string): Promise<{ success: boolean; error: string | null }> {
-  if (!isFirebaseConfigured || !auth) {
-    const matched = db.getUserByEmail(email);
-    if (matched) {
-      return { success: true, error: null };
-    }
-    return { success: false, error: 'Email not found in HESICS team directory.' };
-  }
-
-  try {
-    await sendPasswordResetEmail(auth, email);
-    return { success: true, error: null };
-  } catch (err: any) {
-    return { success: false, error: err?.message || 'Failed to send password reset email.' };
-  }
-}
-
-/**
  * Sign in using Google Provider via Firebase Auth
+ * Strictly enforced: Only authorized roster emails can sign in.
  */
 export async function signInWithGoogle(): Promise<{ user: User | null; error: string | null }> {
   if (!isFirebaseConfigured || !auth) {
@@ -163,25 +103,39 @@ export async function signInWithGoogle(): Promise<{ user: User | null; error: st
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
     const result = await signInWithPopup(auth, provider);
-    const email = result.user.email || '';
-    let matched = db.getUserByEmail(email);
+    const normalizedEmail = (result.user.email || '').trim().toLowerCase();
+    const matched = db.getUserByEmail(normalizedEmail);
 
     if (!matched) {
-      // Create user entry in HESICS directory on first Google Sign-In
-      matched = db.addUser({
-        name: result.user.displayName || email.split('@')[0],
-        email: email,
-        hierarchy: 'employee',
-        role_id: 'role-sales',
-        role_name: 'Team Member',
-        is_active: true,
-        avatar_url: result.user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(email)}`,
-      });
+      // Check if this is the initial workspace setup (0 users)
+      const allUsers = db.getUsers();
+      if (allUsers.length === 0) {
+        const firstUser = db.addUser({
+          name: result.user.displayName || normalizedEmail.split('@')[0],
+          email: normalizedEmail,
+          hierarchy: 'founder',
+          role_id: 'role-founder',
+          role_name: 'Founder & Owner',
+          department: 'Leadership',
+          is_active: true,
+          avatar_url: result.user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(normalizedEmail)}`,
+        });
+        setLocalSession(firstUser);
+        return { user: firstUser, error: null };
+      }
+
+      await fbSignOut(auth);
+      return {
+        user: null,
+        error: `Access Denied: ${normalizedEmail} is not authorized in HESICS. Only administrators can add new accounts.`
+      };
     }
+
     if (!matched.is_active) {
       await fbSignOut(auth);
-      return { user: null, error: 'Your account is deactivated.' };
+      return { user: null, error: 'Your account is deactivated. Please contact your administrator.' };
     }
+
     setLocalSession(matched);
     return { user: matched, error: null };
   } catch (err: any) {
@@ -190,15 +144,72 @@ export async function signInWithGoogle(): Promise<{ user: User | null; error: st
 }
 
 /**
+ * Admin-Only Provisioning: Add new team member to HESICS
+ */
+export async function adminCreateTeamMember(
+  name: string,
+  email: string,
+  roleId: string,
+  roleName: string,
+  hierarchy: UserHierarchy,
+  department?: string
+): Promise<{ user: User | null; error: string | null }> {
+  const normalizedEmail = email.trim().toLowerCase();
+  const existing = db.getUserByEmail(normalizedEmail);
+  if (existing) {
+    return { user: null, error: 'A team member with this email already exists in the organization.' };
+  }
+
+  const newUser = db.addUser({
+    name,
+    email: normalizedEmail,
+    role_id: roleId,
+    role_name: roleName,
+    hierarchy,
+    department: department || 'Operations',
+    is_active: true,
+    avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`,
+  });
+
+  return { user: newUser, error: null };
+}
+
+/**
+ * Send Password Reset Email via Firebase
+ */
+export async function sendPasswordReset(email: string): Promise<{ success: boolean; error: string | null }> {
+  const normalizedEmail = email.trim().toLowerCase();
+  const matched = db.getUserByEmail(normalizedEmail);
+
+  if (!matched) {
+    return { success: false, error: 'Email not found in HESICS team directory. Please contact your administrator.' };
+  }
+
+  if (!isFirebaseConfigured || !auth) {
+    return { success: true, error: null };
+  }
+
+  try {
+    await sendPasswordResetEmail(auth, normalizedEmail);
+    return { success: true, error: null };
+  } catch (err: any) {
+    return { success: false, error: err?.message || 'Failed to send password reset email.' };
+  }
+}
+
+/**
  * Send passwordless Email Sign-in link via Firebase
  */
 export async function sendEmailLink(email: string): Promise<{ success: boolean; error: string | null }> {
+  const normalizedEmail = email.trim().toLowerCase();
+  const matched = db.getUserByEmail(normalizedEmail);
+
+  if (!matched) {
+    return { success: false, error: 'Email not found in HESICS team roster. Please contact your administrator.' };
+  }
+
   if (!isFirebaseConfigured || !auth) {
-    const matched = db.getUserByEmail(email);
-    if (matched && matched.is_active) {
-      return { success: true, error: null };
-    }
-    return { success: false, error: 'Email not found in HESICS team roster.' };
+    return { success: true, error: null };
   }
 
   const actionCodeSettings = {
@@ -207,8 +218,8 @@ export async function sendEmailLink(email: string): Promise<{ success: boolean; 
   };
 
   try {
-    await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-    window.localStorage.setItem('emailForSignIn', email);
+    await sendSignInLinkToEmail(auth, normalizedEmail, actionCodeSettings);
+    window.localStorage.setItem('emailForSignIn', normalizedEmail);
     return { success: true, error: null };
   } catch (err: any) {
     return { success: false, error: err?.message || 'Failed to send login link' };
