@@ -271,3 +271,28 @@ export interface PrivateVaultItem {
   content?: string;
   created_at: string;
 }
+
+// ── Client Agreements ──────────────────────────────────────────────────────────
+export type AgreementStatus = 'pending' | 'signed' | 'expired' | 'cancelled';
+
+export interface ClientAgreement {
+  id: string;
+  org_id: string;
+  client_id: string;
+  client_name: string;
+  client_email: string;
+  client_phone?: string;
+  client_company?: string;
+  scope: string[];          // list of deliverables / scope items
+  pan_card?: string;
+  aadhaar_number?: string;
+  kyc_doc_url?: string;     // ID proof image data URL
+  photo_url?: string;       // client selfie/photo data URL
+  signature_url?: string;   // signature canvas data URL
+  status: AgreementStatus;
+  sign_link: string;        // public URL for client signing
+  pdf_data_url?: string;    // generated PDF stored as base64
+  created_at: string;
+  signed_at?: string;
+  expires_at?: string;
+}

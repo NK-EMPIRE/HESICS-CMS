@@ -1,6 +1,6 @@
 ﻿import {
   Organization, User, Role, Client, Deal, Activity,
-  Quotation, Invoice, IncomeEntry, ExpenseEntry, HesicsService, PrivateVaultItem
+  Quotation, Invoice, IncomeEntry, ExpenseEntry, HesicsService, PrivateVaultItem, ClientAgreement
 } from './types';
 import { dbInstance, isFirebaseConfigured } from './firebase';
 import {
@@ -68,6 +68,7 @@ export class FirebaseDataStore {
   private expenseEntries: ExpenseEntry[] = getStorageItem('expense_entries', []);
   private services: HesicsService[] = getStorageItem('services', INITIAL_SERVICES);
   private privateVaultItems: PrivateVaultItem[] = getStorageItem('private_vault', []);
+  private agreements: ClientAgreement[] = getStorageItem('agreements', []);
 
   constructor() {
     this.ensureRootMasterPresent();
@@ -903,8 +904,50 @@ export class FirebaseDataStore {
       (a) => a.due_date && !a.is_completed && new Date(a.due_date).getTime() < now
     ).length;
   }
+  // ── Client Agreements ─────────────────────────────────────────────────────────
+  getAgreements(): ClientAgreement[] {
+    return this.agreements;
+  }
+
+  getAgreementsByClient(clientId: string): ClientAgreement[] {
+    return this.agreements.filter((a) => a.client_id === clientId);
+  }
+
+  getAgreementById(id: string): ClientAgreement | undefined {
+    return this.agreements.find((a) => a.id === id);
+  }
+
+  addAgreement(agreement: Omit<ClientAgreement, 'id' | 'org_id' | 'created_at' | 'sign_link'>): ClientAgreement {
+    const id = `agr-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const newAgreement: ClientAgreement = {
+      ...agreement,
+      id,
+      org_id: this.org.id,
+      created_at: new Date().toISOString(),
+      sign_link: `https://hub-hesics.vercel.app/#/sign-agreement/${id}`,
+    };
+    this.agreements = [newAgreement, ...this.agreements];
+    setStorageItem('agreements', this.agreements);
+    logAudit('usr-admin', 'Admin', 'client.created', 'Agreement', newAgreement.id, `Agreement for ${newAgreement.client_name}`);
+    return newAgreement;
+  }
+
+  updateAgreement(id: string, updates: Partial<ClientAgreement>): ClientAgreement | undefined {
+    this.agreements = this.agreements.map((a) => (a.id === id ? { ...a, ...updates } : a));
+    setStorageItem('agreements', this.agreements);
+    return this.agreements.find((a) => a.id === id);
+  }
+
+  deleteAgreement(id: string): void {
+    this.agreements = this.agreements.filter((a) => a.id !== id);
+    setStorageItem('agreements', this.agreements);
+  }
 }
 
 export const db = new FirebaseDataStore();
+
+
+
+
 
 

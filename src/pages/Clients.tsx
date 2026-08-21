@@ -25,6 +25,7 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
   const [search, setSearch] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<ClientStatus | 'all'>('all');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [resourceTab, setResourceTab] = useState<'agreements'|'invoices'|'quotations'|'activities'>('agreements');
 
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
@@ -281,3 +282,4 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
     </div>
   );
 };
+

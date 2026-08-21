@@ -1,6 +1,6 @@
 ﻿import React, { useState } from 'react';
 import {
-  LayoutDashboard, Users, Kanban, DollarSign, FileText, Receipt,
+  LayoutDashboard, Users, Kanban, DollarSign, FileText, Receipt, FileSignature,
   ShieldCheck, Settings, LogOut, ChevronLeft, ChevronRight,
   Shield, UserCheck, Briefcase, Lock, History
 } from 'lucide-react';
@@ -77,6 +77,7 @@ export const AppShell: React.FC<AppShellProps> = ({
     { id: 'finance', label: 'Finance & Tax', icon: DollarSign, perm: 'finance:read' as PermissionKey },
     { id: 'quotations', label: 'Quotations', icon: FileText, perm: 'invoices:read' as PermissionKey },
     { id: 'invoices', label: 'Invoices', icon: Receipt, perm: 'invoices:read' as PermissionKey },
+    { id: 'agreements', label: 'Agreements', icon: FileSignature, perm: 'clients:read' as PermissionKey },
     { id: 'team', label: 'Team & RBAC', icon: ShieldCheck, perm: 'team:manage' as PermissionKey },
     ...(isAdmin
       ? [{ id: 'audit_logs', label: 'Audit Logs', icon: History, perm: 'team:manage' as PermissionKey }]
@@ -247,3 +248,6 @@ export const AppShell: React.FC<AppShellProps> = ({
     </div>
   );
 };
+
+
+

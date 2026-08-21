@@ -3,7 +3,7 @@
   subject: string;
   html: string;
   text?: string;
-  category?: 'invitation' | 'task_assignment' | 'quotation' | 'invoice' | 'password_reset' | 'activity_log' | 'custom';
+  category?: 'invitation' | 'task_assignment' | 'quotation' | 'invoice' | 'invoice_paid' | 'password_reset' | 'activity_log' | 'agreement_sign' | 'custom';
 }
 
 /**
@@ -31,7 +31,7 @@ export function wrapBrandEmailTemplate(title: string, contentHtml: string, actio
               <table width="100%" border="0" cellspacing="0" cellpadding="0">
                 <tr>
                   <td>
-                    <div style="font-size: 20px; font-weight: 800; letter-spacing: -0.02em; color: #FFFFFF;">
+                    <img src="https://hub-hesics.vercel.app/assets/hesics-logo-white.png" alt="HESICS" width="40" height="40" style="display:block; margin-bottom:8px;" /><div style="font-size: 20px; font-weight: 800; letter-spacing: -0.02em; color: #FFFFFF;">
                       HESICS<span style="color: #77727E;">.</span>
                     </div>
                     <div style="font-size: 10px; font-weight: 600; color: #808090; text-transform: uppercase; letter-spacing: 0.15em; margin-top: 2px;">
@@ -67,7 +67,7 @@ export function wrapBrandEmailTemplate(title: string, contentHtml: string, actio
           <tr>
             <td style="padding: 24px 36px; border-top: 1px solid #181820; background-color: #09090C; text-align: center; font-size: 11px; color: #606070; line-height: 1.5;">
               <div>This is an automated operational notification from <strong>HESICS OS</strong>.</div>
-              <div style="margin-top: 4px;">Direct queries to <a href="mailto:hesics1@gmail.com" style="color: #77727E; text-decoration: none;">hesics1@gmail.com</a></div>
+              <div style="margin-top: 4px;">Queries: <a href="mailto:hesics1@gmail.com" style="color: #77727E; text-decoration: none;">hesics1@gmail.com</a> &nbsp;&middot;&nbsp; <a href="https://hub-hesics.vercel.app" style="color: #77727E; text-decoration: none;">hub-hesics.vercel.app</a></div>
               <div style="margin-top: 12px; font-size: 10px; color: #404050;">© ${new Date().getFullYear()} HESICS. All rights reserved.</div>
             </td>
           </tr>
@@ -323,3 +323,28 @@ export async function sendInvoiceEmail(params: {
     category: 'invoice',
   });
 }
+
+
+/** Send Agreement Sign Link to Client */
+export function buildAgreementSignEmail(clientName: string, agreementId: string, scope: string, expiryDate: string): EmailPayload {
+  const signUrl = `https://hub-hesics.vercel.app/#/sign-agreement/${agreementId}`;
+  return {
+    to: '',
+    subject: `[HESICS] Service Agreement for Your Signature — ${scope}`,
+    category: 'agreement_sign',
+    html: wrapBrandEmailTemplate(
+      'Agreement Signing',
+      `<p>Dear <strong style="color: #F4F4F6;">${clientName}</strong>,</p>
+      <p>Your <strong>HESICS Service Agreement</strong> has been prepared and is ready for your formal review and digital signature.</p>
+      <div style="background-color: #0A0A0E; border: 1px solid #1E1E28; border-radius: 10px; padding: 20px; margin: 20px 0;">
+        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #77727E; margin-bottom: 6px;">Scope of Engagement</div>
+        <div style="font-weight: 600; color: #F4F4F6;">${scope}</div>
+        <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #77727E; margin: 12px 0 4px;">Valid Until</div>
+        <div style="font-weight: 600; color: #F4F4F6;">${expiryDate}</div>
+      </div>
+      <p style="color: #A0A0B0;">Click the secure button below to review the full 4-page agreement, upload your KYC, draw your digital signature, and confirm execution. The process takes under 3 minutes.</p>`,
+      { text: 'Review & Sign Agreement', url: signUrl }
+    ),
+  };
+}
+
