@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import {
   LayoutDashboard, Users, Kanban, DollarSign, FileText, Receipt,
   ShieldCheck, Settings, LogOut, ChevronLeft, ChevronRight,
@@ -7,6 +7,7 @@ import {
 import { db } from '../../lib/firebaseDb';
 import { User, PermissionKey, UserHierarchy } from '../../lib/types';
 import { hasPermission } from '../../lib/rbac';
+import { HesicsLogo } from '../common/HesicsLogo';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -71,28 +72,22 @@ export const AppShell: React.FC<AppShellProps> = ({
         <div>
           <div className="h-12 px-3 border-b border-[#1a1a1a] flex items-center justify-between">
             {!collapsed ? (
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="w-6 h-6 rounded bg-[#080808] border border-[#1E9EFF]/30 flex items-center justify-center shrink-0">
-                  <svg width="14" height="11" viewBox="0 0 28 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M2 2H7V10H13V2H18V20H13V13H7V20H2V2Z" fill="white"/>
-                    <path d="M20 2L24 2L24 20" stroke="#1E9EFF" strokeWidth="3" strokeLinecap="round"/>
-                  </svg>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-7 h-7 rounded-lg bg-[#080808] border border-[#1E9EFF]/30 flex items-center justify-center shrink-0 p-1">
+                  <HesicsLogo size={20} variant="glow" />
                 </div>
                 <div className="truncate min-w-0">
                   <span className="text-xs font-bold tracking-tight text-white block truncate leading-none">
                     {org.name}
                   </span>
-                  <span className="text-[9px] text-[#444444] font-medium tracking-wider uppercase block truncate mt-0.5">
+                  <span className="text-[9px] text-[#555555] font-medium tracking-wider uppercase block truncate mt-0.5">
                     Make It Simple.
                   </span>
                 </div>
               </div>
             ) : (
-              <div className="w-6 h-6 rounded bg-[#080808] border border-[#1E9EFF]/30 flex items-center justify-center mx-auto">
-                <svg width="14" height="11" viewBox="0 0 28 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M2 2H7V10H13V2H18V20H13V13H7V20H2V2Z" fill="white"/>
-                  <path d="M20 2L24 2L24 20" stroke="#1E9EFF" strokeWidth="3" strokeLinecap="round"/>
-                </svg>
+              <div className="w-7 h-7 rounded-lg bg-[#080808] border border-[#1E9EFF]/30 flex items-center justify-center mx-auto p-1">
+                <HesicsLogo size={20} variant="glow" />
               </div>
             )}
             <button

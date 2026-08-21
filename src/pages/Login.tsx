@@ -13,6 +13,7 @@ import {
   completeEmailLinkSignIn,
   onAuthStateChange
 } from '../lib/firebaseAuth';
+import { HesicsLogo } from '../components/common/HesicsLogo';
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -131,12 +132,9 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       <div className="w-full max-w-[380px] space-y-5 relative z-10">
 
         {/* HESICS Brand Header */}
-        <div className="text-center space-y-2.5">
-          <div className="w-14 h-14 rounded-2xl bg-[#0d0d0d] border border-[#1E9EFF]/25 flex items-center justify-center mx-auto shadow-2xl shadow-[#1E9EFF]/10">
-            <svg width="32" height="25" viewBox="0 0 28 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M2 2H7V10H13V2H18V20H13V13H7V20H2V2Z" fill="white"/>
-              <path d="M20 2L24 2L24 20" stroke="#1E9EFF" strokeWidth="2.5" strokeLinecap="round"/>
-            </svg>
+        <div className="text-center space-y-3">
+          <div className="w-16 h-16 rounded-2xl bg-[#0a0a0a] border border-[#1E9EFF]/30 flex items-center justify-center mx-auto shadow-2xl shadow-[#1E9EFF]/15 overflow-hidden p-2">
+            <HesicsLogo size={48} variant="glow" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-white tracking-tight font-display">HESICS</h1>
