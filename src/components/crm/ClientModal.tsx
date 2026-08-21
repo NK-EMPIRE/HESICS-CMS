@@ -1,176 +1,185 @@
 import React, { useState } from 'react';
-import { Modal } from '../ui/Modal';
-import { Client, ClientSource, ClientStatus } from '../../lib/types';
-import { db } from '../../lib/supabase';
+import { X, Building2, Mail, Phone, Tag, User } from 'lucide-react';
+import { db } from '../../lib/firebaseDb';
+import { Client, ClientSource, ClientStatus, User as UserType } from '../../lib/types';
 
 interface ClientModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  initialData?: Client;
+  client?: Client;
+  activeUser: UserType;
 }
 
 export const ClientModal: React.FC<ClientModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
-  initialData,
+  client,
+  activeUser,
 }) => {
-  const users = db.getUsers();
+  const [name, setName] = useState(client?.name || '');
+  const [companyName, setCompanyName] = useState(client?.company_name || '');
+  const [email, setEmail] = useState(client?.email || '');
+  const [phone, setPhone] = useState(client?.phone || '');
+  const [source, setSource] = useState<ClientSource>(client?.source || 'referral');
+  const [status, setStatus] = useState<ClientStatus>(client?.status || 'lead');
+  const [notes, setNotes] = useState(client?.notes || '');
+  const [tagsInput, setTagsInput] = useState(client?.tags?.join(', ') || '');
 
-  const [formData, setFormData] = useState({
-    name: initialData?.name || '',
-    company_name: initialData?.company_name || '',
-    email: initialData?.email || '',
-    phone: initialData?.phone || '',
-    source: (initialData?.source || 'referral') as ClientSource,
-    status: (initialData?.status || 'lead') as ClientStatus,
-    owner_id: initialData?.owner_id || users[0]?.id || '',
-  });
+  if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim()) return;
+    if (!name.trim()) return;
 
-    if (initialData) {
-      db.updateClient(initialData.id, formData);
+    const tags = tagsInput
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean);
+
+    if (client) {
+      db.updateClient(client.id, {
+        name: name.trim(),
+        company_name: companyName.trim() || undefined,
+        email: email.trim() || undefined,
+        phone: phone.trim() || undefined,
+        source,
+        status,
+        notes: notes.trim() || undefined,
+        tags,
+      });
     } else {
-      db.addClient(formData);
+      db.addClient({
+        name: name.trim(),
+        company_name: companyName.trim() || undefined,
+        email: email.trim() || undefined,
+        phone: phone.trim() || undefined,
+        source,
+        status,
+        notes: notes.trim() || undefined,
+        tags,
+        owner_id: activeUser.id,
+      });
     }
+
     onSuccess();
     onClose();
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={initialData ? 'Edit Client Profile' : 'Add New Client'}
-      subtitle="Keep client contact records structured and accessible for the team."
-    >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-            Client Name *
-          </label>
-          <input
-            type="text"
-            required
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            placeholder="e.g. Anand Kumar"
-            className="w-full px-3 py-2 bg-dark-900 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
-          />
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-[#0D0D11] border border-[#1E1E26] rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+        <div className="flex items-center justify-between border-b border-[#1A1A22] pb-3">
+          <h2 className="text-sm font-bold text-[#F4F4F6]">
+            {client ? 'Edit Client Account' : 'New Client Account'}
+          </h2>
+          <button onClick={onClose} className="text-[#606070] hover:text-white p-1 rounded">
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
-        <div>
-          <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-            Company / Brand Name
-          </label>
-          <input
-            type="text"
-            value={formData.company_name}
-            onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-            placeholder="e.g. Apex Digital Media"
-            className="w-full px-3 py-2 bg-dark-900 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="space-y-3.5">
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-              Email Address
-            </label>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder="client@company.com"
-              className="w-full px-3 py-2 bg-dark-900 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-              Phone Number
-            </label>
+            <label className="hesics-label">Contact / Account Name *</label>
             <input
               type="text"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              placeholder="+91 98765 43210"
-              className="w-full px-3 py-2 bg-dark-900 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Rahul Sharma"
+              className="hesics-input"
             />
           </div>
-        </div>
 
-        <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-              Lead Source
-            </label>
-            <select
-              value={formData.source}
-              onChange={(e) => setFormData({ ...formData, source: e.target.value as ClientSource })}
-              className="w-full px-3 py-2 bg-dark-900 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
-            >
-              <option value="referral">Referral</option>
-              <option value="instagram">Instagram DM</option>
-              <option value="cold_dm">Cold Outreach</option>
-              <option value="website">Website Form</option>
-              <option value="other">Other</option>
-            </select>
+            <label className="hesics-label">Company Name</label>
+            <input
+              type="text"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              placeholder="e.g. Apex Global Technologies"
+              className="hesics-input"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="hesics-label">Email Address</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="contact@company.com"
+                className="hesics-input"
+              />
+            </div>
+            <div>
+              <label className="hesics-label">Phone Number</label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+91 98765 43210"
+                className="hesics-input"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="hesics-label">Lead Source</label>
+              <select
+                value={source}
+                onChange={(e) => setSource(e.target.value as ClientSource)}
+                className="hesics-input"
+              >
+                <option value="referral">Referral</option>
+                <option value="instagram">Instagram</option>
+                <option value="cold_dm">Direct Outreach</option>
+                <option value="website">Website Inquiry</option>
+                <option value="other">Other Channel</option>
+              </select>
+            </div>
+            <div>
+              <label className="hesics-label">Account Status</label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as ClientStatus)}
+                className="hesics-input"
+              >
+                <option value="lead">Prospect / Lead</option>
+                <option value="active">Active Client</option>
+                <option value="churned">Churned</option>
+              </select>
+            </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-              Client Status
-            </label>
-            <select
-              value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value as ClientStatus })}
-              className="w-full px-3 py-2 bg-dark-900 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
-            >
-              <option value="lead">Lead</option>
-              <option value="active">Active Client</option>
-              <option value="churned">Churned</option>
-            </select>
+            <label className="hesics-label">Tags (comma separated)</label>
+            <input
+              type="text"
+              value={tagsInput}
+              onChange={(e) => setTagsInput(e.target.value)}
+              placeholder="Enterprise, High Priority, Retainer"
+              className="hesics-input"
+            />
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-              Account Owner
-            </label>
-            <select
-              value={formData.owner_id}
-              onChange={(e) => setFormData({ ...formData, owner_id: e.target.value })}
-              className="w-full px-3 py-2 bg-dark-900 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="hesics-btn-ghost"
             >
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                </option>
-              ))}
-            </select>
+              Cancel
+            </button>
+            <button type="submit" className="hesics-btn-primary">
+              {client ? 'Save Changes' : 'Create Client'}
+            </button>
           </div>
-        </div>
-
-        <div className="pt-4 flex justify-end gap-3 border-t border-dark-600">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-semibold text-slate-400 hover:text-white transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="px-5 py-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-lg text-sm transition-all shadow-lg shadow-brand-500/20"
-          >
-            {initialData ? 'Update Client' : 'Save Client'}
-          </button>
-        </div>
-      </form>
-    </Modal>
+        </form>
+      </div>
+    </div>
   );
 };

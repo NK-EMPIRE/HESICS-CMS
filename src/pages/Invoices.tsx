@@ -1,166 +1,170 @@
 import React, { useState } from 'react';
-import { Plus, Download, Eye } from 'lucide-react';
-import { db } from '../lib/supabase';
-import { Invoice, User } from '../lib/types';
+import {
+  Plus, Receipt, Download, CheckCircle2,
+  Trash2, Edit3, Clock, DollarSign
+} from 'lucide-react';
+import { db } from '../lib/firebaseDb';
+import { Invoice, InvoiceStatus, User } from '../lib/types';
 import { InvoiceModal } from '../components/invoices/InvoiceModal';
-import { InvoicePDFDocument } from '../components/invoices/InvoicePDF';
-import { PDFDownloadLink, PDFViewer } from '@react-pdf/renderer';
-import { Modal } from '../components/ui/Modal';
-import confetti from 'canvas-confetti';
+import { generateInvoicePDF } from '../components/invoices/InvoicePDF';
+import { hasPermission } from '../lib/rbac';
 
 interface InvoicesProps {
   activeUser: User;
 }
 
+const statusBadge: Record<InvoiceStatus, string> = {
+  draft: 'text-[#808090] bg-[#14141A] border-[#202028]',
+  sent: 'text-[#1E9EFF] bg-[#1E9EFF]/10 border-[#1E9EFF]/30',
+  paid: 'text-emerald-400 bg-emerald-950/30 border-emerald-900/40',
+  overdue: 'text-rose-400 bg-rose-950/30 border-rose-900/40',
+  cancelled: 'text-[#606070] bg-[#101014] border-[#181820]',
+};
+
 export const Invoices: React.FC<InvoicesProps> = ({ activeUser }) => {
-  const [invoices, setInvoices] = useState(db.getInvoices());
-  const org = db.getOrg();
-
+  const [invoices, setInvoices] = useState(() => db.getInvoices());
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingInvoice, setEditingInvoice] = useState<Invoice | undefined>();
-  const [previewInvoice, setPreviewInvoice] = useState<Invoice | undefined>();
+  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
 
-  const refreshData = () => {
-    setInvoices(db.getInvoices());
+  const canWrite = hasPermission(activeUser.role_id, 'invoices:write');
+
+  const refreshInvoices = () => setInvoices(db.getInvoices());
+
+  const fmt = (n: number) => `₹${n.toLocaleString('en-IN')}`;
+
+  const handleMarkPaid = (inv: Invoice) => {
+    db.updateInvoice(inv.id, {
+      status: 'paid',
+      paid_at: new Date().toISOString().split('T')[0],
+    });
+    refreshInvoices();
   };
 
-  const handleMarkAsPaid = (invoice: Invoice) => {
-    db.updateInvoice(invoice.id, {
-      status: 'paid',
-      paid_at: new Date().toISOString(),
-    });
-    confetti({ particleCount: 100, spread: 80, origin: { y: 0.5 } });
-    refreshData();
+  const handleDelete = (inv: Invoice) => {
+    if (window.confirm(`Delete invoice #${inv.invoice_number}?`)) {
+      db.deleteInvoice(inv.id);
+      refreshInvoices();
+    }
+  };
+
+  const handleDownloadPDF = (inv: Invoice) => {
+    const org = db.getOrg();
+    generateInvoicePDF(inv, org, 'invoice');
   };
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
-      {/* Page Header */}
-      <div className="space-y-1 pb-3 border-b border-[#1a1a1a]">
-        <div className="text-2xl">🧾</div>
-        <h1 className="text-xl font-bold text-white tracking-tight">Tax Invoices</h1>
-        <p className="text-xs text-[#888888]">
-          Tax compliance invoices database with status tracking and PDF receipt export.
-        </p>
-      </div>
 
-      <div className="flex justify-end">
-        <button
-          onClick={() => {
-            setEditingInvoice(undefined);
-            setIsModalOpen(true);
-          }}
-          className="notion-button bg-[#1E9EFF] hover:bg-[#0A8AE6] text-white font-medium text-xs"
-        >
-          <Plus className="w-3.5 h-3.5" /> Issue Invoice
-        </button>
-      </div>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1A1A20]">
+        <div>
+          <h1 className="text-xl font-bold text-[#F4F4F6] tracking-tight font-display">Invoices & Billing</h1>
+          <p className="text-xs text-[#828290] mt-1">
+            Tax invoices, collection tracking, and automated income reconciliation.
+          </p>
+        </div>
 
-      {invoices.length === 0 ? (
-        <div className="p-12 notion-card text-center border-dashed border-[#151515] space-y-2">
-          <p className="text-xs text-[#777777]">No tax invoices created yet.</p>
+        {canWrite && (
           <button
             onClick={() => {
-              setEditingInvoice(undefined);
+              setEditingInvoice(null);
               setIsModalOpen(true);
             }}
-            className="text-xs text-white underline hover:text-[#1E9EFF]"
+            className="hesics-btn-primary self-start sm:self-auto"
           >
-            + Create your first invoice
+            <Plus className="w-3.5 h-3.5" /> Issue Invoice
           </button>
-        </div>
-      ) : (
-        <div className="notion-card overflow-hidden">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-[#1c1c1c] border-b border-[#181818] text-[#888888] font-medium">
+        )}
+      </div>
+
+      {/* Invoices Table */}
+      <div className="hesics-card overflow-hidden">
+        <table className="w-full text-left text-xs">
+          <thead className="bg-[#09090C] text-[#606070] border-b border-[#181820] uppercase text-[10px] font-semibold tracking-wider">
+            <tr>
+              <th className="p-3.5">Invoice #</th>
+              <th className="p-3.5">Client</th>
+              <th className="p-3.5">Due Date</th>
+              <th className="p-3.5">Status</th>
+              <th className="p-3.5">Total Amount</th>
+              <th className="p-3.5 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[#15151C]">
+            {invoices.length === 0 ? (
               <tr>
-                <th className="p-3">Invoice #</th>
-                <th className="p-3">Client</th>
-                <th className="p-3">Subtotal</th>
-                <th className="p-3">GST (18%)</th>
-                <th className="p-3">Total Amount</th>
-                <th className="p-3">Due Date</th>
-                <th className="p-3">Status</th>
-                <th className="p-3 text-right">Actions</th>
+                <td colSpan={6} className="p-8 text-center text-[#555565]">
+                  No invoices issued yet.
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-[#111111] text-[#cccccc]">
-              {invoices.map((inv) => (
-                <tr key={inv.id} className="hover:bg-[#111111] transition-colors">
-                  <td className="p-3 font-mono font-semibold text-white">{inv.invoice_number}</td>
-                  <td className="p-3 font-medium text-white">{inv.client_name || 'Client'}</td>
-                  <td className="p-3 font-mono">₹{inv.subtotal.toLocaleString('en-IN')}</td>
-                  <td className="p-3 font-mono text-[#888888]">₹{inv.tax.toLocaleString('en-IN')}</td>
-                  <td className="p-3 font-mono font-bold text-white">₹{inv.total.toLocaleString('en-IN')}</td>
-                  <td className="p-3 font-mono text-[#888888]">{inv.due_date || '—'}</td>
-                  <td className="p-3">
-                    <span
-                      className={`inline-block text-[10px] font-mono px-2 py-0.5 rounded ${
-                        inv.status === 'paid'
-                          ? 'bg-emerald-950/40 text-emerald-400 border border-emerald-900/40'
-                          : 'bg-[#181818] text-[#aaaaaa]'
-                      }`}
-                    >
+            ) : (
+              invoices.map((inv) => (
+                <tr key={inv.id} className="hover:bg-[#111116] transition-colors">
+                  <td className="p-3.5 font-mono text-[#F4F4F6] font-semibold">
+                    {inv.invoice_number}
+                  </td>
+                  <td className="p-3.5 font-semibold text-[#F4F4F6]">{inv.client_name}</td>
+                  <td className="p-3.5 text-[#808090] font-mono text-[11px]">
+                    {inv.due_date || '—'}
+                  </td>
+                  <td className="p-3.5">
+                    <span className={`inline-block text-[9px] font-bold uppercase px-2 py-0.5 rounded border ${statusBadge[inv.status]}`}>
                       {inv.status}
                     </span>
                   </td>
-                  <td className="p-3 text-right space-x-1.5">
-                    <button
-                      onClick={() => setPreviewInvoice(inv)}
-                      className="px-2 py-1 bg-[#181818] hover:bg-[#333333] text-[#cccccc] rounded text-[10px]"
-                    >
-                      <Eye className="w-3 h-3 inline mr-1" /> PDF Preview
-                    </button>
-                    {inv.status !== 'paid' && (
+                  <td className="p-3.5 font-bold text-[#F4F4F6] font-mono">{fmt(inv.total)}</td>
+                  <td className="p-3.5 text-right">
+                    <div className="inline-flex items-center gap-1.5">
                       <button
-                        onClick={() => handleMarkAsPaid(inv)}
-                        className="px-2 py-1 bg-emerald-950/40 text-emerald-400 hover:bg-emerald-900/60 rounded text-[10px]"
+                        onClick={() => handleDownloadPDF(inv)}
+                        title="Download PDF"
+                        className="p-1.5 text-[#707080] hover:text-[#1E9EFF] rounded transition-colors"
                       >
-                        Mark Paid ✅
+                        <Download className="w-3.5 h-3.5" />
                       </button>
-                    )}
+
+                      {canWrite && inv.status !== 'paid' && (
+                        <button
+                          onClick={() => handleMarkPaid(inv)}
+                          title="Mark as Paid"
+                          className="p-1.5 text-[#707080] hover:text-emerald-400 rounded transition-colors"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+
+                      {canWrite && (
+                        <button
+                          onClick={() => handleDelete(inv)}
+                          title="Delete Invoice"
+                          className="p-1.5 text-[#707080] hover:text-rose-400 rounded transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Modal */}
+      {isModalOpen && (
+        <InvoiceModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditingInvoice(null);
+          }}
+          onSuccess={refreshInvoices}
+          invoice={editingInvoice || undefined}
+          activeUser={activeUser}
+        />
       )}
 
-      {/* Modal Form */}
-      <InvoiceModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSuccess={refreshData}
-        initialData={editingInvoice}
-      />
-
-      {/* PDF Preview Modal */}
-      {previewInvoice && (
-        <Modal
-          isOpen={Boolean(previewInvoice)}
-          onClose={() => setPreviewInvoice(undefined)}
-          title={`Tax Invoice PDF — #${previewInvoice.invoice_number}`}
-          maxWidth="2xl"
-        >
-          <div className="space-y-3">
-            <div className="h-[420px] w-full border border-[#1e1e1e] rounded-lg overflow-hidden bg-[#111111]">
-              <PDFViewer width="100%" height="100%" showToolbar={false}>
-                <InvoicePDFDocument data={previewInvoice} org={org} type="invoice" />
-              </PDFViewer>
-            </div>
-            <div className="flex justify-end pt-1">
-              <PDFDownloadLink
-                document={<InvoicePDFDocument data={previewInvoice} org={org} type="invoice" />}
-                fileName={`Invoice-${previewInvoice.invoice_number}.pdf`}
-                className="notion-button bg-[#1E9EFF] text-white text-xs"
-              >
-                <Download className="w-3.5 h-3.5" /> Download PDF
-              </PDFDownloadLink>
-            </div>
-          </div>
-        </Modal>
-      )}
     </div>
   );
 };

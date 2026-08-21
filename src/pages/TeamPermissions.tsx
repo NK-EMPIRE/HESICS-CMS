@@ -15,21 +15,6 @@ interface TeamPermissionsProps {
   activeUser: User;
 }
 
-const ALL_PERMISSIONS: { key: PermissionKey; title: string; category: string }[] = [
-  { key: 'clients:read', title: 'View Clients Directory', category: 'CRM' },
-  { key: 'clients:write', title: 'Create & Edit Clients', category: 'CRM' },
-  { key: 'clients:delete', title: 'Delete Clients', category: 'CRM' },
-  { key: 'deals:read', title: 'View Deals & Pipeline', category: 'CRM' },
-  { key: 'deals:write', title: 'Create & Edit Deals', category: 'CRM' },
-  { key: 'invoices:read', title: 'View Quotes & Invoices', category: 'Finance' },
-  { key: 'invoices:write', title: 'Issue Quotes & Invoices', category: 'Finance' },
-  { key: 'finance:read', title: 'View Financial Dashboards', category: 'Finance' },
-  { key: 'finance:write', title: 'Manage Income & Expenses', category: 'Finance' },
-  { key: 'team:manage', title: 'Manage Team & Roles', category: 'Admin' },
-  { key: 'team:invite', title: 'Invite Team Members', category: 'Admin' },
-  { key: 'org:admin', title: 'Org-Level Admin Control', category: 'Admin' },
-];
-
 const HierarchyIcon: React.FC<{ h: UserHierarchy; className?: string }> = ({ h, className = 'w-3.5 h-3.5' }) => {
   if (h === 'founder' || h === 'admin') return <Shield className={`${className} text-[#1E9EFF]`} />;
   if (h === 'officer') return <Briefcase className={`${className} text-indigo-400`} />;
@@ -39,9 +24,9 @@ const HierarchyIcon: React.FC<{ h: UserHierarchy; className?: string }> = ({ h, 
 const hierarchyBadge: Record<UserHierarchy, string> = {
   founder: 'text-[#1E9EFF] bg-[#1E9EFF]/10 border-[#1E9EFF]/30',
   admin: 'text-[#1E9EFF] bg-[#1E9EFF]/10 border-[#1E9EFF]/30',
-  officer: 'text-indigo-400 bg-indigo-950/40 border-indigo-900/50',
-  employee: 'text-emerald-400 bg-emerald-950/40 border-emerald-900/50',
-  intern: 'text-slate-400 bg-slate-800/40 border-slate-700/50',
+  officer: 'text-indigo-400 bg-indigo-950/30 border-indigo-900/40',
+  employee: 'text-emerald-400 bg-emerald-950/30 border-emerald-900/40',
+  intern: 'text-[#808090] bg-[#14141A] border-[#202028]',
 };
 
 const hierarchyDisplayName: Record<UserHierarchy, string> = {
@@ -108,7 +93,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
     });
 
     refreshUsers();
-    setInviteSuccess(`${inviteData.name} added to the team.`);
+    setInviteSuccess(`${inviteData.name} added to the team roster.`);
     setInviteData({ name: '', email: '', role_id: availableRoles[0]?.id || 'role-officer', department: '' });
     setTimeout(() => {
       setInviteSuccess('');
@@ -168,10 +153,10 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1a1a1a]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1A1A20]">
         <div>
-          <h1 className="text-xl font-bold text-white tracking-tight font-display">Team & Access Control</h1>
-          <p className="text-[11px] text-[#666666] mt-0.5">
+          <h1 className="text-xl font-bold text-[#F4F4F6] tracking-tight font-display">Team & Access Control</h1>
+          <p className="text-xs text-[#828290] mt-1">
             Role-Based Access Control, team roster, and operational permissions.
           </p>
         </div>
@@ -180,13 +165,13 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowCreateRoleForm(true)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-[#121212] hover:bg-[#181818] border border-[#1e1e1e] text-white text-xs font-medium rounded-lg transition-colors"
+              className="hesics-btn-secondary"
             >
               <Plus className="w-3.5 h-3.5 text-[#1E9EFF]" /> Create Role
             </button>
             <button
               onClick={() => setShowInviteForm(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-[#1E9EFF] hover:bg-[#0A8AE6] text-white text-xs font-semibold rounded-lg transition-colors shadow-lg shadow-[#1E9EFF]/10"
+              className="hesics-btn-primary"
             >
               <UserPlus className="w-3.5 h-3.5" /> Add Team Member
             </button>
@@ -197,67 +182,61 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
       {/* Add Team Member Modal */}
       {showInviteForm && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[#161616] pb-3">
-              <h2 className="text-sm font-bold text-white flex items-center gap-2">
+          <div className="bg-[#0D0D11] border border-[#1E1E26] rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#1A1A22] pb-3">
+              <h2 className="text-sm font-bold text-[#F4F4F6] flex items-center gap-2">
                 <UserPlus className="w-4 h-4 text-[#1E9EFF]" /> Provision Team Member
               </h2>
               <button
                 onClick={() => setShowInviteForm(false)}
-                className="text-[#666666] hover:text-white p-1 rounded"
+                className="text-[#606070] hover:text-white p-1 rounded"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {errorMessage && (
-              <div className="p-2.5 bg-red-950/40 border border-red-900/50 rounded-lg text-xs text-red-400">
+              <div className="p-3 bg-rose-950/20 border border-rose-900/40 rounded-xl text-xs text-rose-300">
                 {errorMessage}
               </div>
             )}
             {inviteSuccess && (
-              <div className="p-2.5 bg-emerald-950/40 border border-emerald-900/50 rounded-lg text-xs text-emerald-400 flex items-center gap-1.5">
+              <div className="p-3 bg-emerald-950/20 border border-emerald-900/40 rounded-xl text-xs text-emerald-300 flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> {inviteSuccess}
               </div>
             )}
 
             <form onSubmit={handleInvite} className="space-y-3.5">
               <div>
-                <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#666666] mb-1">
-                  Full Name *
-                </label>
+                <label className="hesics-label">Full Name *</label>
                 <input
                   type="text"
                   required
                   value={inviteData.name}
                   onChange={(e) => setInviteData({ ...inviteData, name: e.target.value })}
                   placeholder="e.g. Sheik Mydeen"
-                  className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-white text-xs focus:outline-none focus:border-[#1E9EFF]/40"
+                  className="hesics-input"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#666666] mb-1">
-                  Work Email *
-                </label>
+                <label className="hesics-label">Work Email *</label>
                 <input
                   type="email"
                   required
                   value={inviteData.email}
                   onChange={(e) => setInviteData({ ...inviteData, email: e.target.value })}
                   placeholder="name@hesics.com"
-                  className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-white text-xs focus:outline-none focus:border-[#1E9EFF]/40"
+                  className="hesics-input"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#666666] mb-1">
-                  Assigned Role *
-                </label>
+                <label className="hesics-label">Assigned Role *</label>
                 <select
                   value={inviteData.role_id}
                   onChange={(e) => setInviteData({ ...inviteData, role_id: e.target.value })}
-                  className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-white text-xs focus:outline-none focus:border-[#1E9EFF]/40"
+                  className="hesics-input"
                 >
                   {availableRoles.map((r) => (
                     <option key={r.id} value={r.id}>
@@ -268,15 +247,13 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
               </div>
 
               <div>
-                <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#666666] mb-1">
-                  Department
-                </label>
+                <label className="hesics-label">Department</label>
                 <input
                   type="text"
                   value={inviteData.department}
                   onChange={(e) => setInviteData({ ...inviteData, department: e.target.value })}
                   placeholder="e.g. Sales, Marketing, Tech"
-                  className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-white text-xs focus:outline-none focus:border-[#1E9EFF]/40"
+                  className="hesics-input"
                 />
               </div>
 
@@ -284,13 +261,13 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                 <button
                   type="button"
                   onClick={() => setShowInviteForm(false)}
-                  className="px-3 py-1.5 text-xs text-[#666666] hover:text-white"
+                  className="hesics-btn-ghost"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-[#1E9EFF] hover:bg-[#0A8AE6] text-white text-xs font-semibold rounded-lg transition-colors"
+                  className="hesics-btn-primary"
                 >
                   Provision User
                 </button>
@@ -303,14 +280,14 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
       {/* Create Custom Role Modal */}
       {showCreateRoleForm && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[#161616] pb-3">
-              <h2 className="text-sm font-bold text-white flex items-center gap-2">
+          <div className="bg-[#0D0D11] border border-[#1E1E26] rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#1A1A22] pb-3">
+              <h2 className="text-sm font-bold text-[#F4F4F6] flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-[#1E9EFF]" /> Create Custom Role
               </h2>
               <button
                 onClick={() => setShowCreateRoleForm(false)}
-                className="text-[#666666] hover:text-white p-1 rounded"
+                className="text-[#606070] hover:text-white p-1 rounded"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -318,27 +295,23 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
 
             <form onSubmit={handleCreateCustomRole} className="space-y-3.5">
               <div>
-                <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#666666] mb-1">
-                  Role Title *
-                </label>
+                <label className="hesics-label">Role Title *</label>
                 <input
                   type="text"
                   required
                   value={newRoleName}
                   onChange={(e) => setNewRoleName(e.target.value)}
                   placeholder="e.g. Senior Creative Lead"
-                  className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-white text-xs focus:outline-none focus:border-[#1E9EFF]/40"
+                  className="hesics-input"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#666666] mb-1">
-                  Hierarchy Tier *
-                </label>
+                <label className="hesics-label">Hierarchy Tier *</label>
                 <select
                   value={newRoleTier}
                   onChange={(e) => setNewRoleTier(e.target.value as UserHierarchy)}
-                  className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-white text-xs focus:outline-none focus:border-[#1E9EFF]/40"
+                  className="hesics-input"
                 >
                   {allowedTiers.map((t) => (
                     <option key={t} value={t}>
@@ -349,15 +322,13 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
               </div>
 
               <div>
-                <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#666666] mb-1">
-                  Description
-                </label>
+                <label className="hesics-label">Description</label>
                 <input
                   type="text"
                   value={newRoleDesc}
                   onChange={(e) => setNewRoleDesc(e.target.value)}
                   placeholder="Operational responsibilities and scope"
-                  className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-white text-xs focus:outline-none focus:border-[#1E9EFF]/40"
+                  className="hesics-input"
                 />
               </div>
 
@@ -365,13 +336,13 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                 <button
                   type="button"
                   onClick={() => setShowCreateRoleForm(false)}
-                  className="px-3 py-1.5 text-xs text-[#666666] hover:text-white"
+                  className="hesics-btn-ghost"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-[#1E9EFF] hover:bg-[#0A8AE6] text-white text-xs font-semibold rounded-lg transition-colors"
+                  className="hesics-btn-primary"
                 >
                   Create Role
                 </button>
@@ -382,17 +353,17 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
       )}
 
       {/* Team Roster Table */}
-      <div className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-2xl overflow-hidden shadow-2xl">
-        <div className="p-4 border-b border-[#161616] flex items-center justify-between">
+      <div className="hesics-card overflow-hidden">
+        <div className="p-4 border-b border-[#181820] flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Users className="w-4 h-4 text-[#1E9EFF]" />
-            <h2 className="text-xs font-bold text-white">Organization Members ({users.length})</h2>
+            <h2 className="text-xs font-bold text-[#F4F4F6]">Organization Members ({users.length})</h2>
           </div>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-[#0a0a0a] text-[#555555] border-b border-[#161616] uppercase text-[10px] font-semibold tracking-wider">
+            <thead className="bg-[#09090C] text-[#606070] border-b border-[#181820] uppercase text-[10px] font-semibold tracking-wider">
               <tr>
                 <th className="p-3.5">Member</th>
                 <th className="p-3.5">Role</th>
@@ -401,10 +372,10 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                 <th className="p-3.5 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#141414]">
+            <tbody className="divide-y divide-[#15151C]">
               {users.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-[#555555]">
+                  <td colSpan={5} className="p-8 text-center text-[#555565]">
                     No team members provisioned yet.
                   </td>
                 </tr>
@@ -414,22 +385,22 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                   const isSelf = u.id === activeUser.id;
 
                   return (
-                    <tr key={u.id} className="hover:bg-[#111111] transition-colors">
+                    <tr key={u.id} className="hover:bg-[#111116] transition-colors">
                       <td className="p-3.5">
                         <div className="flex items-center gap-3">
                           <img
                             src={u.avatar_url}
                             alt={u.name}
-                            className="w-8 h-8 rounded-full bg-[#181818] ring-1 ring-[#1e1e1e]"
+                            className="w-8 h-8 rounded-full bg-[#15151C] ring-1 ring-[#202028]"
                           />
                           <div>
-                            <div className="font-semibold text-white flex items-center gap-1.5">
+                            <div className="font-semibold text-[#F4F4F6] flex items-center gap-1.5">
                               {u.name}
                               {isSelf && (
-                                <span className="text-[9px] text-[#1E9EFF] font-normal">(You)</span>
+                                <span className="text-[9px] text-[#1E9EFF] font-normal font-mono">(You)</span>
                               )}
                             </div>
-                            <div className="text-[11px] text-[#555555]">{u.email}</div>
+                            <div className="text-[11px] text-[#707080]">{u.email}</div>
                           </div>
                         </div>
                       </td>
@@ -441,7 +412,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                         </span>
                       </td>
 
-                      <td className="p-3.5 text-[#888888] font-mono text-[11px]">
+                      <td className="p-3.5 text-[#808090] font-mono text-[11px]">
                         {u.department || 'Operations'}
                       </td>
 
@@ -451,8 +422,8 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Active
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-red-400 bg-red-950/30 px-2 py-0.5 rounded-full border border-red-900/40">
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-400" /> Deactivated
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-rose-400 bg-rose-950/30 px-2 py-0.5 rounded-full border border-rose-900/40">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-400" /> Deactivated
                           </span>
                         )}
                       </td>
@@ -463,7 +434,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                             {u.is_active ? (
                               <button
                                 onClick={() => handleDeactivate(u)}
-                                className="p-1.5 text-[#666666] hover:text-amber-400 hover:bg-amber-950/20 rounded transition-colors"
+                                className="p-1.5 text-[#707080] hover:text-amber-400 hover:bg-amber-950/20 rounded transition-colors"
                                 title="Deactivate Account"
                               >
                                 <UserX className="w-3.5 h-3.5" />
@@ -471,7 +442,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                             ) : (
                               <button
                                 onClick={() => handleReactivate(u)}
-                                className="p-1.5 text-[#666666] hover:text-emerald-400 hover:bg-emerald-950/20 rounded transition-colors"
+                                className="p-1.5 text-[#707080] hover:text-emerald-400 hover:bg-emerald-950/20 rounded transition-colors"
                                 title="Reactivate Account"
                               >
                                 <CheckCircle2 className="w-3.5 h-3.5" />
@@ -479,14 +450,14 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                             )}
                             <button
                               onClick={() => handleDelete(u)}
-                              className="p-1.5 text-[#666666] hover:text-red-400 hover:bg-red-950/20 rounded transition-colors"
+                              className="p-1.5 text-[#707080] hover:text-rose-400 hover:bg-rose-950/20 rounded transition-colors"
                               title="Permanently Delete User"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         ) : (
-                          <span className="text-[11px] text-[#444444]">—</span>
+                          <span className="text-[11px] text-[#454555]">—</span>
                         )}
                       </td>
                     </tr>
@@ -499,11 +470,11 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
       </div>
 
       {/* Role Permission Matrix Card */}
-      <div className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-2xl p-5 space-y-4 shadow-2xl">
-        <h2 className="text-xs font-bold text-white flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-[#1E9EFF]" /> Role Permission Matrix
+      <div className="hesics-card p-5 space-y-4">
+        <h2 className="text-xs font-bold text-[#F4F4F6] flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-[#1E9EFF]" /> Role Capability Matrix
         </h2>
-        <p className="text-[11px] text-[#666666]">
+        <p className="text-xs text-[#707080]">
           Configured capability boundaries per organization role.
         </p>
 
@@ -511,19 +482,19 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
           {roles.map((r) => {
             const perms = getPermissionsForRole(r.id);
             return (
-              <div key={r.id} className="p-4 bg-[#080808] border border-[#161616] rounded-xl space-y-2.5">
+              <div key={r.id} className="p-4 bg-[#08080B] border border-[#181820] rounded-xl space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-white">{r.name}</span>
+                  <span className="text-xs font-bold text-[#F4F4F6]">{r.name}</span>
                   <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${hierarchyBadge[r.hierarchy_level]}`}>
                     {hierarchyDisplayName[r.hierarchy_level] || r.hierarchy_level}
                   </span>
                 </div>
-                <p className="text-[10px] text-[#666666] min-h-[28px] leading-relaxed">
+                <p className="text-[10px] text-[#707080] min-h-[28px] leading-relaxed">
                   {r.description || 'Standard role permissions.'}
                 </p>
-                <div className="pt-2 border-t border-[#141414] text-[10px] text-[#888888] flex items-center justify-between">
+                <div className="pt-2 border-t border-[#14141A] text-[10px] text-[#808090] flex items-center justify-between">
                   <span>Authorized Actions:</span>
-                  <span className="font-mono text-[#1E9EFF]">{perms.length}</span>
+                  <span className="font-mono text-[#1E9EFF] font-semibold">{perms.length}</span>
                 </div>
               </div>
             );

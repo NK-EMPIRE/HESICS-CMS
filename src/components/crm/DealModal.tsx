@@ -1,61 +1,60 @@
 import React, { useState } from 'react';
-import { Modal } from '../ui/Modal';
-import { Deal, DealStage } from '../../lib/types';
-import { db } from '../../lib/supabase';
-import confetti from 'canvas-confetti';
+import { X, Sparkles, DollarSign, Calendar, Target, User } from 'lucide-react';
+import { db } from '../../lib/firebaseDb';
+import { Deal, DealStage, User as UserType } from '../../lib/types';
 
 interface DealModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  initialData?: Deal;
+  deal?: Deal;
+  activeUser: UserType;
 }
 
 export const DealModal: React.FC<DealModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
-  initialData,
+  deal,
+  activeUser,
 }) => {
   const clients = db.getClients();
-  const users = db.getUsers();
+  const [clientId, setClientId] = useState(deal?.client_id || clients[0]?.id || '');
+  const [title, setTitle] = useState(deal?.title || '');
+  const [value, setValue] = useState(deal?.value ? String(deal.value) : '');
+  const [stage, setStage] = useState<DealStage>(deal?.stage || 'discovery');
+  const [closeDate, setCloseDate] = useState(deal?.expected_close_date || '');
+  const [notes, setNotes] = useState(deal?.notes || '');
 
-  const [formData, setFormData] = useState({
-    client_id: initialData?.client_id || clients[0]?.id || '',
-    title: initialData?.title || '',
-    value: initialData?.value || 100000,
-    currency: initialData?.currency || 'INR',
-    stage: (initialData?.stage || 'new') as DealStage,
-    probability: initialData?.probability || 20,
-    expected_close_date: initialData?.expected_close_date || new Date().toISOString().split('T')[0],
-    owner_id: initialData?.owner_id || users[0]?.id || '',
-  });
+  if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title.trim()) return;
+    if (!title.trim() || !value) return;
 
-    const client = clients.find((c) => c.id === formData.client_id);
-    const owner = users.find((u) => u.id === formData.owner_id);
+    const selectedClient = clients.find((c) => c.id === clientId);
 
-    const payload = {
-      ...formData,
-      client_name: client?.name || '',
-      company_name: client?.company_name || '',
-      owner_name: owner?.name || '',
-    };
-
-    if (initialData) {
-      db.updateDeal(initialData.id, payload);
+    if (deal) {
+      db.updateDeal(deal.id, {
+        client_id: clientId,
+        client_name: selectedClient?.name || deal.client_name,
+        title: title.trim(),
+        value: Number(value),
+        stage,
+        expected_close_date: closeDate || undefined,
+        notes: notes.trim() || undefined,
+      });
     } else {
-      db.addDeal(payload);
-    }
-
-    if (formData.stage === 'won') {
-      confetti({
-        particleCount: 80,
-        spread: 70,
-        origin: { y: 0.6 },
+      db.addDeal({
+        client_id: clientId,
+        client_name: selectedClient?.name || 'General Client',
+        title: title.trim(),
+        value: Number(value),
+        stage,
+        expected_close_date: closeDate || undefined,
+        owner_id: activeUser.id,
+        owner_name: activeUser.name,
+        notes: notes.trim() || undefined,
       });
     }
 
@@ -64,138 +63,111 @@ export const DealModal: React.FC<DealModalProps> = ({
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={initialData ? 'Edit Deal' : 'Create New Deal'}
-      subtitle="Track high-value client engagements in your sales pipeline."
-    >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-            Client *
-          </label>
-          <select
-            value={formData.client_id}
-            onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
-            className="w-full px-3 py-2 bg-dark-900 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
-          >
-            {clients.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name} {c.company_name ? `(${c.company_name})` : ''}
-              </option>
-            ))}
-          </select>
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-[#0D0D11] border border-[#1E1E26] rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+        <div className="flex items-center justify-between border-b border-[#1A1A22] pb-3">
+          <h2 className="text-sm font-bold text-[#F4F4F6]">
+            {deal ? 'Edit Deal Opportunity' : 'New Deal Opportunity'}
+          </h2>
+          <button onClick={onClose} className="text-[#606070] hover:text-white p-1 rounded">
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
-        <div>
-          <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-            Deal Title / Service Package *
-          </label>
-          <input
-            type="text"
-            required
-            value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            placeholder="e.g. AI Workflow Automation & Custom CRM"
-            className="w-full px-3 py-2 bg-dark-900 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="space-y-3.5">
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-              Deal Value (₹ INR)
-            </label>
-            <input
-              type="number"
-              min="0"
-              value={formData.value}
-              onChange={(e) => setFormData({ ...formData, value: Number(e.target.value) })}
-              className="w-full px-3 py-2 bg-dark-900 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500 font-mono"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-              Win Probability (%)
-            </label>
-            <input
-              type="number"
-              min="0"
-              max="100"
-              value={formData.probability}
-              onChange={(e) => setFormData({ ...formData, probability: Number(e.target.value) })}
-              className="w-full px-3 py-2 bg-dark-900 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500 font-mono"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-              Pipeline Stage
-            </label>
+            <label className="hesics-label">Associated Client Account *</label>
             <select
-              value={formData.stage}
-              onChange={(e) => setFormData({ ...formData, stage: e.target.value as DealStage })}
-              className="w-full px-3 py-2 bg-dark-900 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
+              required
+              value={clientId}
+              onChange={(e) => setClientId(e.target.value)}
+              className="hesics-input"
             >
-              <option value="new">New Lead</option>
-              <option value="contacted">Contacted</option>
-              <option value="quoted">Quoted</option>
-              <option value="negotiation">Negotiation</option>
-              <option value="won">Won 🎉</option>
-              <option value="lost">Lost</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-              Expected Close
-            </label>
-            <input
-              type="date"
-              value={formData.expected_close_date}
-              onChange={(e) => setFormData({ ...formData, expected_close_date: e.target.value })}
-              className="w-full px-3 py-2 bg-dark-900 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-              Deal Owner
-            </label>
-            <select
-              value={formData.owner_id}
-              onChange={(e) => setFormData({ ...formData, owner_id: e.target.value })}
-              className="w-full px-3 py-2 bg-dark-900 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
-            >
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
+              {clients.length === 0 && <option value="">No clients found — add client first</option>}
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} {c.company_name ? `(${c.company_name})` : ''}
                 </option>
               ))}
             </select>
           </div>
-        </div>
 
-        <div className="pt-4 flex justify-end gap-3 border-t border-dark-600">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-semibold text-slate-400 hover:text-white transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="px-5 py-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-lg text-sm transition-all shadow-lg shadow-brand-500/20"
-          >
-            {initialData ? 'Update Deal' : 'Save Deal'}
-          </button>
-        </div>
-      </form>
-    </Modal>
+          <div>
+            <label className="hesics-label">Deal Title *</label>
+            <input
+              type="text"
+              required
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. Enterprise Cloud Integration Retainer"
+              className="hesics-input"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="hesics-label">Deal Value (₹ INR) *</label>
+              <input
+                type="number"
+                required
+                min="0"
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                placeholder="250000"
+                className="hesics-input font-mono"
+              />
+            </div>
+            <div>
+              <label className="hesics-label">Pipeline Stage</label>
+              <select
+                value={stage}
+                onChange={(e) => setStage(e.target.value as DealStage)}
+                className="hesics-input"
+              >
+                <option value="discovery">Discovery</option>
+                <option value="proposal">Proposal Sent</option>
+                <option value="negotiation">Negotiation</option>
+                <option value="won">Closed Won</option>
+                <option value="lost">Closed Lost</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="hesics-label">Expected Close Date</label>
+            <input
+              type="date"
+              value={closeDate}
+              onChange={(e) => setCloseDate(e.target.value)}
+              className="hesics-input font-mono"
+            />
+          </div>
+
+          <div>
+            <label className="hesics-label">Deal Notes</label>
+            <textarea
+              rows={2}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Scope details, decision makers, and key milestones..."
+              className="hesics-input resize-none"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="hesics-btn-ghost"
+            >
+              Cancel
+            </button>
+            <button type="submit" className="hesics-btn-primary">
+              {deal ? 'Save Changes' : 'Create Deal'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 };

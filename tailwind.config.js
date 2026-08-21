@@ -7,24 +7,27 @@ export default {
   theme: {
     extend: {
       colors: {
-        // HESICS Brand
+        // HESICS Brand System
         hesics: {
-          blue:      '#1E9EFF',
+          blue:        '#1E9EFF',
           'blue-dark': '#0A8AE6',
           'blue-dim':  'rgba(30, 158, 255, 0.12)',
         },
-        // Surface system
+        // Elevated Dark Luxury Palette
         surface: {
-          main:    '#080808',
-          card:    '#0f0f0f',
-          hover:   '#161616',
-          border:  '#1a1a1a',
+          root:    '#050505',
+          main:    '#09090B',
+          card:    '#0E0E11',
+          elevated:'#141418',
+          hover:   '#18181D',
+          border:  '#1C1C21',
+          subtle:  '#27272F',
         },
       },
       fontFamily: {
-        sans:    ['Inter', 'system-ui', 'sans-serif'],
-        display: ['Space Grotesk', 'Inter', 'sans-serif'],
-        mono:    ['JetBrains Mono', 'Fira Code', 'monospace'],
+        sans:    ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],
+        display: ['"Space Grotesk"', '"Plus Jakarta Sans"', 'sans-serif'],
+        mono:    ['"JetBrains Mono"', 'monospace'],
       },
       animation: {
         'fade-in': 'fadeIn 0.15s ease-out',

@@ -2,10 +2,9 @@ import React, { useState } from 'react';
 import {
   Plus, Clock, Sparkles, AlertTriangle,
   ArrowUpRight, TrendingUp, TrendingDown,
-  Users, Briefcase, DollarSign, Target,
-  Crown, Shield
+  Users, Briefcase, DollarSign, Target, Shield, CheckCircle2, ChevronRight
 } from 'lucide-react';
-import { db } from '../lib/supabase';
+import { db } from '../lib/firebaseDb';
 import { User, UserHierarchy } from '../lib/types';
 import { DealModal } from '../components/crm/DealModal';
 import { ActivityModal } from '../components/crm/ActivityModal';
@@ -16,20 +15,6 @@ interface DashboardProps {
   activeUser: User;
   onNavigate: (tab: string) => void;
 }
-
-const HierarchyBadge: React.FC<{ h: UserHierarchy }> = ({ h }) => {
-  if (h === 'founder') return (
-    <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border text-amber-400 bg-amber-950/40 border-amber-900/50">
-      <Crown className="w-2.5 h-2.5" /> Founder
-    </span>
-  );
-  if (h === 'admin') return (
-    <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border text-blue-400 bg-blue-950/40 border-blue-900/50">
-      <Shield className="w-2.5 h-2.5" /> Admin
-    </span>
-  );
-  return null;
-};
 
 export const Dashboard: React.FC<DashboardProps> = ({ activeUser, onNavigate }) => {
   const [isDealModalOpen, setIsDealModalOpen] = useState(false);
@@ -54,272 +39,224 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeUser, onNavigate }) 
     <div className="space-y-6 max-w-6xl mx-auto">
 
       {/* Page Header */}
-      <div className="space-y-1 pb-4 border-b border-[#1a1a1a]">
-        <div className="flex items-center gap-3">
-          <div>
-            <div className="text-2xl">⚡</div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1A1A20]">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold text-[#F4F4F6] tracking-tight font-display">
+              {isAdminUser ? 'Executive Overview' : 'Operational Dashboard'}
+            </h1>
+            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border text-[#1E9EFF] bg-[#1E9EFF]/10 border-[#1E9EFF]/25 font-mono">
+              <Shield className="w-2.5 h-2.5" /> {activeUser.role_name || 'Admin'}
+            </span>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-white tracking-tight">
-                {isAdminUser ? 'Executive Dashboard' : 'Dashboard'}
-              </h1>
-              <HierarchyBadge h={activeUser.hierarchy} />
-            </div>
-            <p className="text-[11px] text-[#666666] mt-0.5">
-              Welcome back, <span className="text-[#aaaaaa]">{activeUser.name.split(' ')[0]}</span>
-              {isAdminUser && ' · Org-wide metrics below'}
-            </p>
-          </div>
+          <p className="text-xs text-[#828290] mt-1">
+            Real-time pipeline metrics, financial cash flow, and client operations.
+          </p>
         </div>
-      </div>
 
-      {/* Action Bar */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <button
-          onClick={() => setIsClientModalOpen(true)}
-          className="notion-button bg-[#111111] hover:bg-[#141414] text-white border border-[#333333]"
-        >
-          <Plus className="w-3.5 h-3.5 text-[#aaaaaa]" /> New Client
-        </button>
-        <button
-          onClick={() => setIsDealModalOpen(true)}
-          className="notion-button bg-[#111111] hover:bg-[#141414] text-white border border-[#333333]"
-        >
-          <Sparkles className="w-3.5 h-3.5 text-[#1E9EFF]" /> New Deal
-        </button>
-        <button
-          onClick={() => setIsActivityModalOpen(true)}
-          className="notion-button bg-[#111111] hover:bg-[#141414] text-white border border-[#333333]"
-        >
-          <Clock className="w-3.5 h-3.5 text-[#aaaaaa]" /> Log Activity
-        </button>
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setIsClientModalOpen(true)}
+            className="hesics-btn-secondary"
+          >
+            <Plus className="w-3.5 h-3.5 text-[#888896]" /> New Client
+          </button>
+          <button
+            onClick={() => setIsDealModalOpen(true)}
+            className="hesics-btn-primary"
+          >
+            <Sparkles className="w-3.5 h-3.5" /> New Deal
+          </button>
+          <button
+            onClick={() => setIsActivityModalOpen(true)}
+            className="hesics-btn-secondary"
+          >
+            <Clock className="w-3.5 h-3.5 text-[#888896]" /> Log Activity
+          </button>
+        </div>
       </div>
 
       {/* Overdue alert banner */}
       {stats.overdueFollowUps > 0 && (
-        <div className="p-3 bg-red-950/20 border border-red-900/40 rounded-lg flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs text-red-400">
-            <AlertTriangle className="w-4 h-4 shrink-0" />
-            <span>{stats.overdueFollowUps} overdue follow-up{stats.overdueFollowUps > 1 ? 's' : ''} need attention</span>
+        <div className="p-3.5 bg-amber-950/20 border border-amber-900/30 rounded-xl flex items-center justify-between gap-3 text-xs text-amber-300">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>
+              <strong>{stats.overdueFollowUps} scheduled follow-up{stats.overdueFollowUps > 1 ? 's are' : ' is'} overdue.</strong> Review client activities to maintain momentum.
+            </span>
           </div>
           <button
             onClick={() => onNavigate('clients')}
-            className="text-xs text-red-300 underline font-medium hover:text-white"
+            className="text-[11px] font-semibold text-amber-400 hover:text-amber-300 hover:underline shrink-0"
           >
-            Review →
+            View Follow-ups →
           </button>
         </div>
       )}
 
-      {/* Admin-only: Full Revenue Cards */}
-      {isAdminUser && (
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-[#555555] mb-3">Revenue Overview</p>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="p-4 bg-[#0f0f0f] border border-[#161616] rounded-xl space-y-1 hover:border-[#383838] transition-colors">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-[#666666]">Total Income</span>
-                <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
-              </div>
-              <div className="text-xl font-bold font-mono text-emerald-400">{fmt(stats.totalIncome)}</div>
-              <div className="text-[10px] text-[#555555]">Collected + logged</div>
-            </div>
-
-            <div className="p-4 bg-[#0f0f0f] border border-[#161616] rounded-xl space-y-1 hover:border-[#383838] transition-colors">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-[#666666]">Total Expenses</span>
-                <TrendingDown className="w-3.5 h-3.5 text-red-500" />
-              </div>
-              <div className="text-xl font-bold font-mono text-red-400">{fmt(stats.totalExpenses)}</div>
-              <div className="text-[10px] text-[#555555]">All categories</div>
-            </div>
-
-            <div className="p-4 bg-[#0f0f0f] border border-[#161616] rounded-xl space-y-1 hover:border-[#383838] transition-colors">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-[#666666]">Net Profit</span>
-                <DollarSign className="w-3.5 h-3.5 text-[#1E9EFF]" />
-              </div>
-              <div className={`text-xl font-bold font-mono ${stats.netProfit >= 0 ? 'text-white' : 'text-red-400'}`}>
-                {fmt(stats.netProfit)}
-              </div>
-              <div className="text-[10px] text-[#555555]">
-                {stats.profitMargin}% margin
-              </div>
-            </div>
-
-            <div className="p-4 bg-[#0f0f0f] border border-[#161616] rounded-xl space-y-1 hover:border-[#383838] transition-colors">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-[#666666]">Pipeline Value</span>
-                <Target className="w-3.5 h-3.5 text-[#888888]" />
-              </div>
-              <div className="text-xl font-bold font-mono text-white">{fmt(stats.activePipelineValue)}</div>
-              <div className="text-[10px] text-[#555555]">{stats.totalDeals} deals total</div>
-            </div>
+      {/* KPI Stats Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+        {/* Total Collected Revenue */}
+        <div className="hesics-card p-4 space-y-2 relative overflow-hidden">
+          <div className="flex items-center justify-between text-xs text-[#787886]">
+            <span className="font-medium">Collected Cash</span>
+            <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+          </div>
+          <div className="text-xl font-bold text-[#F4F4F6] font-display">
+            {fmt(stats.cashCollected)}
+          </div>
+          <div className="text-[11px] text-[#60606E] flex items-center gap-1">
+            <span>Invoiced: {fmt(stats.totalInvoiced)}</span>
           </div>
         </div>
-      )}
 
-      {/* CRM Metrics (visible to all) */}
-      <div>
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-[#555555] mb-3">CRM Snapshot</p>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="p-4 bg-[#0f0f0f] border border-[#161616] rounded-xl space-y-1">
-            <div className="flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5 text-[#888888]" />
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-[#666666]">Clients</span>
-            </div>
-            <div className="text-xl font-bold font-mono text-white">{stats.totalClients}</div>
-            <div className="text-[10px] text-[#555555]">{stats.activeClients} active · {stats.leadClients} leads</div>
+        {/* Active Pipeline Value */}
+        <div className="hesics-card p-4 space-y-2 relative overflow-hidden">
+          <div className="flex items-center justify-between text-xs text-[#787886]">
+            <span className="font-medium">Active Pipeline</span>
+            <Target className="w-3.5 h-3.5 text-[#1E9EFF]" />
           </div>
-
-          <div className="p-4 bg-[#0f0f0f] border border-[#161616] rounded-xl space-y-1">
-            <div className="flex items-center gap-1.5">
-              <Briefcase className="w-3.5 h-3.5 text-[#888888]" />
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-[#666666]">Won Revenue</span>
-            </div>
-            <div className="text-xl font-bold font-mono text-emerald-400">{fmt(stats.wonDealsValue)}</div>
-            <div className="text-[10px] text-[#555555]">Committed contracts</div>
+          <div className="text-xl font-bold text-[#F4F4F6] font-display">
+            {fmt(stats.activePipelineValue)}
           </div>
-
-          <div className="p-4 bg-[#0f0f0f] border border-[#161616] rounded-xl space-y-1">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-[#666666] mb-1">Cash Collected</div>
-            <div className="text-xl font-bold font-mono text-white">{fmt(stats.collectedCash)}</div>
-            <div className="text-[10px] text-[#555555]">Paid invoices</div>
+          <div className="text-[11px] text-[#60606E]">
+            <span>{stats.totalDeals} Total Opportunities</span>
           </div>
+        </div>
 
-          <div className="p-4 bg-[#0f0f0f] border border-[#161616] rounded-xl space-y-1">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-[#666666] mb-1">Outstanding</div>
-            <div className={`text-xl font-bold font-mono ${stats.outstandingInvoices > 0 ? 'text-amber-400' : 'text-white'}`}>
-              {fmt(stats.outstandingInvoices)}
-            </div>
-            <div className="text-[10px] text-[#555555]">Overdue invoices</div>
+        {/* Net Profit Margin */}
+        <div className="hesics-card p-4 space-y-2 relative overflow-hidden">
+          <div className="flex items-center justify-between text-xs text-[#787886]">
+            <span className="font-medium">Net Profit</span>
+            {stats.netProfit >= 0 ? (
+              <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+            ) : (
+              <TrendingDown className="w-3.5 h-3.5 text-rose-400" />
+            )}
+          </div>
+          <div className={`text-xl font-bold font-display ${stats.netProfit >= 0 ? 'text-[#F4F4F6]' : 'text-rose-400'}`}>
+            {fmt(stats.netProfit)}
+          </div>
+          <div className="text-[11px] text-[#60606E]">
+            <span>{stats.profitMargin}% Margin</span>
+          </div>
+        </div>
+
+        {/* Client Accounts */}
+        <div className="hesics-card p-4 space-y-2 relative overflow-hidden">
+          <div className="flex items-center justify-between text-xs text-[#787886]">
+            <span className="font-medium">Active Clients</span>
+            <Users className="w-3.5 h-3.5 text-indigo-400" />
+          </div>
+          <div className="text-xl font-bold text-[#F4F4F6] font-display">
+            {stats.activeClients}
+          </div>
+          <div className="text-[11px] text-[#60606E]">
+            <span>{stats.totalClients} Total Roster</span>
           </div>
         </div>
       </div>
 
-      {/* Admin: Team Overview strip */}
-      {isAdminUser && (
-        <div className="p-4 bg-[#0f0f0f] border border-[#161616] rounded-xl flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Users className="w-4 h-4 text-[#1E9EFF]" />
-            <div>
-              <div className="text-xs font-semibold text-white">Team — {stats.teamSize} active members</div>
-              <div className="text-[10px] text-[#666666] mt-0.5">
-                {db.getUsers().filter((u) => u.hierarchy === 'founder').length} founder ·{' '}
-                {db.getUsers().filter((u) => u.hierarchy === 'admin').length} admins ·{' '}
-                {db.getUsers().filter((u) => u.hierarchy === 'employee').length} employees ·{' '}
-                {db.getUsers().filter((u) => u.hierarchy === 'intern').length} interns
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={() => onNavigate('team')}
-            className="text-xs text-[#666666] hover:text-white flex items-center gap-1 transition-colors"
-          >
-            Manage <ArrowUpRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
-
-      {/* Deals & Activities Row */}
+      {/* Main Grid: Pipeline Summary & Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Active Deals */}
-        <div className="lg:col-span-2 bg-[#0f0f0f] border border-[#161616] rounded-xl p-4 space-y-3">
+
+        {/* Pipeline Breakdown (2 cols) */}
+        <div className="hesics-card p-5 space-y-4 lg:col-span-2">
           <div className="flex items-center justify-between">
-            <h3 className="text-[11px] font-bold uppercase tracking-wider text-[#888888]">Active Deals</h3>
+            <div>
+              <h2 className="text-sm font-bold text-[#F4F4F6]">Deal Pipeline Distribution</h2>
+              <p className="text-[11px] text-[#707080]">Revenue grouped by operational stage</p>
+            </div>
             <button
               onClick={() => onNavigate('deals')}
-              className="text-xs text-[#666666] hover:text-white flex items-center gap-1 transition-colors"
+              className="text-xs text-[#1E9EFF] hover:underline font-medium flex items-center gap-1"
             >
-              Board <ArrowUpRight className="w-3 h-3" />
+              Open Deals Board <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          {db.getDeals().length === 0 ? (
-            <div className="py-10 text-center border border-dashed border-[#161616] rounded-lg space-y-2">
-              <p className="text-xs text-[#666666]">No deals in pipeline yet.</p>
-              <button
-                onClick={() => setIsDealModalOpen(true)}
-                className="text-xs text-[#1E9EFF] hover:underline"
-              >
-                + Add your first deal
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {db.getDeals().slice(0, 6).map((deal) => (
-                <div
-                  key={deal.id}
-                  className="p-3 bg-[#080808] border border-[#181818] rounded-lg flex items-center justify-between hover:border-[#383838] transition-colors"
-                >
-                  <div>
-                    <div className="text-xs font-medium text-white">{deal.title}</div>
-                    <div className="text-[10px] text-[#666666]">{deal.client_name || '—'}</div>
+          <div className="space-y-3">
+            {['discovery', 'proposal', 'negotiation', 'won'].map((stg) => {
+              const stageDeals = db.getDeals().filter((d) => d.stage === stg);
+              const stageSum = stageDeals.reduce((sum, d) => sum + Number(d.value), 0);
+              const maxVal = stats.activePipelineValue || 1;
+              const pct = Math.min(100, Math.round((stageSum / maxVal) * 100));
+
+              return (
+                <div key={stg} className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="capitalize font-medium text-[#D4D4D8]">{stg}</span>
+                    <span className="font-mono text-[#F4F4F6]">{fmt(stageSum)} ({stageDeals.length})</span>
                   </div>
-                  <div className="text-right">
-                    <div className="text-xs font-mono font-semibold text-white">
-                      ₹{Number(deal.value).toLocaleString('en-IN')}
-                    </div>
-                    <span className="text-[9px] uppercase font-mono px-1.5 py-0.5 rounded bg-[#1a1a1a] text-[#888888]">
-                      {deal.stage}
-                    </span>
+                  <div className="w-full h-1.5 bg-[#17171C] rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${
+                        stg === 'won' ? 'bg-emerald-400' : 'bg-[#1E9EFF]'
+                      }`}
+                      style={{ width: `${Math.max(4, pct)}%` }}
+                    />
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+              );
+            })}
+          </div>
         </div>
 
-        {/* Activity Feed */}
-        <div className="bg-[#0f0f0f] border border-[#161616] rounded-xl p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-[11px] font-bold uppercase tracking-wider text-[#888888]">Touchpoints</h3>
-            <button
-              onClick={() => setIsActivityModalOpen(true)}
-              className="text-xs text-[#666666] hover:text-white transition-colors"
-            >
-              + Log
-            </button>
+        {/* Quick Operations Sidebar (1 col) */}
+        <div className="hesics-card p-5 space-y-4">
+          <div>
+            <h2 className="text-sm font-bold text-[#F4F4F6]">Recent Activity</h2>
+            <p className="text-[11px] text-[#707080]">Latest client touchpoints</p>
           </div>
 
-          {db.getActivities().length === 0 ? (
-            <div className="py-10 text-center border border-dashed border-[#161616] rounded-lg">
-              <p className="text-xs text-[#666666]">No touchpoints yet.</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {db.getActivities().slice(0, 5).map((act) => (
-                <div key={act.id} className="p-2.5 bg-[#080808] border border-[#181818] rounded-lg text-xs space-y-1">
-                  <div className="flex items-center justify-between text-[11px] font-medium text-white">
-                    <span>{act.client_name || '—'}</span>
-                    <span className="text-[9px] text-[#666666] uppercase">{act.type}</span>
+          <div className="space-y-2.5">
+            {db.getActivities().slice(0, 5).length === 0 ? (
+              <div className="p-6 text-center text-xs text-[#505060]">
+                No logged client touchpoints yet.
+              </div>
+            ) : (
+              db.getActivities().slice(0, 5).map((act) => (
+                <div key={act.id} className="p-2.5 bg-[#09090C] border border-[#18181F] rounded-lg space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-medium text-[#F4F4F6] truncate max-w-[140px]">{act.client_name || 'Client'}</span>
+                    <span className="text-[10px] uppercase font-mono text-[#1E9EFF]">{act.type}</span>
                   </div>
-                  <p className="text-[11px] text-[#888888] line-clamp-2">{act.outcome}</p>
+                  <p className="text-[11px] text-[#787888] line-clamp-1">{act.title || act.notes || act.outcome || 'Touchpoint recorded'}</p>
                 </div>
-              ))}
-            </div>
-          )}
+              ))
+            )}
+          </div>
         </div>
+
       </div>
 
       {/* Modals */}
-      <DealModal
-        isOpen={isDealModalOpen}
-        onClose={() => setIsDealModalOpen(false)}
-        onSuccess={refreshData}
-      />
-      <ClientModal
-        isOpen={isClientModalOpen}
-        onClose={() => setIsClientModalOpen(false)}
-        onSuccess={refreshData}
-      />
-      <ActivityModal
-        isOpen={isActivityModalOpen}
-        onClose={() => setIsActivityModalOpen(false)}
-        onSuccess={refreshData}
-        activeUser={activeUser}
-      />
+      {isDealModalOpen && (
+        <DealModal
+          isOpen={isDealModalOpen}
+          onClose={() => setIsDealModalOpen(false)}
+          onSuccess={refreshData}
+          activeUser={activeUser}
+        />
+      )}
+      {isClientModalOpen && (
+        <ClientModal
+          isOpen={isClientModalOpen}
+          onClose={() => setIsClientModalOpen(false)}
+          onSuccess={refreshData}
+          activeUser={activeUser}
+        />
+      )}
+      {isActivityModalOpen && (
+        <ActivityModal
+          isOpen={isActivityModalOpen}
+          onClose={() => setIsActivityModalOpen(false)}
+          onSuccess={refreshData}
+          activeUser={activeUser}
+        />
+      )}
+
     </div>
   );
 };

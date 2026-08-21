@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Modal } from '../ui/Modal';
-import { ActivityType, User } from '../../lib/types';
-import { db } from '../../lib/supabase';
+import { X, Clock, Calendar, CheckSquare, MessageSquare } from 'lucide-react';
+import { db } from '../../lib/firebaseDb';
+import { ActivityType, User as UserType } from '../../lib/types';
 
 interface ActivityModalProps {
   isOpen: boolean;
@@ -9,39 +9,43 @@ interface ActivityModalProps {
   onSuccess: () => void;
   clientId?: string;
   dealId?: string;
-  activeUser: User;
+  activeUser: UserType;
 }
 
 export const ActivityModal: React.FC<ActivityModalProps> = ({
   isOpen,
   onClose,
   onSuccess,
-  clientId,
-  dealId,
+  clientId: initialClientId,
+  dealId: initialDealId,
   activeUser,
 }) => {
   const clients = db.getClients();
   const deals = db.getDeals();
 
-  const [formData, setFormData] = useState({
-    client_id: clientId || clients[0]?.id || '',
-    deal_id: dealId || '',
-    type: 'meeting' as ActivityType,
-    outcome: '',
-    follow_up_date: new Date().toISOString().split('T')[0],
-  });
+  const [clientId, setClientId] = useState(initialClientId || clients[0]?.id || '');
+  const [dealId, setDealId] = useState(initialDealId || '');
+  const [type, setType] = useState<ActivityType>('call');
+  const [outcome, setOutcome] = useState('');
+  const [followUpDate, setFollowUpDate] = useState('');
+
+  if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.outcome.trim()) return;
+    if (!outcome.trim() || !clientId) return;
 
-    const client = clients.find((c) => c.id === formData.client_id);
-    const deal = deals.find((d) => d.id === formData.deal_id);
+    const selectedClient = clients.find((c) => c.id === clientId);
+    const selectedDeal = deals.find((d) => d.id === dealId);
 
     db.addActivity({
-      ...formData,
-      client_name: client?.name,
-      deal_title: deal?.title,
+      client_id: clientId,
+      client_name: selectedClient?.name,
+      deal_id: dealId || undefined,
+      deal_title: selectedDeal?.title,
+      type,
+      outcome: outcome.trim(),
+      follow_up_date: followUpDate || undefined,
       author_id: activeUser.id,
       author_name: activeUser.name,
     });
@@ -51,91 +55,86 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Log Touchpoint / Activity"
-      subtitle="Never lose track of client calls, meetings, or upcoming follow-up dates."
-    >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-            Client *
-          </label>
-          <select
-            value={formData.client_id}
-            onChange={(e) => setFormData({ ...formData, client_id: e.target.value })}
-            className="w-full px-3 py-2 bg-dark-900 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
-          >
-            {clients.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name} {c.company_name ? `(${c.company_name})` : ''}
-              </option>
-            ))}
-          </select>
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-[#0D0D11] border border-[#1E1E26] rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+        <div className="flex items-center justify-between border-b border-[#1A1A22] pb-3">
+          <h2 className="text-sm font-bold text-[#F4F4F6]">Log Client Touchpoint</h2>
+          <button onClick={onClose} className="text-[#606070] hover:text-white p-1 rounded">
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="space-y-3.5">
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-              Activity Type
-            </label>
+            <label className="hesics-label">Client Account *</label>
             <select
-              value={formData.type}
-              onChange={(e) => setFormData({ ...formData, type: e.target.value as ActivityType })}
-              className="w-full px-3 py-2 bg-dark-900 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
+              required
+              value={clientId}
+              onChange={(e) => setClientId(e.target.value)}
+              className="hesics-input"
             >
-              <option value="meeting font-semibold">🤝 Meeting / Demo</option>
-              <option value="call">📞 Phone Call</option>
-              <option value="dm">💬 Instagram / WhatsApp DM</option>
-              <option value="email">✉️ Email</option>
+              {clients.length === 0 && <option value="">No clients found — add client first</option>}
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} {c.company_name ? `(${c.company_name})` : ''}
+                </option>
+              ))}
             </select>
           </div>
 
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="hesics-label">Activity Type</label>
+              <select
+                value={type}
+                onChange={(e) => setType(e.target.value as ActivityType)}
+                className="hesics-input"
+              >
+                <option value="call">Phone Call</option>
+                <option value="meeting">Video / In-Person Meeting</option>
+                <option value="email">Email</option>
+                <option value="dm">Direct Message</option>
+                <option value="task">Task Action</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="hesics-label">Follow-Up Date</label>
+              <input
+                type="date"
+                value={followUpDate}
+                onChange={(e) => setFollowUpDate(e.target.value)}
+                className="hesics-input font-mono"
+              />
+            </div>
+          </div>
+
           <div>
-            <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-              Next Follow-Up Date *
-            </label>
-            <input
-              type="date"
+            <label className="hesics-label">Discussion & Outcome *</label>
+            <textarea
+              rows={3}
               required
-              value={formData.follow_up_date}
-              onChange={(e) => setFormData({ ...formData, follow_up_date: e.target.value })}
-              className="w-full px-3 py-2 bg-dark-900 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
+              value={outcome}
+              onChange={(e) => setOutcome(e.target.value)}
+              placeholder="Key points discussed, client feedback, and next scheduled action..."
+              className="hesics-input resize-none"
             />
           </div>
-        </div>
 
-        <div>
-          <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">
-            Discussion Outcome / Notes *
-          </label>
-          <textarea
-            required
-            rows={3}
-            value={formData.outcome}
-            onChange={(e) => setFormData({ ...formData, outcome: e.target.value })}
-            placeholder="e.g. Discussed proposal details. Client agreed on terms, scheduled invoice rollout."
-            className="w-full px-3 py-2 bg-dark-900 border border-dark-600 rounded-lg text-white text-sm focus:outline-none focus:border-brand-500"
-          />
-        </div>
-
-        <div className="pt-4 flex justify-end gap-3 border-t border-dark-600">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-semibold text-slate-400 hover:text-white transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="px-5 py-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-lg text-sm transition-all shadow-lg shadow-brand-500/20"
-          >
-            Log Activity
-          </button>
-        </div>
-      </form>
-    </Modal>
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="hesics-btn-ghost"
+            >
+              Cancel
+            </button>
+            <button type="submit" className="hesics-btn-primary">
+              Log Activity
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 };

@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { Modal } from '../ui/Modal';
-import { ExpenseCategory, User } from '../../lib/types';
-import { db } from '../../lib/supabase';
+import { X, DollarSign, Calendar, Tag, User } from 'lucide-react';
+import { db } from '../../lib/firebaseDb';
+import { ExpenseCategory, User as UserType } from '../../lib/types';
 
 interface ExpenseModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  activeUser: User;
+  activeUser: UserType;
 }
 
 export const ExpenseModal: React.FC<ExpenseModalProps> = ({
@@ -16,23 +16,27 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   onSuccess,
   activeUser,
 }) => {
-  const [formData, setFormData] = useState({
-    category: 'software' as ExpenseCategory,
-    vendor: '',
-    amount: 10000,
-    gst_paid: 1800, // Input GST credit
-    spent_at: new Date().toISOString().split('T')[0],
-    is_recurring: false,
-    notes: '',
-  });
+  const [vendor, setVendor] = useState('');
+  const [amount, setAmount] = useState('');
+  const [category, setCategory] = useState<ExpenseCategory>('software');
+  const [gstPaid, setGstPaid] = useState('0');
+  const [spentAt, setSpentAt] = useState(new Date().toISOString().split('T')[0]);
+  const [notes, setNotes] = useState('');
+
+  if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.amount) return;
+    if (!amount || Number(amount) <= 0) return;
 
     db.addExpenseEntry({
-      ...formData,
+      vendor: vendor.trim() || undefined,
+      amount: Number(amount),
       currency: 'INR',
+      category,
+      gst_paid: Number(gstPaid) || 0,
+      spent_at: spentAt,
+      notes: notes.trim() || undefined,
       created_by: activeUser.id,
     });
 
@@ -41,134 +45,107 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Log Business Expense"
-      subtitle="Track operational costs & claim Input GST credits."
-    >
-      <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-        <div>
-          <label className="block font-semibold uppercase tracking-wider text-[#888888] mb-1">
-            Expense Category *
-          </label>
-          <select
-            value={formData.category}
-            onChange={(e) => setFormData({ ...formData, category: e.target.value as ExpenseCategory })}
-            className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-md text-white focus:outline-none"
-          >
-            <option value="software">Software & SaaS Tools</option>
-            <option value="marketing">Marketing & Ads</option>
-            <option value="salary">Team Salary / Payouts</option>
-            <option value="equipment">Equipment & Hardware</option>
-            <option value="travel">Travel & Client Meetings</option>
-            <option value="other">Other Operational Costs</option>
-          </select>
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-[#0D0D11] border border-[#1E1E26] rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+        <div className="flex items-center justify-between border-b border-[#1A1A22] pb-3">
+          <h2 className="text-sm font-bold text-[#F4F4F6]">Record Expenditure</h2>
+          <button onClick={onClose} className="text-[#606070] hover:text-white p-1 rounded">
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <form onSubmit={handleSubmit} className="space-y-3.5">
           <div>
-            <label className="block font-semibold uppercase tracking-wider text-[#888888] mb-1">
-              Vendor / Service Name
-            </label>
+            <label className="hesics-label">Vendor / Service Provider</label>
             <input
               type="text"
-              value={formData.vendor}
-              onChange={(e) => setFormData({ ...formData, vendor: e.target.value })}
-              placeholder="e.g. OpenAI, AWS, Vercel"
-              className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-md text-white focus:outline-none"
+              value={vendor}
+              onChange={(e) => setVendor(e.target.value)}
+              placeholder="e.g. AWS, Figma, Office Rent"
+              className="hesics-input"
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="hesics-label">Total Amount (₹) *</label>
+              <input
+                type="number"
+                required
+                min="1"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="25000"
+                className="hesics-input font-mono"
+              />
+            </div>
+            <div>
+              <label className="hesics-label">GST Paid (₹)</label>
+              <input
+                type="number"
+                min="0"
+                value={gstPaid}
+                onChange={(e) => setGstPaid(e.target.value)}
+                placeholder="4500"
+                className="hesics-input font-mono"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="hesics-label">Category</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value as ExpenseCategory)}
+                className="hesics-input"
+              >
+                <option value="software">Software & SaaS</option>
+                <option value="salary">Payroll & Team</option>
+                <option value="marketing">Marketing & Ads</option>
+                <option value="rent">Office & Rent</option>
+                <option value="travel">Travel & Client Meetings</option>
+                <option value="legal">Legal & Professional</option>
+                <option value="other">Other Operational</option>
+              </select>
+            </div>
+            <div>
+              <label className="hesics-label">Expense Date *</label>
+              <input
+                type="date"
+                required
+                value={spentAt}
+                onChange={(e) => setSpentAt(e.target.value)}
+                className="hesics-input font-mono"
+              />
+            </div>
           </div>
 
           <div>
-            <label className="block font-semibold uppercase tracking-wider text-[#888888] mb-1">
-              Date Spent *
-            </label>
-            <input
-              type="date"
-              required
-              value={formData.spent_at}
-              onChange={(e) => setFormData({ ...formData, spent_at: e.target.value })}
-              className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-md text-white focus:outline-none"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block font-semibold uppercase tracking-wider text-[#888888] mb-1">
-              Total Amount Paid (₹ INR) *
-            </label>
-            <input
-              type="number"
-              min="0"
-              required
-              value={formData.amount}
-              onChange={(e) => {
-                const amt = Number(e.target.value);
-                // Auto compute 18% input GST estimate
-                setFormData({ ...formData, amount: amt, gst_paid: Math.round(amt * 0.18) });
-              }}
-              className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-md text-white font-mono focus:outline-none"
+            <label className="hesics-label">Notes & Invoicing Memo</label>
+            <textarea
+              rows={2}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Business purpose, invoice reference..."
+              className="hesics-input resize-none"
             />
           </div>
 
-          <div>
-            <label className="block font-semibold uppercase tracking-wider text-[#888888] mb-1">
-              Input GST Paid (Tax Credit ₹)
-            </label>
-            <input
-              type="number"
-              min="0"
-              value={formData.gst_paid}
-              onChange={(e) => setFormData({ ...formData, gst_paid: Number(e.target.value) })}
-              className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-md text-emerald-400 font-mono focus:outline-none"
-            />
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="hesics-btn-ghost"
+            >
+              Cancel
+            </button>
+            <button type="submit" className="hesics-btn-primary">
+              Record Expense
+            </button>
           </div>
-        </div>
-
-        <div>
-          <label className="block font-semibold uppercase tracking-wider text-[#888888] mb-1">
-            Notes / Invoice Details
-          </label>
-          <input
-            type="text"
-            value={formData.notes}
-            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-            placeholder="e.g. Monthly subscription invoice #1042"
-            className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-md text-white focus:outline-none"
-          />
-        </div>
-
-        <div className="flex items-center gap-2 pt-1">
-          <input
-            type="checkbox"
-            id="is_recurring"
-            checked={formData.is_recurring}
-            onChange={(e) => setFormData({ ...formData, is_recurring: e.target.checked })}
-            className="rounded border-[#1e1e1e] bg-[#080808] text-[#1E9EFF] focus:ring-0"
-          />
-          <label htmlFor="is_recurring" className="text-xs text-[#cccccc] cursor-pointer">
-            Mark as <span className="text-[#1E9EFF] font-medium">Recurring Monthly Expense</span> (Software/Hosting)
-          </label>
-        </div>
-
-        <div className="pt-3 flex justify-end gap-2 border-t border-[#161616]">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-3 py-1.5 text-xs text-[#888888] hover:text-white"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="notion-button bg-[#1E9EFF] hover:bg-[#0A8AE6] text-white font-medium text-xs"
-          >
-            Save Expense
-          </button>
-        </div>
-      </form>
-    </Modal>
+        </form>
+      </div>
+    </div>
   );
 };

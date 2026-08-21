@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { Modal } from '../ui/Modal';
-import { IncomeSourceType, User } from '../../lib/types';
-import { db } from '../../lib/supabase';
+import { X, DollarSign, Calendar, Tag, User } from 'lucide-react';
+import { db } from '../../lib/firebaseDb';
+import { IncomeSourceType, User as UserType } from '../../lib/types';
 
 interface IncomeModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  activeUser: User;
+  activeUser: UserType;
 }
 
 export const IncomeModal: React.FC<IncomeModalProps> = ({
@@ -16,25 +16,28 @@ export const IncomeModal: React.FC<IncomeModalProps> = ({
   onSuccess,
   activeUser,
 }) => {
-  const clients = db.getClients();
+  const [clientName, setClientName] = useState('');
+  const [amount, setAmount] = useState('');
+  const [category, setCategory] = useState('Client Retainer');
+  const [receivedAt, setReceivedAt] = useState(new Date().toISOString().split('T')[0]);
+  const [paymentMethod, setPaymentMethod] = useState('Bank Transfer (NEFT/RTGS/IMPS)');
+  const [notes, setNotes] = useState('');
 
-  const [formData, setFormData] = useState({
-    source_type: 'invoice' as IncomeSourceType,
-    client_name: clients[0]?.name || '',
-    amount: 50000,
-    category: 'Client Retainer',
-    received_at: new Date().toISOString().split('T')[0],
-    payment_method: 'Bank Transfer / UPI',
-    notes: '',
-  });
+  if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.amount) return;
+    if (!amount || Number(amount) <= 0) return;
 
     db.addIncomeEntry({
-      ...formData,
+      source_type: 'direct',
+      client_name: clientName.trim() || undefined,
+      amount: Number(amount),
       currency: 'INR',
+      category: category.trim() || 'Direct Revenue',
+      received_at: receivedAt,
+      payment_method: paymentMethod,
+      notes: notes.trim() || undefined,
       created_by: activeUser.id,
     });
 
@@ -43,102 +46,100 @@ export const IncomeModal: React.FC<IncomeModalProps> = ({
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Record Income Received"
-      subtitle="Log client retainer payments, digital sales, or direct bank credits."
-    >
-      <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block font-semibold uppercase tracking-wider text-[#888888] mb-1">
-              Revenue Stream *
-            </label>
-            <select
-              value={formData.source_type}
-              onChange={(e) => setFormData({ ...formData, source_type: e.target.value as IncomeSourceType })}
-              className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-md text-white focus:outline-none"
-            >
-              <option value="invoice">Client Invoice Payment</option>
-              <option value="product_sale">Digital Product Sale</option>
-              <option value="subscription">SaaS Subscription</option>
-              <option value="other">Other Income</option>
-            </select>
-          </div>
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-[#0D0D11] border border-[#1E1E26] rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+        <div className="flex items-center justify-between border-b border-[#1A1A22] pb-3">
+          <h2 className="text-sm font-bold text-[#F4F4F6]">Record Inflow / Revenue</h2>
+          <button onClick={onClose} className="text-[#606070] hover:text-white p-1 rounded">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
 
+        <form onSubmit={handleSubmit} className="space-y-3.5">
           <div>
-            <label className="block font-semibold uppercase tracking-wider text-[#888888] mb-1">
-              Client / Source Name
-            </label>
+            <label className="hesics-label">Client / Source Name</label>
             <input
               type="text"
-              value={formData.client_name}
-              onChange={(e) => setFormData({ ...formData, client_name: e.target.value })}
-              placeholder="e.g. Anand Kumar"
-              className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-md text-white focus:outline-none"
+              value={clientName}
+              onChange={(e) => setClientName(e.target.value)}
+              placeholder="e.g. Apex Global Technologies"
+              className="hesics-input"
             />
           </div>
-        </div>
 
-        <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="hesics-label">Amount Received (₹) *</label>
+              <input
+                type="number"
+                required
+                min="1"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="100000"
+                className="hesics-input font-mono"
+              />
+            </div>
+            <div>
+              <label className="hesics-label">Received Date *</label>
+              <input
+                type="date"
+                required
+                value={receivedAt}
+                onChange={(e) => setReceivedAt(e.target.value)}
+                className="hesics-input font-mono"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="hesics-label">Category</label>
+              <input
+                type="text"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                placeholder="e.g. Retainer, Project Milestone"
+                className="hesics-input"
+              />
+            </div>
+            <div>
+              <label className="hesics-label">Payment Method</label>
+              <input
+                type="text"
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+                placeholder="e.g. UPI, Bank Transfer"
+                className="hesics-input"
+              />
+            </div>
+          </div>
+
           <div>
-            <label className="block font-semibold uppercase tracking-wider text-[#888888] mb-1">
-              Amount Received (₹ INR) *
-            </label>
-            <input
-              type="number"
-              min="0"
-              required
-              value={formData.amount}
-              onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
-              className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-md text-white font-mono focus:outline-none"
+            <label className="hesics-label">Notes & Reference #</label>
+            <textarea
+              rows={2}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="UTR reference or payment memo..."
+              className="hesics-input resize-none"
             />
           </div>
 
-          <div>
-            <label className="block font-semibold uppercase tracking-wider text-[#888888] mb-1">
-              Date Received *
-            </label>
-            <input
-              type="date"
-              required
-              value={formData.received_at}
-              onChange={(e) => setFormData({ ...formData, received_at: e.target.value })}
-              className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-md text-white focus:outline-none"
-            />
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="hesics-btn-ghost"
+            >
+              Cancel
+            </button>
+            <button type="submit" className="hesics-btn-primary">
+              Record Income
+            </button>
           </div>
-        </div>
-
-        <div>
-          <label className="block font-semibold uppercase tracking-wider text-[#888888] mb-1">
-            Payment Method
-          </label>
-          <input
-            type="text"
-            value={formData.payment_method}
-            onChange={(e) => setFormData({ ...formData, payment_method: e.target.value })}
-            placeholder="e.g. HDFC Bank IMPS / Razorpay"
-            className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-md text-white focus:outline-none"
-          />
-        </div>
-
-        <div className="pt-3 flex justify-end gap-2 border-t border-[#161616]">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-3 py-1.5 text-xs text-[#888888] hover:text-white"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className="notion-button bg-[#1E9EFF] hover:bg-[#0A8AE6] text-white font-medium text-xs"
-          >
-            Record Income
-          </button>
-        </div>
-      </form>
-    </Modal>
+        </form>
+      </div>
+    </div>
   );
 };

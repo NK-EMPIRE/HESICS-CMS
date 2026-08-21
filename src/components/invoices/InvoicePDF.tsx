@@ -1,5 +1,5 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, pdf } from '@react-pdf/renderer';
 import { Invoice, Quotation, Organization } from '../../lib/types';
 
 const styles = StyleSheet.create({
@@ -65,57 +65,54 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
     color: '#111827',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   text: {
     fontSize: 9,
     color: '#4b5563',
-    marginBottom: 2,
+    lineHeight: 1.4,
   },
   table: {
-    width: '100%',
     marginBottom: 24,
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#111827',
-    color: '#ffffff',
-    padding: 8,
-    borderRadius: 4,
+    backgroundColor: '#f3f4f6',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
     fontWeight: 'bold',
   },
   tableRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
-    padding: 8,
-    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 8,
   },
-  colDesc: { width: '55%' },
+  colDesc: { width: '50%' },
   colQty: { width: '15%', textAlign: 'center' },
   colPrice: { width: '15%', textAlign: 'right' },
-  colAmount: { width: '15%', textAlign: 'right' },
+  colAmount: { width: '20%', textAlign: 'right' },
   totals: {
-    width: '40%',
-    marginLeft: 'auto',
-    padding: 10,
-    backgroundColor: '#f9fafb',
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+    width: '45%',
+    alignSelf: 'flex-end',
+    marginBottom: 30,
   },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    paddingVertical: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
   },
   grandTotal: {
-    borderTopWidth: 1,
-    borderTopColor: '#d1d5db',
+    borderTopWidth: 2,
+    borderTopColor: '#1E9EFF',
+    borderBottomWidth: 0,
     paddingTop: 6,
     marginTop: 4,
-    fontWeight: 'bold',
-    color: '#1E9EFF',
   },
   footer: {
     position: 'absolute',
@@ -126,20 +123,24 @@ const styles = StyleSheet.create({
     fontSize: 8,
     color: '#9ca3af',
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    paddingTop: 8,
+    borderTopColor: '#f3f4f6',
+    paddingTop: 12,
   },
 });
 
-interface PDFProps {
+interface InvoicePDFDocProps {
   data: Invoice | Quotation;
   org: Organization;
   type: 'invoice' | 'quotation';
 }
 
-export const InvoicePDFDocument: React.FC<PDFProps> = ({ data, org, type }) => {
+export const InvoicePDFDoc: React.FC<InvoicePDFDocProps> = ({ data, org, type }) => {
   const isInvoice = type === 'invoice';
-  const docNumber = isInvoice ? (data as Invoice).invoice_number : (data as Quotation).quote_number;
+  const docNumber = isInvoice
+    ? (data as Invoice).invoice_number
+    : (data as Quotation).quotation_number || (data as Quotation).quote_number || data.id;
+
+  const items = data.line_items || data.items || [];
 
   return (
     <Document>
@@ -148,22 +149,21 @@ export const InvoicePDFDocument: React.FC<PDFProps> = ({ data, org, type }) => {
         <View style={styles.header}>
           <View>
             <Text style={styles.brandName}>{org.name}</Text>
-            <Text style={styles.brandTagline}>Business Operating System & Advisory</Text>
+            <Text style={styles.brandTagline}>Business Operating System</Text>
           </View>
           <View style={styles.titleContainer}>
             <Text style={styles.docTitle}>{isInvoice ? 'TAX INVOICE' : 'QUOTATION'}</Text>
             <Text style={styles.docNumber}>#{docNumber}</Text>
-            <Text style={styles.text}>Date: {data.created_at.split('T')[0]}</Text>
           </View>
         </View>
 
-        {/* Sender & Recipient Details */}
+        {/* Sender & Client Section */}
         <View style={styles.section}>
           <View style={styles.billBox}>
             <Text style={styles.boxTitle}>Issued By</Text>
             <Text style={styles.entityName}>{org.name}</Text>
-            <Text style={styles.text}>GSTIN: {org.gstin || '33AAAAA0000A1Z5'}</Text>
-            <Text style={styles.text}>Entity: {org.entity_type || 'Pvt Ltd'}</Text>
+            {org.gstin && <Text style={styles.text}>GSTIN: {org.gstin}</Text>}
+            <Text style={styles.text}>Email: hesics1@gmail.com</Text>
           </View>
 
           <View style={styles.billBox}>
@@ -182,11 +182,11 @@ export const InvoicePDFDocument: React.FC<PDFProps> = ({ data, org, type }) => {
             <Text style={styles.colAmount}>Amount (₹)</Text>
           </View>
 
-          {data.line_items.map((item, idx) => (
+          {items.map((item, idx) => (
             <View key={idx} style={styles.tableRow}>
               <Text style={styles.colDesc}>{item.description}</Text>
               <Text style={styles.colQty}>{item.quantity}</Text>
-              <Text style={styles.colPrice}>₹{item.unit_price.toLocaleString('en-IN')}</Text>
+              <Text style={styles.colPrice}>₹{(item.unit_price ?? item.rate ?? 0).toLocaleString('en-IN')}</Text>
               <Text style={styles.colAmount}>₹{item.amount.toLocaleString('en-IN')}</Text>
             </View>
           ))}
@@ -218,3 +218,28 @@ export const InvoicePDFDocument: React.FC<PDFProps> = ({ data, org, type }) => {
     </Document>
   );
 };
+
+export async function generateInvoicePDF(
+  data: Invoice | Quotation,
+  org: Organization,
+  type: 'invoice' | 'quotation'
+) {
+  try {
+    const doc = <InvoicePDFDoc data={data} org={org} type={type} />;
+    const blob = await pdf(doc).toBlob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const num = type === 'invoice'
+      ? (data as Invoice).invoice_number
+      : (data as Quotation).quotation_number || (data as Quotation).quote_number || 'quote';
+    a.download = `${type.toUpperCase()}-${num}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error('Error generating PDF:', err);
+    alert('Unable to generate PDF at this time.');
+  }
+}
