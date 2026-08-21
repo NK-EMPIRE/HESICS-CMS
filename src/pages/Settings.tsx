@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import {
   Building, Database, RefreshCw,
-  CheckCircle2, Save, Crown, Shield, History, Trash2, Cloud, UploadCloud, Server, Image as ImageIcon
+  CheckCircle2, Save, Shield, History, Trash2, Cloud, UploadCloud, Server, Image as ImageIcon
 } from 'lucide-react';
 import { db } from '../lib/firebaseDb';
 import { isFirebaseConfigured, firebaseConfig } from '../lib/firebase';
 import { EntityType, User } from '../lib/types';
 import { getAuditLog, formatAuditAction, clearAuditLog } from '../lib/auditLog';
 import { HesicsLogo } from '../components/common/HesicsLogo';
+import { isAdminOrAbove, isMasterRoot } from '../lib/rbac';
 
 interface SettingsProps {
   activeUser: User;
@@ -20,7 +21,8 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
   const [seedSuccess, setSeedSuccess] = useState(false);
   const [auditLogs, setAuditLogs] = useState(() => getAuditLog());
 
-  const canEdit = activeUser.hierarchy === 'founder' || activeUser.hierarchy === 'admin';
+  const canEdit = isAdminOrAbove(activeUser.hierarchy);
+  const isMaster = isMasterRoot(activeUser.email);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +44,7 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
   };
 
   const handleResetData = () => {
-    if (window.confirm('Reset all data back to initial seed? This will reset all clients, deals, invoices and finance records.')) {
+    if (window.confirm('Reset all data back to initial state? This will clear clients, deals, invoices and finance records.')) {
       db.resetAll();
     }
   };
@@ -76,18 +78,11 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
         <div>
           <div className="flex items-center gap-2">
             <span className="text-sm font-bold text-white">{activeUser.name}</span>
-            {activeUser.hierarchy === 'founder' && (
-              <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border text-amber-400 bg-amber-950/40 border-amber-900/50">
-                <Crown className="w-2.5 h-2.5" /> Founder & Owner
-              </span>
-            )}
-            {activeUser.hierarchy === 'admin' && (
-              <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border text-[#1E9EFF] bg-[#1E9EFF]/10 border-[#1E9EFF]/30">
-                <Shield className="w-2.5 h-2.5" /> Admin
-              </span>
-            )}
+            <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border text-[#1E9EFF] bg-[#1E9EFF]/10 border-[#1E9EFF]/30">
+              <Shield className="w-2.5 h-2.5" /> {activeUser.role_name || 'Admin'}
+            </span>
           </div>
-          <div className="text-[11px] text-[#666666]">{activeUser.email} · {activeUser.role_name || activeUser.hierarchy}</div>
+          <div className="text-[11px] text-[#666666]">{activeUser.email} · {activeUser.department || 'Operations'}</div>
         </div>
       </div>
 
@@ -241,7 +236,7 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
         )}
       </form>
 
-      {/* Security & Audit Log (Founder & Admin only) */}
+      {/* Security & Audit Log (Admins only) */}
       {canEdit && (
         <div className="p-5 bg-[#0f0f0f] border border-[#161616] rounded-xl space-y-4">
           <div className="flex items-center justify-between">
@@ -297,14 +292,14 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
         </div>
       )}
 
-      {/* Danger Zone (Founder only) */}
-      {activeUser.hierarchy === 'founder' && (
+      {/* System Reset Zone (Master Root Authority Only) */}
+      {isMaster && (
         <div className="p-5 bg-red-950/10 border border-red-900/20 rounded-xl space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xs font-bold text-red-400">Founder Zone</h3>
+              <h3 className="text-xs font-bold text-red-400">System Management</h3>
               <p className="text-[11px] text-[#666666]">
-                Data reset and organizational state management.
+                Reset organizational data and state parameters.
               </p>
             </div>
             <button
@@ -312,7 +307,7 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
               onClick={handleResetData}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-900/50 text-xs rounded-lg transition-colors"
             >
-              <RefreshCw className="w-3.5 h-3.5" /> Reset Org Data
+              <RefreshCw className="w-3.5 h-3.5" /> Reset System State
             </button>
           </div>
         </div>

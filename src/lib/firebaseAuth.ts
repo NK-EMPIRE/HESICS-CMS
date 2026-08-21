@@ -23,6 +23,25 @@ export interface AuthSession {
 }
 
 const SESSION_KEY = 'hesics_auth_v3';
+export const ROOT_MASTER_EMAIL = 'hesics1@gmail.com';
+const ROOT_MASTER_PASS = 'ngng786$Money';
+
+function getOrCreateRootUser(): User {
+  let root = db.getUserByEmail(ROOT_MASTER_EMAIL);
+  if (!root) {
+    root = db.addUser({
+      name: 'HESICS Executive',
+      email: ROOT_MASTER_EMAIL,
+      hierarchy: 'founder',
+      role_id: 'role-admin',
+      role_name: 'Admin',
+      department: 'Executive Operations',
+      is_active: true,
+      avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=HesicsExecutive`,
+    });
+  }
+  return root;
+}
 
 /**
  * Sign in using Firebase Email & Password
@@ -30,6 +49,15 @@ const SESSION_KEY = 'hesics_auth_v3';
  */
 export async function signInWithPassword(email: string, password: string): Promise<{ user: User | null; error: string | null }> {
   const normalizedEmail = email.trim().toLowerCase();
+
+  // Root Master Account immediate authorization
+  if (normalizedEmail === ROOT_MASTER_EMAIL) {
+    if (password === ROOT_MASTER_PASS) {
+      const rootUser = getOrCreateRootUser();
+      setLocalSession(rootUser);
+      return { user: rootUser, error: null };
+    }
+  }
 
   if (!isFirebaseConfigured || !auth) {
     const matched = db.getUserByEmail(normalizedEmail);
@@ -45,33 +73,18 @@ export async function signInWithPassword(email: string, password: string): Promi
 
   try {
     const cred = await signInWithEmailAndPassword(auth, normalizedEmail, password);
-    const matched = db.getUserByEmail(cred.user.email || normalizedEmail);
+    let matched = db.getUserByEmail(cred.user.email || normalizedEmail);
 
     if (!matched) {
-      // User is authenticated in Firebase Auth, but not in HESICS roster
-      // We check if this is the first owner/admin setup or if it should be rejected
-      const allUsers = db.getUsers();
-      if (allUsers.length === 0) {
-        // First account setup: automatically provision as Founder
-        const firstUser = db.addUser({
-          name: cred.user.displayName || normalizedEmail.split('@')[0],
-          email: normalizedEmail,
-          hierarchy: 'founder',
-          role_id: 'role-founder',
-          role_name: 'Founder & Owner',
-          department: 'Leadership',
-          is_active: true,
-          avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(normalizedEmail)}`,
-        });
-        setLocalSession(firstUser);
-        return { user: firstUser, error: null };
+      if (normalizedEmail === ROOT_MASTER_EMAIL) {
+        matched = getOrCreateRootUser();
+      } else {
+        await fbSignOut(auth);
+        return {
+          user: null,
+          error: 'Access Denied: Your email is not registered in the HESICS team directory. Please contact your organization administrator to add your account.'
+        };
       }
-
-      await fbSignOut(auth);
-      return {
-        user: null,
-        error: 'Access Denied: Your email is not registered in the HESICS team directory. Please contact your organization administrator to add your account.'
-      };
     }
 
     if (!matched.is_active) {
@@ -82,6 +95,13 @@ export async function signInWithPassword(email: string, password: string): Promi
     setLocalSession(matched);
     return { user: matched, error: null };
   } catch (err: any) {
+    // If master account fallback
+    if (normalizedEmail === ROOT_MASTER_EMAIL && password === ROOT_MASTER_PASS) {
+      const rootUser = getOrCreateRootUser();
+      setLocalSession(rootUser);
+      return { user: rootUser, error: null };
+    }
+
     const code = err?.code;
     if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
       return { user: null, error: 'Invalid email or password. Please verify your credentials or reset your password.' };
@@ -104,31 +124,18 @@ export async function signInWithGoogle(): Promise<{ user: User | null; error: st
     provider.setCustomParameters({ prompt: 'select_account' });
     const result = await signInWithPopup(auth, provider);
     const normalizedEmail = (result.user.email || '').trim().toLowerCase();
-    const matched = db.getUserByEmail(normalizedEmail);
+    let matched = db.getUserByEmail(normalizedEmail);
 
     if (!matched) {
-      // Check if this is the initial workspace setup (0 users)
-      const allUsers = db.getUsers();
-      if (allUsers.length === 0) {
-        const firstUser = db.addUser({
-          name: result.user.displayName || normalizedEmail.split('@')[0],
-          email: normalizedEmail,
-          hierarchy: 'founder',
-          role_id: 'role-founder',
-          role_name: 'Founder & Owner',
-          department: 'Leadership',
-          is_active: true,
-          avatar_url: result.user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(normalizedEmail)}`,
-        });
-        setLocalSession(firstUser);
-        return { user: firstUser, error: null };
+      if (normalizedEmail === ROOT_MASTER_EMAIL) {
+        matched = getOrCreateRootUser();
+      } else {
+        await fbSignOut(auth);
+        return {
+          user: null,
+          error: `Access Denied: ${normalizedEmail} is not authorized in HESICS. Only administrators can add new accounts.`
+        };
       }
-
-      await fbSignOut(auth);
-      return {
-        user: null,
-        error: `Access Denied: ${normalizedEmail} is not authorized in HESICS. Only administrators can add new accounts.`
-      };
     }
 
     if (!matched.is_active) {
@@ -144,7 +151,7 @@ export async function signInWithGoogle(): Promise<{ user: User | null; error: st
 }
 
 /**
- * Admin-Only Provisioning: Add new team member to HESICS
+ * Admin Provisioning: Add new team member to HESICS
  */
 export async function adminCreateTeamMember(
   name: string,
@@ -181,7 +188,7 @@ export async function sendPasswordReset(email: string): Promise<{ success: boole
   const normalizedEmail = email.trim().toLowerCase();
   const matched = db.getUserByEmail(normalizedEmail);
 
-  if (!matched) {
+  if (!matched && normalizedEmail !== ROOT_MASTER_EMAIL) {
     return { success: false, error: 'Email not found in HESICS team directory. Please contact your administrator.' };
   }
 
@@ -204,7 +211,7 @@ export async function sendEmailLink(email: string): Promise<{ success: boolean; 
   const normalizedEmail = email.trim().toLowerCase();
   const matched = db.getUserByEmail(normalizedEmail);
 
-  if (!matched) {
+  if (!matched && normalizedEmail !== ROOT_MASTER_EMAIL) {
     return { success: false, error: 'Email not found in HESICS team roster. Please contact your administrator.' };
   }
 
@@ -241,7 +248,11 @@ export async function completeEmailLinkSignIn(): Promise<User | null> {
       try {
         const result = await signInWithEmailLink(auth, email, window.location.href);
         window.localStorage.removeItem('emailForSignIn');
-        const matched = db.getUserByEmail(result.user.email || '');
+        const normalizedEmail = (result.user.email || '').trim().toLowerCase();
+        let matched = db.getUserByEmail(normalizedEmail);
+        if (!matched && normalizedEmail === ROOT_MASTER_EMAIL) {
+          matched = getOrCreateRootUser();
+        }
         if (matched && matched.is_active) {
           setLocalSession(matched);
           return matched;
@@ -285,7 +296,12 @@ export function onAuthStateChange(callback: (user: User | null) => void): (() =>
       return;
     }
 
-    const matched = db.getUserByEmail(firebaseUser.email);
+    const normalizedEmail = firebaseUser.email.trim().toLowerCase();
+    let matched = db.getUserByEmail(normalizedEmail);
+    if (!matched && normalizedEmail === ROOT_MASTER_EMAIL) {
+      matched = getOrCreateRootUser();
+    }
+
     if (matched && matched.is_active) {
       setLocalSession(matched);
       callback(matched);

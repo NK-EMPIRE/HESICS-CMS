@@ -1,4 +1,4 @@
-﻿import { Organization, User, Role, Client, Deal, Activity, Quotation, Invoice } from './types';
+import { Organization, User, Role, Client, Deal, Activity, Quotation, Invoice } from './types';
 
 export const INITIAL_ORG: Organization = {
   id: 'org-hesics-001',
@@ -9,53 +9,45 @@ export const INITIAL_ORG: Organization = {
   // Brand: Make It Simple. | hesics1@gmail.com | +91 78679 99298
 };
 
-// Role definitions with hierarchy
+// Standard role definitions
 export const INITIAL_ROLES: Role[] = [
-  {
-    id: 'role-founder',
-    org_id: 'org-hesics-001',
-    name: 'Founder & Owner',
-    description: 'Absolute control over all org data, settings, and permissions.',
-    hierarchy_level: 'founder',
-  },
   {
     id: 'role-admin',
     org_id: 'org-hesics-001',
     name: 'Admin',
-    description: 'Full operational access including team management. Cannot remove founder.',
+    description: 'Full administrative access across CRM, Finance, and team operations.',
     hierarchy_level: 'admin',
+  },
+  {
+    id: 'role-officer',
+    org_id: 'org-hesics-001',
+    name: 'Operations Officer',
+    description: 'Elevated operational access: CRM pipeline, quotations, invoices, and activity logs.',
+    hierarchy_level: 'officer',
   },
   {
     id: 'role-sales',
     org_id: 'org-hesics-001',
     name: 'Sales Executive',
-    description: 'CRM access: clients, deals, quotations. No financial data.',
+    description: 'CRM access: clients, deals, and quotations.',
     hierarchy_level: 'employee',
   },
   {
     id: 'role-finance',
     org_id: 'org-hesics-001',
     name: 'Finance Manager',
-    description: 'Invoices and finance module. No CRM write access.',
-    hierarchy_level: 'employee',
-  },
-  {
-    id: 'role-design',
-    org_id: 'org-hesics-001',
-    name: 'Design & Creative',
-    description: 'Client directory read access. Primarily for project context.',
+    description: 'Invoices, taxation, and finance logs.',
     hierarchy_level: 'employee',
   },
   {
     id: 'role-intern',
     org_id: 'org-hesics-001',
     name: 'Intern',
-    description: 'Read-only access to clients and deals pipeline.',
+    description: 'Read-only access to client directory and deal pipeline.',
     hierarchy_level: 'intern',
   },
 ];
 
-// Clean empty collections — zero mock users, zero fake dummy data
 export const INITIAL_USERS: User[] = [];
 export const INITIAL_CLIENTS: Client[] = [];
 export const INITIAL_DEALS: Deal[] = [];

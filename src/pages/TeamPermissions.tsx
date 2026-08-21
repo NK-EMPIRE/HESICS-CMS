@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import {
   ShieldCheck, Users, CheckCircle2, XCircle,
-  UserPlus, Key, Crown, Shield, UserCheck,
-  MoreHorizontal, UserX, Pencil, X, ChevronDown
+  UserPlus, Shield, UserCheck, Trash2,
+  UserX, Pencil, X, ChevronDown, Plus, Briefcase
 } from 'lucide-react';
-import { db } from '../lib/supabase';
-import { PermissionKey, User, UserHierarchy } from '../lib/types';
-import { ROLE_PERMISSIONS, isAdminOrAbove, canManageUser } from '../lib/rbac';
-import { INITIAL_ROLES } from '../lib/mockData';
+import { db } from '../lib/firebaseDb';
+import { PermissionKey, User, UserHierarchy, Role } from '../lib/types';
+import {
+  isAdminOrAbove, canManageUser, getAllowedRoleTiers,
+  isMasterRoot, getPermissionsForRole
+} from '../lib/rbac';
 
 interface TeamPermissionsProps {
   activeUser: User;
@@ -29,16 +31,25 @@ const ALL_PERMISSIONS: { key: PermissionKey; title: string; category: string }[]
 ];
 
 const HierarchyIcon: React.FC<{ h: UserHierarchy; className?: string }> = ({ h, className = 'w-3.5 h-3.5' }) => {
-  if (h === 'founder') return <Crown className={`${className} text-amber-400`} />;
-  if (h === 'admin') return <Shield className={`${className} text-blue-400`} />;
-  return <UserCheck className={`${className} text-slate-400`} />;
+  if (h === 'founder' || h === 'admin') return <Shield className={`${className} text-[#1E9EFF]`} />;
+  if (h === 'officer') return <Briefcase className={`${className} text-indigo-400`} />;
+  return <UserCheck className={`${className} text-emerald-400`} />;
 };
 
 const hierarchyBadge: Record<UserHierarchy, string> = {
-  founder: 'text-amber-400 bg-amber-950/40 border-amber-900/50',
-  admin: 'text-blue-400 bg-blue-950/40 border-blue-900/50',
+  founder: 'text-[#1E9EFF] bg-[#1E9EFF]/10 border-[#1E9EFF]/30',
+  admin: 'text-[#1E9EFF] bg-[#1E9EFF]/10 border-[#1E9EFF]/30',
+  officer: 'text-indigo-400 bg-indigo-950/40 border-indigo-900/50',
   employee: 'text-emerald-400 bg-emerald-950/40 border-emerald-900/50',
   intern: 'text-slate-400 bg-slate-800/40 border-slate-700/50',
+};
+
+const hierarchyDisplayName: Record<UserHierarchy, string> = {
+  founder: 'Admin',
+  admin: 'Admin',
+  officer: 'Officer',
+  employee: 'Employee',
+  intern: 'Intern',
 };
 
 interface InviteFormData {
@@ -49,417 +60,475 @@ interface InviteFormData {
 }
 
 export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) => {
-  const [users, setUsers] = useState(() => db.getUsers());
+  const [users, setUsers] = useState(() => db.getUsers(activeUser.email));
   const roles = db.getRoles();
   const canManage = isAdminOrAbove(activeUser.hierarchy);
+  const isMaster = isMasterRoot(activeUser.email);
+  const allowedTiers = getAllowedRoleTiers(activeUser.hierarchy, activeUser.email);
 
   const [showInviteForm, setShowInviteForm] = useState(false);
+  const [showCreateRoleForm, setShowCreateRoleForm] = useState(false);
+  const [newRoleName, setNewRoleName] = useState('');
+  const [newRoleDesc, setNewRoleDesc] = useState('');
+  const [newRoleTier, setNewRoleTier] = useState<UserHierarchy>('employee');
+
   const [inviteData, setInviteData] = useState<InviteFormData>({
-    name: '', email: '', role_id: 'role-sales', department: '',
+    name: '', email: '', role_id: roles[0]?.id || 'role-admin', department: '',
   });
   const [inviteSuccess, setInviteSuccess] = useState('');
-  const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const refreshUsers = () => setUsers(db.getUsers());
+  const refreshUsers = () => setUsers(db.getUsers(activeUser.email));
+
+  const availableRoles = roles.filter((r) => allowedTiers.includes(r.hierarchy_level));
 
   const handleInvite = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage('');
     if (!inviteData.name || !inviteData.email || !inviteData.role_id) return;
 
     const role = roles.find((r) => r.id === inviteData.role_id);
+    const targetHierarchy = role?.hierarchy_level || 'employee';
+
+    // Verify permission: Only master root can create admin
+    if (targetHierarchy === 'admin' && !isMaster) {
+      setErrorMessage('Permission Denied: Only organization owners can provision new Admins.');
+      return;
+    }
+
     db.addUser({
       name: inviteData.name,
-      email: inviteData.email,
+      email: inviteData.email.trim().toLowerCase(),
       role_id: inviteData.role_id,
-      role_name: role?.name,
-      hierarchy: role?.hierarchy_level || 'employee',
-      department: inviteData.department || undefined,
+      role_name: role?.name || 'Team Member',
+      hierarchy: targetHierarchy,
+      department: inviteData.department || 'Operations',
       is_active: true,
       avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(inviteData.name)}`,
     });
+
     refreshUsers();
     setInviteSuccess(`${inviteData.name} added to the team.`);
-    setInviteData({ name: '', email: '', role_id: 'role-sales', department: '' });
+    setInviteData({ name: '', email: '', role_id: availableRoles[0]?.id || 'role-officer', department: '' });
     setTimeout(() => {
       setInviteSuccess('');
       setShowInviteForm(false);
     }, 2000);
   };
 
-  const handleDeactivate = (userId: string) => {
-    const target = users.find((u) => u.id === userId);
-    if (!target) return;
-    if (target.hierarchy === 'founder') {
-      alert('Cannot deactivate the Founder account.');
+  const handleCreateCustomRole = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newRoleName.trim()) return;
+
+    if (newRoleTier === 'admin' && !isMaster) {
+      alert('Only organization owners can create Admin level roles.');
       return;
     }
-    if (!canManageUser(activeUser.hierarchy, target.hierarchy)) {
-      alert('You cannot manage users at your own or higher level.');
-      return;
-    }
-    db.deactivateUser(userId);
-    refreshUsers();
-    setActiveMenu(null);
+
+    db.addRole({
+      name: newRoleName.trim(),
+      description: newRoleDesc.trim() || undefined,
+      hierarchy_level: newRoleTier,
+    });
+
+    setNewRoleName('');
+    setNewRoleDesc('');
+    setShowCreateRoleForm(false);
   };
 
-  const handleRemove = (userId: string) => {
-    const target = users.find((u) => u.id === userId);
-    if (!target) return;
-    if (target.hierarchy === 'founder') {
-      alert('Cannot remove the Founder account.');
+  const handleDeactivate = (targetUser: User) => {
+    if (!canManageUser(activeUser.hierarchy, targetUser.hierarchy, activeUser.email)) {
+      alert('You do not have permission to modify this user account.');
       return;
     }
-    if (!canManageUser(activeUser.hierarchy, target.hierarchy)) {
-      alert('You cannot remove users at your own or higher level.');
-      return;
-    }
-    if (!confirm(`Remove ${target.name} from the team? This cannot be undone.`)) return;
-    db.removeUser(userId);
+    db.deactivateUser(targetUser.id);
     refreshUsers();
-    setActiveMenu(null);
   };
 
-  const activeUsers = users.filter((u) => u.is_active);
-  const inactiveUsers = users.filter((u) => !u.is_active);
+  const handleReactivate = (targetUser: User) => {
+    if (!canManageUser(activeUser.hierarchy, targetUser.hierarchy, activeUser.email)) {
+      alert('You do not have permission to modify this user account.');
+      return;
+    }
+    db.updateUser(targetUser.id, { is_active: true });
+    refreshUsers();
+  };
 
-  // Group by hierarchy
-  const founders = activeUsers.filter((u) => u.hierarchy === 'founder');
-  const admins = activeUsers.filter((u) => u.hierarchy === 'admin');
-  const employees = activeUsers.filter((u) => u.hierarchy === 'employee');
-  const interns = activeUsers.filter((u) => u.hierarchy === 'intern');
-
-  const roleColumns = [
-    { id: 'role-founder', label: 'Founder' },
-    { id: 'role-admin', label: 'Admin' },
-    { id: 'role-sales', label: 'Sales' },
-    { id: 'role-finance', label: 'Finance' },
-    { id: 'role-design', label: 'Design' },
-    { id: 'role-intern', label: 'Intern' },
-  ];
+  const handleDelete = (targetUser: User) => {
+    if (!canManageUser(activeUser.hierarchy, targetUser.hierarchy, activeUser.email)) {
+      alert('You do not have permission to remove this user.');
+      return;
+    }
+    if (window.confirm(`Permanently remove ${targetUser.name} from the organization roster?`)) {
+      db.removeUser(targetUser.id);
+      refreshUsers();
+    }
+  };
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto">
-
+    <div className="space-y-6 max-w-6xl mx-auto">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 pb-4 border-b border-[#1a1a1a]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1a1a1a]">
         <div>
-          <div className="text-2xl mb-1">👥</div>
-          <h1 className="text-xl font-bold text-white tracking-tight">Team & Permissions</h1>
+          <h1 className="text-xl font-bold text-white tracking-tight font-display">Team & Access Control</h1>
           <p className="text-[11px] text-[#666666] mt-0.5">
-            Org hierarchy · Role-based access control · {activeUsers.length} active members
+            Role-Based Access Control, team roster, and operational permissions.
           </p>
         </div>
+
         {canManage && (
-          <button
-            onClick={() => setShowInviteForm(!showInviteForm)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-[#1E9EFF] hover:bg-[#0A8AE6] text-white text-xs font-semibold rounded-lg transition-colors shrink-0"
-          >
-            <UserPlus className="w-3.5 h-3.5" />
-            Add Member
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowCreateRoleForm(true)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-[#121212] hover:bg-[#181818] border border-[#1e1e1e] text-white text-xs font-medium rounded-lg transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5 text-[#1E9EFF]" /> Create Role
+            </button>
+            <button
+              onClick={() => setShowInviteForm(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-[#1E9EFF] hover:bg-[#0A8AE6] text-white text-xs font-semibold rounded-lg transition-colors shadow-lg shadow-[#1E9EFF]/10"
+            >
+              <UserPlus className="w-3.5 h-3.5" /> Add Team Member
+            </button>
+          </div>
         )}
       </div>
 
-      {/* Invite Form */}
-      {showInviteForm && canManage && (
-        <div className="p-5 bg-[#0f0f0f] border border-[#1e1e1e] rounded-xl space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-white">Add Team Member</h3>
-            <button onClick={() => setShowInviteForm(false)} className="text-[#666666] hover:text-white">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          {inviteSuccess ? (
-            <div className="flex items-center gap-2 p-3 bg-emerald-950/40 border border-emerald-900/50 rounded-lg text-xs text-emerald-400">
-              <CheckCircle2 className="w-4 h-4" /> {inviteSuccess}
+      {/* Add Team Member Modal */}
+      {showInviteForm && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#161616] pb-3">
+              <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                <UserPlus className="w-4 h-4 text-[#1E9EFF]" /> Provision Team Member
+              </h2>
+              <button
+                onClick={() => setShowInviteForm(false)}
+                className="text-[#666666] hover:text-white p-1 rounded"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
-          ) : (
-            <form onSubmit={handleInvite} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+            {errorMessage && (
+              <div className="p-2.5 bg-red-950/40 border border-red-900/50 rounded-lg text-xs text-red-400">
+                {errorMessage}
+              </div>
+            )}
+            {inviteSuccess && (
+              <div className="p-2.5 bg-emerald-950/40 border border-emerald-900/50 rounded-lg text-xs text-emerald-400 flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> {inviteSuccess}
+              </div>
+            )}
+
+            <form onSubmit={handleInvite} className="space-y-3.5">
               <div>
-                <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#666666] mb-1">Full Name *</label>
+                <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#666666] mb-1">
+                  Full Name *
+                </label>
                 <input
+                  type="text"
                   required
                   value={inviteData.name}
-                  onChange={(e) => setInviteData((d) => ({ ...d, name: e.target.value }))}
-                  placeholder="e.g. Ravi Kumar"
-                  className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-xs text-white placeholder-[#444444] focus:outline-none focus:border-[#1E9EFF]/40"
+                  onChange={(e) => setInviteData({ ...inviteData, name: e.target.value })}
+                  placeholder="e.g. Sheik Mydeen"
+                  className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-white text-xs focus:outline-none focus:border-[#1E9EFF]/40"
                 />
               </div>
+
               <div>
-                <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#666666] mb-1">Work Email *</label>
+                <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#666666] mb-1">
+                  Work Email *
+                </label>
                 <input
-                  required
                   type="email"
+                  required
                   value={inviteData.email}
-                  onChange={(e) => setInviteData((d) => ({ ...d, email: e.target.value }))}
-                  placeholder="ravi@hesics.com"
-                  className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-xs text-white placeholder-[#444444] focus:outline-none focus:border-[#1E9EFF]/40"
+                  onChange={(e) => setInviteData({ ...inviteData, email: e.target.value })}
+                  placeholder="name@hesics.com"
+                  className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-white text-xs focus:outline-none focus:border-[#1E9EFF]/40"
                 />
               </div>
+
               <div>
-                <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#666666] mb-1">Role *</label>
-                <div className="relative">
-                  <select
-                    required
-                    value={inviteData.role_id}
-                    onChange={(e) => setInviteData((d) => ({ ...d, role_id: e.target.value }))}
-                    className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-xs text-white focus:outline-none focus:border-[#1E9EFF]/40 appearance-none"
-                  >
-                    {roles
-                      .filter((r) => {
-                        // Founder can assign any role; Admin cannot assign founder or admin
-                        if (activeUser.hierarchy === 'founder') return true;
-                        return r.hierarchy_level !== 'founder' && r.hierarchy_level !== 'admin';
-                      })
-                      .map((r) => (
-                        <option key={r.id} value={r.id}>{r.name}</option>
-                      ))}
-                  </select>
-                  <ChevronDown className="absolute right-2 top-2.5 w-3 h-3 text-[#666666] pointer-events-none" />
-                </div>
+                <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#666666] mb-1">
+                  Assigned Role *
+                </label>
+                <select
+                  value={inviteData.role_id}
+                  onChange={(e) => setInviteData({ ...inviteData, role_id: e.target.value })}
+                  className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-white text-xs focus:outline-none focus:border-[#1E9EFF]/40"
+                >
+                  {availableRoles.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name} ({hierarchyDisplayName[r.hierarchy_level] || r.hierarchy_level})
+                    </option>
+                  ))}
+                </select>
               </div>
+
               <div>
-                <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#666666] mb-1">Department</label>
+                <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#666666] mb-1">
+                  Department
+                </label>
                 <input
+                  type="text"
                   value={inviteData.department}
-                  onChange={(e) => setInviteData((d) => ({ ...d, department: e.target.value }))}
-                  placeholder="e.g. Sales, Design..."
-                  className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-xs text-white placeholder-[#444444] focus:outline-none focus:border-[#1E9EFF]/40"
+                  onChange={(e) => setInviteData({ ...inviteData, department: e.target.value })}
+                  placeholder="e.g. Sales, Marketing, Tech"
+                  className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-white text-xs focus:outline-none focus:border-[#1E9EFF]/40"
                 />
               </div>
-              <div className="sm:col-span-2 flex justify-end gap-2 pt-1">
+
+              <div className="flex items-center justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowInviteForm(false)}
-                  className="px-4 py-1.5 text-xs text-[#888888] hover:text-white border border-[#333333] rounded-lg transition-colors"
+                  className="px-3 py-1.5 text-xs text-[#666666] hover:text-white"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 bg-[#1E9EFF] hover:bg-[#0A8AE6] text-white text-xs font-semibold rounded-lg transition-colors"
+                  className="px-4 py-2 bg-[#1E9EFF] hover:bg-[#0A8AE6] text-white text-xs font-semibold rounded-lg transition-colors"
                 >
-                  Add to Team
+                  Provision User
                 </button>
               </div>
             </form>
-          )}
+          </div>
         </div>
       )}
 
-      {/* Org Hierarchy View */}
-      <div className="space-y-4">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-[#555555]">Organisation Hierarchy</p>
+      {/* Create Custom Role Modal */}
+      {showCreateRoleForm && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#161616] pb-3">
+              <h2 className="text-sm font-bold text-white flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-[#1E9EFF]" /> Create Custom Role
+              </h2>
+              <button
+                onClick={() => setShowCreateRoleForm(false)}
+                className="text-[#666666] hover:text-white p-1 rounded"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
-        {/* Founder tier */}
-        {founders.map((u) => (
-          <div key={u.id} className="p-4 bg-[#0f0f0f] border border-amber-900/30 rounded-xl flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <img src={u.avatar_url} alt={u.name} className="w-9 h-9 rounded-full ring-2 ring-amber-500/30" />
+            <form onSubmit={handleCreateCustomRole} className="space-y-3.5">
               <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-white">{u.name}</span>
-                  <span className={`flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${hierarchyBadge[u.hierarchy]}`}>
-                    <Crown className="w-2.5 h-2.5" /> Founder & Owner
-                  </span>
-                </div>
-                <div className="text-[11px] text-[#666666] mt-0.5">{u.email}</div>
+                <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#666666] mb-1">
+                  Role Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newRoleName}
+                  onChange={(e) => setNewRoleName(e.target.value)}
+                  placeholder="e.g. Senior Creative Lead"
+                  className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-white text-xs focus:outline-none focus:border-[#1E9EFF]/40"
+                />
               </div>
-            </div>
-            <div className="text-[10px] text-[#555555]">All permissions</div>
-          </div>
-        ))}
 
-        {/* Vertical connector + Admin tier */}
-        {admins.length > 0 && (
-          <div className="ml-4 pl-4 border-l border-[#1e1e1e] space-y-2">
-            <p className="text-[10px] text-[#555555] uppercase font-semibold tracking-wider">Admins</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {admins.map((u) => (
-                <UserCard key={u.id} user={u} activeUser={activeUser} canManage={canManage}
-                  onDeactivate={handleDeactivate} onRemove={handleRemove}
-                  activeMenu={activeMenu} setActiveMenu={setActiveMenu}
+              <div>
+                <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#666666] mb-1">
+                  Hierarchy Tier *
+                </label>
+                <select
+                  value={newRoleTier}
+                  onChange={(e) => setNewRoleTier(e.target.value as UserHierarchy)}
+                  className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-white text-xs focus:outline-none focus:border-[#1E9EFF]/40"
+                >
+                  {allowedTiers.map((t) => (
+                    <option key={t} value={t}>
+                      {hierarchyDisplayName[t] || t} Tier
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-semibold uppercase tracking-wider text-[#666666] mb-1">
+                  Description
+                </label>
+                <input
+                  type="text"
+                  value={newRoleDesc}
+                  onChange={(e) => setNewRoleDesc(e.target.value)}
+                  placeholder="Operational responsibilities and scope"
+                  className="w-full px-3 py-2 bg-[#080808] border border-[#1e1e1e] rounded-lg text-white text-xs focus:outline-none focus:border-[#1E9EFF]/40"
                 />
-              ))}
-            </div>
-          </div>
-        )}
+              </div>
 
-        {/* Employees tier */}
-        {employees.length > 0 && (
-          <div className="ml-4 pl-4 border-l border-[#1e1e1e] space-y-2">
-            <p className="text-[10px] text-[#555555] uppercase font-semibold tracking-wider">Employees</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {employees.map((u) => (
-                <UserCard key={u.id} user={u} activeUser={activeUser} canManage={canManage}
-                  onDeactivate={handleDeactivate} onRemove={handleRemove}
-                  activeMenu={activeMenu} setActiveMenu={setActiveMenu}
-                />
-              ))}
-            </div>
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateRoleForm(false)}
+                  className="px-3 py-1.5 text-xs text-[#666666] hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-[#1E9EFF] hover:bg-[#0A8AE6] text-white text-xs font-semibold rounded-lg transition-colors"
+                >
+                  Create Role
+                </button>
+              </div>
+            </form>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Interns tier */}
-        {interns.length > 0 && (
-          <div className="ml-8 pl-4 border-l border-[#1e1e1e] space-y-2">
-            <p className="text-[10px] text-[#555555] uppercase font-semibold tracking-wider">Interns</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {interns.map((u) => (
-                <UserCard key={u.id} user={u} activeUser={activeUser} canManage={canManage}
-                  onDeactivate={handleDeactivate} onRemove={handleRemove}
-                  activeMenu={activeMenu} setActiveMenu={setActiveMenu}
-                />
-              ))}
-            </div>
+      {/* Team Roster Table */}
+      <div className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-2xl overflow-hidden shadow-2xl">
+        <div className="p-4 border-b border-[#161616] flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4 text-[#1E9EFF]" />
+            <h2 className="text-xs font-bold text-white">Organization Members ({users.length})</h2>
           </div>
-        )}
-
-        {/* Empty state */}
-        {founders.length === 0 && admins.length === 0 && employees.length === 0 && interns.length === 0 && (
-          <div className="py-12 text-center border border-dashed border-[#161616] rounded-xl">
-            <p className="text-xs text-[#666666]">No active team members.</p>
-          </div>
-        )}
-
-        {/* Inactive members */}
-        {inactiveUsers.length > 0 && (
-          <div className="pt-2">
-            <p className="text-[10px] text-[#444444] uppercase font-semibold tracking-wider mb-2">Deactivated</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {inactiveUsers.map((u) => (
-                <div key={u.id} className="p-3 bg-[#181818] border border-[#222222] rounded-lg flex items-center gap-2.5 opacity-50">
-                  <img src={u.avatar_url} alt={u.name} className="w-7 h-7 rounded-full grayscale" />
-                  <div>
-                    <div className="text-xs font-medium text-[#666666]">{u.name}</div>
-                    <div className="text-[10px] text-[#444444]">Deactivated</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Permission Matrix */}
-      <div className="space-y-3">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-[#555555]">Role Permission Matrix</p>
-          <p className="text-[10px] text-[#444444] mt-0.5">Evaluated at runtime — roles determine what each member can access</p>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="border-b border-[#161616]">
-                <th className="py-2 pr-4 text-[10px] font-semibold uppercase tracking-wider text-[#666666] min-w-[160px]">Permission</th>
-                {roleColumns.map((rc) => (
-                  <th key={rc.id} className="py-2 px-3 text-center text-[10px] font-semibold uppercase tracking-wider text-[#666666]">
-                    {rc.label}
-                  </th>
-                ))}
+          <table className="w-full text-left text-xs">
+            <thead className="bg-[#0a0a0a] text-[#555555] border-b border-[#161616] uppercase text-[10px] font-semibold tracking-wider">
+              <tr>
+                <th className="p-3.5">Member</th>
+                <th className="p-3.5">Role</th>
+                <th className="p-3.5">Department</th>
+                <th className="p-3.5">Status</th>
+                <th className="p-3.5 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody>
-              {/* Group by category */}
-              {['CRM', 'Finance', 'Admin'].map((category) => (
-                <React.Fragment key={category}>
-                  <tr>
-                    <td colSpan={roleColumns.length + 1} className="pt-4 pb-1">
-                      <span className="text-[9px] font-bold uppercase tracking-widest text-[#1E9EFF]">{category}</span>
-                    </td>
-                  </tr>
-                  {ALL_PERMISSIONS.filter((p) => p.category === category).map((p) => (
-                    <tr key={p.key} className="border-b border-[#1e1e1e] hover:bg-[#0d0d0d] transition-colors">
-                      <td className="py-2 pr-4">
-                        <div className="text-[11px] font-medium text-[#cccccc]">{p.title}</div>
-                        <div className="text-[9px] font-mono text-[#444444]">{p.key}</div>
+            <tbody className="divide-y divide-[#141414]">
+              {users.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="p-8 text-center text-[#555555]">
+                    No team members provisioned yet.
+                  </td>
+                </tr>
+              ) : (
+                users.map((u) => {
+                  const isManageable = canManageUser(activeUser.hierarchy, u.hierarchy, activeUser.email);
+                  const isSelf = u.id === activeUser.id;
+
+                  return (
+                    <tr key={u.id} className="hover:bg-[#111111] transition-colors">
+                      <td className="p-3.5">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={u.avatar_url}
+                            alt={u.name}
+                            className="w-8 h-8 rounded-full bg-[#181818] ring-1 ring-[#1e1e1e]"
+                          />
+                          <div>
+                            <div className="font-semibold text-white flex items-center gap-1.5">
+                              {u.name}
+                              {isSelf && (
+                                <span className="text-[9px] text-[#1E9EFF] font-normal">(You)</span>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-[#555555]">{u.email}</div>
+                          </div>
+                        </div>
                       </td>
-                      {roleColumns.map((rc) => {
-                        const isGranted = (ROLE_PERMISSIONS[rc.id] || []).includes(p.key);
-                        return (
-                          <td key={rc.id} className="py-2 px-3 text-center">
-                            {isGranted ? (
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 inline" />
+
+                      <td className="p-3.5">
+                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${hierarchyBadge[u.hierarchy]}`}>
+                          <HierarchyIcon h={u.hierarchy} />
+                          {u.role_name || hierarchyDisplayName[u.hierarchy]}
+                        </span>
+                      </td>
+
+                      <td className="p-3.5 text-[#888888] font-mono text-[11px]">
+                        {u.department || 'Operations'}
+                      </td>
+
+                      <td className="p-3.5">
+                        {u.is_active ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-400 bg-emerald-950/30 px-2 py-0.5 rounded-full border border-emerald-900/40">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Active
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-red-400 bg-red-950/30 px-2 py-0.5 rounded-full border border-red-900/40">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-400" /> Deactivated
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="p-3.5 text-right">
+                        {isManageable && !isSelf ? (
+                          <div className="inline-flex items-center gap-1.5">
+                            {u.is_active ? (
+                              <button
+                                onClick={() => handleDeactivate(u)}
+                                className="p-1.5 text-[#666666] hover:text-amber-400 hover:bg-amber-950/20 rounded transition-colors"
+                                title="Deactivate Account"
+                              >
+                                <UserX className="w-3.5 h-3.5" />
+                              </button>
                             ) : (
-                              <XCircle className="w-3.5 h-3.5 text-[#333333] inline" />
+                              <button
+                                onClick={() => handleReactivate(u)}
+                                className="p-1.5 text-[#666666] hover:text-emerald-400 hover:bg-emerald-950/20 rounded transition-colors"
+                                title="Reactivate Account"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                              </button>
                             )}
-                          </td>
-                        );
-                      })}
+                            <button
+                              onClick={() => handleDelete(u)}
+                              className="p-1.5 text-[#666666] hover:text-red-400 hover:bg-red-950/20 rounded transition-colors"
+                              title="Permanently Delete User"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-[11px] text-[#444444]">—</span>
+                        )}
+                      </td>
                     </tr>
-                  ))}
-                </React.Fragment>
-              ))}
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
       </div>
-    </div>
-  );
-};
 
-// Reusable user card component
-const UserCard: React.FC<{
-  user: User;
-  activeUser: User;
-  canManage: boolean;
-  onDeactivate: (id: string) => void;
-  onRemove: (id: string) => void;
-  activeMenu: string | null;
-  setActiveMenu: (id: string | null) => void;
-}> = ({ user, activeUser, canManage, onDeactivate, onRemove, activeMenu, setActiveMenu }) => {
-  const badge = hierarchyBadge[user.hierarchy];
-  const isSelf = user.id === activeUser.id;
-  const canAct = canManage && !isSelf && canManageUser(activeUser.hierarchy, user.hierarchy);
+      {/* Role Permission Matrix Card */}
+      <div className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-2xl p-5 space-y-4 shadow-2xl">
+        <h2 className="text-xs font-bold text-white flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-[#1E9EFF]" /> Role Permission Matrix
+        </h2>
+        <p className="text-[11px] text-[#666666]">
+          Configured capability boundaries per organization role.
+        </p>
 
-  return (
-    <div className="p-3 bg-[#0f0f0f] border border-[#161616] rounded-lg flex items-center justify-between hover:border-[#383838] transition-colors relative">
-      <div className="flex items-center gap-2.5">
-        <img src={user.avatar_url} alt={user.name} className="w-8 h-8 rounded-full" />
-        <div>
-          <div className="text-xs font-semibold text-white leading-tight flex items-center gap-1.5">
-            {user.name}
-            {isSelf && <span className="text-[9px] text-[#666666]">(you)</span>}
-          </div>
-          <div className="text-[10px] text-[#666666] mt-0.5">{user.role_name || user.hierarchy}</div>
-          {user.department && (
-            <div className="text-[9px] text-[#555555]">{user.department}</div>
-          )}
-        </div>
-      </div>
-
-      <div className="flex items-center gap-1.5">
-        <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border ${badge}`}>
-          {user.hierarchy}
-        </span>
-        {canAct && (
-          <div className="relative">
-            <button
-              onClick={() => setActiveMenu(activeMenu === user.id ? null : user.id)}
-              className="p-1 text-[#555555] hover:text-white hover:bg-[#161616] rounded transition-colors"
-            >
-              <MoreHorizontal className="w-3.5 h-3.5" />
-            </button>
-            {activeMenu === user.id && (
-              <div className="absolute right-0 top-7 z-20 bg-[#1a1a1a] border border-[#333333] rounded-lg shadow-xl shadow-black/50 min-w-[130px] py-1 text-xs">
-                <button
-                  onClick={() => onDeactivate(user.id)}
-                  className="w-full flex items-center gap-2 px-3 py-1.5 text-[#aaaaaa] hover:bg-[#161616] hover:text-white transition-colors text-left"
-                >
-                  <UserX className="w-3.5 h-3.5" /> Deactivate
-                </button>
-                <button
-                  onClick={() => onRemove(user.id)}
-                  className="w-full flex items-center gap-2 px-3 py-1.5 text-red-400 hover:bg-[#161616] transition-colors text-left"
-                >
-                  <X className="w-3.5 h-3.5" /> Remove
-                </button>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          {roles.map((r) => {
+            const perms = getPermissionsForRole(r.id);
+            return (
+              <div key={r.id} className="p-4 bg-[#080808] border border-[#161616] rounded-xl space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-white">{r.name}</span>
+                  <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${hierarchyBadge[r.hierarchy_level]}`}>
+                    {hierarchyDisplayName[r.hierarchy_level] || r.hierarchy_level}
+                  </span>
+                </div>
+                <p className="text-[10px] text-[#666666] min-h-[28px] leading-relaxed">
+                  {r.description || 'Standard role permissions.'}
+                </p>
+                <div className="pt-2 border-t border-[#141414] text-[10px] text-[#888888] flex items-center justify-between">
+                  <span>Authorized Actions:</span>
+                  <span className="font-mono text-[#1E9EFF]">{perms.length}</span>
+                </div>
               </div>
-            )}
-          </div>
-        )}
+            );
+          })}
+        </div>
       </div>
     </div>
   );

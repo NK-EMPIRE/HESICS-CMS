@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   LayoutDashboard, Users, Kanban, DollarSign, FileText, Receipt,
   ShieldCheck, Settings, LogOut, ChevronLeft, ChevronRight,
-  Crown, Shield, UserCheck
+  Shield, UserCheck, Briefcase
 } from 'lucide-react';
 import { db } from '../../lib/firebaseDb';
 import { User, PermissionKey, UserHierarchy } from '../../lib/types';
@@ -20,10 +20,22 @@ interface AppShellProps {
 
 const HierarchyIcon: React.FC<{ h: UserHierarchy }> = ({ h }) => {
   switch (h) {
-    case 'founder': return <Crown className="w-3 h-3 text-amber-400" />;
-    case 'admin': return <Shield className="w-3 h-3 text-[#1E9EFF]" />;
-    default: return <UserCheck className="w-3 h-3 text-emerald-400" />;
+    case 'founder':
+    case 'admin':
+      return <Shield className="w-3 h-3 text-[#1E9EFF]" />;
+    case 'officer':
+      return <Briefcase className="w-3 h-3 text-indigo-400" />;
+    default:
+      return <UserCheck className="w-3 h-3 text-emerald-400" />;
   }
+};
+
+const displayTierName = (h: UserHierarchy, roleName?: string) => {
+  if (roleName) return roleName;
+  if (h === 'founder' || h === 'admin') return 'Admin';
+  if (h === 'officer') return 'Officer';
+  if (h === 'employee') return 'Employee';
+  return 'Intern';
 };
 
 export const AppShell: React.FC<AppShellProps> = ({
@@ -154,7 +166,7 @@ export const AppShell: React.FC<AppShellProps> = ({
                   </div>
                   <div className="text-[9px] text-[#666666] flex items-center gap-1 mt-0.5 truncate">
                     <HierarchyIcon h={activeUser.hierarchy} />
-                    <span className="capitalize font-mono">{activeUser.role_name || activeUser.hierarchy}</span>
+                    <span className="capitalize font-mono">{displayTierName(activeUser.hierarchy, activeUser.role_name)}</span>
                   </div>
                 </div>
               </div>
@@ -200,7 +212,7 @@ export const AppShell: React.FC<AppShellProps> = ({
               />
               <div className="hidden sm:block">
                 <span className="text-xs font-medium text-white">{activeUser.name}</span>
-                <span className="ml-1 text-[10px] text-[#555555] capitalize font-mono">· {activeUser.hierarchy}</span>
+                <span className="ml-1 text-[10px] text-[#555555] capitalize font-mono">· {displayTierName(activeUser.hierarchy, activeUser.role_name)}</span>
               </div>
             </div>
             <button

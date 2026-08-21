@@ -9,8 +9,8 @@ export interface Organization {
   created_at: string;
 }
 
-// Hierarchy: founder > admin > employee > intern
-export type UserHierarchy = 'founder' | 'admin' | 'employee' | 'intern';
+// Hierarchy: founder (stealth master root) > admin > officer > employee > intern
+export type UserHierarchy = 'founder' | 'admin' | 'officer' | 'employee' | 'intern';
 
 export interface User {
   id: string;
@@ -62,106 +62,125 @@ export interface Client {
   org_id: string;
   name: string;
   company_name?: string;
-  phone?: string;
   email?: string;
+  phone?: string;
   source: ClientSource;
   status: ClientStatus;
+  notes?: string;
+  tags?: string[];
   owner_id?: string;
+  total_revenue?: number;
   created_at: string;
   updated_at: string;
 }
 
-export type DealStage = 'new' | 'contacted' | 'quoted' | 'negotiation' | 'won' | 'lost';
+export type DealStage = 'new' | 'contacted' | 'quoted' | 'discovery' | 'proposal' | 'negotiation' | 'won' | 'lost';
 
 export interface Deal {
   id: string;
   org_id: string;
   client_id: string;
   client_name?: string;
-  company_name?: string;
   title: string;
   value: number;
-  currency: string;
-  stage: DealStage;
-  probability: number;
-  expected_close_date?: string;
+  currency?: string;
   owner_id?: string;
+  stage: DealStage;
+  expected_close_date?: string;
+  probability?: number;
   owner_name?: string;
+  notes?: string;
   created_at: string;
   updated_at: string;
 }
 
-export type ActivityType = 'call' | 'dm' | 'email' | 'meeting';
+export type ActivityType = 'call' | 'meeting' | 'email' | 'note' | 'task' | 'dm';
 
 export interface Activity {
   id: string;
   org_id: string;
-  client_id?: string;
+  client_id: string;
   client_name?: string;
   deal_id?: string;
   deal_title?: string;
   type: ActivityType;
+  title?: string;
+  notes?: string;
   outcome?: string;
-  follow_up_date?: string;
-  author_id: string;
+  author_id?: string;
   author_name?: string;
+  due_date?: string;
+  follow_up_date?: string;
+  is_completed?: boolean;
   created_at: string;
 }
+
+export type QuotationStatus = 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired';
 
 export interface LineItem {
   id: string;
   description: string;
   quantity: number;
   unit_price: number;
+  rate?: number;
   tax_rate: number;
   amount: number;
+  hsn_code?: string;
 }
-
-export type QuotationStatus = 'draft' | 'sent' | 'accepted' | 'rejected';
 
 export interface Quotation {
   id: string;
   org_id: string;
   client_id: string;
-  client_name?: string;
+  client_name: string;
   client_email?: string;
   deal_id?: string;
-  quote_number: string;
+  quote_number?: string;
+  quotation_number?: string;
+  issue_date?: string;
+  expiry_date?: string;
+  valid_until?: string;
+  status: QuotationStatus;
+  items?: LineItem[];
   line_items: LineItem[];
   subtotal: number;
+  tax_rate?: number;
   tax: number;
+  discount?: number;
   total: number;
-  status: QuotationStatus;
-  valid_until?: string;
-  pdf_url?: string;
+  notes?: string;
+  terms?: string;
   created_at: string;
 }
 
-export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue';
+export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
 
 export interface Invoice {
   id: string;
   org_id: string;
   client_id: string;
-  client_name?: string;
+  client_name: string;
   client_email?: string;
-  deal_id?: string;
   quotation_id?: string;
+  deal_id?: string;
   invoice_number: string;
+  issue_date?: string;
+  due_date: string;
+  paid_at?: string;
+  status: InvoiceStatus;
+  items?: LineItem[];
   line_items: LineItem[];
   subtotal: number;
+  tax_rate?: number;
   tax: number;
+  discount?: number;
   total: number;
-  status: InvoiceStatus;
-  due_date?: string;
-  paid_at?: string;
-  pdf_url?: string;
+  notes?: string;
+  terms?: string;
   created_at: string;
 }
 
-// Phase 2 Finance Types
-export type ExpenseCategory = 'software' | 'marketing' | 'salary' | 'travel' | 'equipment' | 'other';
-export type IncomeSourceType = 'invoice' | 'product_sale' | 'subscription' | 'other';
+export type IncomeSourceType = 'invoice' | 'direct' | 'other';
 
 export interface IncomeEntry {
   id: string;
@@ -171,7 +190,7 @@ export interface IncomeEntry {
   client_name?: string;
   amount: number;
   currency: string;
-  category?: string;
+  category: string;
   received_at: string;
   payment_method?: string;
   notes?: string;
@@ -179,32 +198,28 @@ export interface IncomeEntry {
   created_at: string;
 }
 
+export type ExpenseCategory =
+  | 'rent'
+  | 'salary'
+  | 'software'
+  | 'marketing'
+  | 'travel'
+  | 'office'
+  | 'legal'
+  | 'other';
+
 export interface ExpenseEntry {
   id: string;
   org_id: string;
-  category: ExpenseCategory;
-  vendor?: string;
+  category: string | ExpenseCategory;
   amount: number;
   currency: string;
+  vendor?: string;
   gst_paid: number;
   is_recurring?: boolean;
-  receipt_url?: string;
-  spent_at: string;
+  date?: string;
+  spent_at?: string;
   notes?: string;
   created_by?: string;
-  created_at: string;
-}
-
-export interface TaxRecord {
-  id: string;
-  org_id: string;
-  period: string;
-  gross_income: number;
-  total_expenses: number;
-  taxable_income: number;
-  gst_collected: number;
-  gst_paid: number;
-  gst_payable: number;
-  status: 'draft' | 'filed';
   created_at: string;
 }
