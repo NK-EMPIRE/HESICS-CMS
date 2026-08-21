@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, Sparkles, DollarSign, Calendar, Target, User } from 'lucide-react';
+import { X, Sparkles, DollarSign, Target, User } from 'lucide-react';
 import { db } from '../../lib/firebaseDb';
 import { Deal, DealStage, User as UserType } from '../../lib/types';
+import { DatePicker } from '../common/DatePicker';
 
 interface DealModalProps {
   isOpen: boolean;
@@ -135,11 +136,10 @@ export const DealModal: React.FC<DealModalProps> = ({
 
           <div>
             <label className="hesics-label">Expected Close Date</label>
-            <input
-              type="date"
+            <DatePicker
               value={closeDate}
-              onChange={(e) => setCloseDate(e.target.value)}
-              className="hesics-input font-mono"
+              onChange={setCloseDate}
+              placeholder="Select target close date..."
             />
           </div>
 

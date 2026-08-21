@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Plus, Trash2, FileText, User } from 'lucide-react';
 import { db } from '../../lib/firebaseDb';
 import { Quotation, QuotationStatus, LineItem, User as UserType } from '../../lib/types';
+import { DatePicker } from '../common/DatePicker';
 
 interface QuotationModalProps {
   isOpen: boolean;
@@ -147,12 +148,10 @@ export const QuotationModal: React.FC<QuotationModalProps> = ({
 
             <div>
               <label className="hesics-label">Valid Until</label>
-              <input
-                type="date"
-                required
+              <DatePicker
                 value={validUntil}
-                onChange={(e) => setValidUntil(e.target.value)}
-                className="hesics-input font-mono"
+                onChange={setValidUntil}
+                placeholder="Select expiry date..."
               />
             </div>
           </div>

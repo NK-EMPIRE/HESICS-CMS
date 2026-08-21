@@ -30,15 +30,17 @@ function getOrCreateRootUser(): User {
   let root = db.getUserByEmail(ROOT_MASTER_EMAIL);
   if (!root) {
     root = db.addUser({
-      name: 'HESICS Executive',
+      name: 'CHIEF',
       email: ROOT_MASTER_EMAIL,
       hierarchy: 'founder',
       role_id: 'role-admin',
       role_name: 'Admin',
       department: 'Executive Operations',
       is_active: true,
-      avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=HesicsExecutive`,
+      avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=HesicsChief`,
     });
+  } else if (root.name !== 'CHIEF') {
+    root = db.updateUser(root.id, { name: 'CHIEF' }) || root;
   }
   return root;
 }

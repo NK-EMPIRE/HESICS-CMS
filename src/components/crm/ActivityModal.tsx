@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, Clock, Calendar, CheckSquare, MessageSquare } from 'lucide-react';
+import { X, Clock, CheckSquare, MessageSquare } from 'lucide-react';
 import { db } from '../../lib/firebaseDb';
 import { ActivityType, User as UserType } from '../../lib/types';
+import { DatePicker } from '../common/DatePicker';
 
 interface ActivityModalProps {
   isOpen: boolean;
@@ -100,11 +101,10 @@ export const ActivityModal: React.FC<ActivityModalProps> = ({
 
             <div>
               <label className="hesics-label">Follow-Up Date</label>
-              <input
-                type="date"
+              <DatePicker
                 value={followUpDate}
-                onChange={(e) => setFollowUpDate(e.target.value)}
-                className="hesics-input font-mono"
+                onChange={setFollowUpDate}
+                placeholder="Next follow-up..."
               />
             </div>
           </div>

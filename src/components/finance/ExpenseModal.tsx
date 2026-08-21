@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, DollarSign, Calendar, Tag, User } from 'lucide-react';
+import { X, DollarSign, Tag, User } from 'lucide-react';
 import { db } from '../../lib/firebaseDb';
 import { ExpenseCategory, User as UserType } from '../../lib/types';
+import { DatePicker } from '../common/DatePicker';
 
 interface ExpenseModalProps {
   isOpen: boolean;
@@ -111,12 +112,10 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
             </div>
             <div>
               <label className="hesics-label">Expense Date *</label>
-              <input
-                type="date"
-                required
+              <DatePicker
                 value={spentAt}
-                onChange={(e) => setSpentAt(e.target.value)}
-                className="hesics-input font-mono"
+                onChange={setSpentAt}
+                placeholder="Select date..."
               />
             </div>
           </div>

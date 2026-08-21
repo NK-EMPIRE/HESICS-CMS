@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, DollarSign, Calendar, Tag, User } from 'lucide-react';
+import { X, DollarSign, Tag, User } from 'lucide-react';
 import { db } from '../../lib/firebaseDb';
 import { IncomeSourceType, User as UserType } from '../../lib/types';
+import { DatePicker } from '../common/DatePicker';
 
 interface IncomeModalProps {
   isOpen: boolean;
@@ -82,12 +83,10 @@ export const IncomeModal: React.FC<IncomeModalProps> = ({
             </div>
             <div>
               <label className="hesics-label">Received Date *</label>
-              <input
-                type="date"
-                required
+              <DatePicker
                 value={receivedAt}
-                onChange={(e) => setReceivedAt(e.target.value)}
-                className="hesics-input font-mono"
+                onChange={setReceivedAt}
+                placeholder="Select date..."
               />
             </div>
           </div>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Plus, Trash2, Receipt, User } from 'lucide-react';
 import { db } from '../../lib/firebaseDb';
 import { Invoice, InvoiceStatus, LineItem, User as UserType } from '../../lib/types';
+import { DatePicker } from '../common/DatePicker';
 
 interface InvoiceModalProps {
   isOpen: boolean;
@@ -139,12 +140,10 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
             <div>
               <label className="hesics-label">Payment Due Date</label>
-              <input
-                type="date"
-                required
+              <DatePicker
                 value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="hesics-input font-mono"
+                onChange={setDueDate}
+                placeholder="Select due date..."
               />
             </div>
           </div>

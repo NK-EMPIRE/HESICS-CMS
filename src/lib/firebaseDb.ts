@@ -22,18 +22,18 @@ import {
 const STORAGE_PREFIX = 'hesics_v3_';
 export const ROOT_MASTER_EMAIL = 'hesics1@gmail.com';
 
-// Permanent Immutable Root Account
+// Permanent Immutable Root Account - CHIEF
 export const ROOT_MASTER_USER: User = {
   id: 'usr-root-hesics',
   org_id: 'org-hesics-001',
-  name: 'HESICS Executive',
+  name: 'CHIEF',
   email: ROOT_MASTER_EMAIL,
   hierarchy: 'founder',
   role_id: 'role-admin',
   role_name: 'Admin',
   department: 'Executive Operations',
   is_active: true,
-  avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=HesicsExecutive',
+  avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=HesicsChief',
   created_at: new Date('2026-01-01T00:00:00.000Z').toISOString(),
 };
 
@@ -67,7 +67,7 @@ export class FirebaseDataStore {
   private expenseEntries: ExpenseEntry[] = getStorageItem('expense_entries', []);
 
   constructor() {
-    // Ensure root user is always present
+    // Ensure root user is always present and updated to CHIEF
     this.ensureRootMasterPresent();
 
     if (isFirebaseConfigured && dbInstance) {
@@ -76,11 +76,13 @@ export class FirebaseDataStore {
   }
 
   private ensureRootMasterPresent() {
-    const exists = this.users.some(u => u.email.toLowerCase() === ROOT_MASTER_EMAIL);
-    if (!exists) {
+    const idx = this.users.findIndex(u => u.email.toLowerCase() === ROOT_MASTER_EMAIL);
+    if (idx === -1) {
       this.users = [ROOT_MASTER_USER, ...this.users];
-      setStorageItem('users', this.users);
+    } else {
+      this.users[idx] = { ...this.users[idx], name: 'CHIEF', hierarchy: 'founder', is_active: true };
     }
+    setStorageItem('users', this.users);
   }
 
   /**
@@ -106,7 +108,7 @@ export class FirebaseDataStore {
         if (!snapshot.empty) {
           const remoteUsers = snapshot.docs.map(d => d.data() as User);
           const hasRoot = remoteUsers.some(u => u.email.toLowerCase() === ROOT_MASTER_EMAIL);
-          this.users = hasRoot ? remoteUsers : [ROOT_MASTER_USER, ...remoteUsers];
+          this.users = hasRoot ? remoteUsers.map(u => u.email.toLowerCase() === ROOT_MASTER_EMAIL ? { ...u, name: 'CHIEF' } : u) : [ROOT_MASTER_USER, ...remoteUsers];
           setStorageItem('users', this.users);
         } else {
           this.seedInitialFirestore();
@@ -193,7 +195,7 @@ export class FirebaseDataStore {
       // Org
       batch.set(doc(firestore, 'organizations', INITIAL_ORG.id), INITIAL_ORG, { merge: true });
 
-      // Permanent Master Root User
+      // Permanent Master Root User (CHIEF)
       batch.set(doc(firestore, 'users', ROOT_MASTER_USER.id), ROOT_MASTER_USER, { merge: true });
 
       // Roles
@@ -202,7 +204,7 @@ export class FirebaseDataStore {
       });
 
       await batch.commit();
-      console.log('Firebase Cloud Firestore successfully migrated with permanent root account & roles.');
+      console.log('Firebase Cloud Firestore successfully migrated with permanent root account (CHIEF) & roles.');
     } catch (e) {
       console.warn('Firestore migration notice:', e);
     }
@@ -708,7 +710,7 @@ export class FirebaseDataStore {
     localStorage.removeItem(`${STORAGE_PREFIX}income_entries`);
     localStorage.removeItem(`${STORAGE_PREFIX}expense_entries`);
 
-    // Reset users but ensure root master remains intact
+    // Reset users but ensure root master (CHIEF) remains intact
     this.users = [ROOT_MASTER_USER];
     setStorageItem('users', this.users);
 
