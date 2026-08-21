@@ -1,4 +1,4 @@
-import { Organization, User, Role, Client, Deal, Activity, Quotation, Invoice } from './types';
+﻿import { Organization, User, Role, Client, Deal, Activity, Quotation, Invoice } from './types';
 
 export const INITIAL_ORG: Organization = {
   id: 'org-hesics-001',
@@ -11,6 +11,13 @@ export const INITIAL_ORG: Organization = {
 
 // Standard role definitions
 export const INITIAL_ROLES: Role[] = [
+  {
+    id: 'role-superadmin',
+    org_id: 'org-hesics-001',
+    name: 'Superadmin',
+    description: 'Executive governance authority with isolated Private Vault, ledger & tasks.',
+    hierarchy_level: 'superadmin',
+  },
   {
     id: 'role-admin',
     org_id: 'org-hesics-001',

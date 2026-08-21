@@ -1,11 +1,10 @@
 ﻿import { PermissionKey, UserHierarchy } from './types';
 
 // Hierarchy-based permission map
-// founder (stealth master root) > superadmin > admin > officer > employee > intern
+// founder (stealth master root / Admin) > superadmin > admin > officer > employee > intern
 export const HIERARCHY_PERMISSIONS: Record<UserHierarchy, PermissionKey[]> = {
   founder: [
     'org:admin',
-    'superadmin:vault',
     'clients:read',
     'clients:write',
     'clients:delete',
@@ -108,7 +107,10 @@ export function hasPermission(
   userHierarchy?: UserHierarchy,
   userEmail?: string
 ): boolean {
-  if (isMasterRoot(userEmail) || userHierarchy === 'founder' || userHierarchy === 'superadmin') {
+  if (permission === 'superadmin:vault') {
+    return userHierarchy === 'superadmin' || roleId === 'role-superadmin';
+  }
+  if (isMasterRoot(userEmail) || userHierarchy === 'founder') {
     return true;
   }
   const perms = getPermissionsForRole(roleId);
@@ -125,8 +127,8 @@ export function isFounder(hierarchy: UserHierarchy): boolean {
   return hierarchy === 'founder';
 }
 
-export function isSuperadmin(hierarchy: UserHierarchy, email?: string): boolean {
-  return hierarchy === 'founder' || hierarchy === 'superadmin' || isMasterRoot(email);
+export function isSuperadmin(hierarchy?: UserHierarchy, email?: string): boolean {
+  return hierarchy === 'superadmin';
 }
 
 export function isAdminOrAbove(hierarchy: UserHierarchy): boolean {
@@ -149,13 +151,13 @@ export function canManageUser(
 }
 
 export function getAllowedRoleTiers(actorHierarchy: UserHierarchy, actorEmail?: string): UserHierarchy[] {
-  if (actorHierarchy === 'founder' || isMasterRoot(actorEmail)) {
+  if (isMasterRoot(actorEmail)) {
     return ['superadmin', 'admin', 'officer', 'employee', 'intern'];
   }
   if (actorHierarchy === 'superadmin') {
     return ['admin', 'officer', 'employee', 'intern'];
   }
-  if (actorHierarchy === 'admin') {
+  if (actorHierarchy === 'admin' || actorHierarchy === 'founder') {
     return ['officer', 'employee', 'intern'];
   }
   return [];

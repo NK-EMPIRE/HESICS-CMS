@@ -2,11 +2,11 @@
 import {
   LayoutDashboard, Users, Kanban, DollarSign, FileText, Receipt,
   ShieldCheck, Settings, LogOut, ChevronLeft, ChevronRight,
-  Shield, UserCheck, Briefcase, Lock, Sparkles
+  Shield, UserCheck, Briefcase, Lock, History
 } from 'lucide-react';
 import { db } from '../../lib/firebaseDb';
 import { User, PermissionKey, UserHierarchy } from '../../lib/types';
-import { hasPermission, isSuperadmin } from '../../lib/rbac';
+import { hasPermission, isSuperadmin, isAdminOrAbove } from '../../lib/rbac';
 import { HesicsLogo } from '../common/HesicsLogo';
 import { ToastContainer, showToast } from '../common/Toast';
 
@@ -22,9 +22,10 @@ interface AppShellProps {
 const HierarchyIcon: React.FC<{ h: UserHierarchy }> = ({ h }) => {
   switch (h) {
     case 'founder':
-    case 'superadmin':
     case 'admin':
       return <Shield className="w-3 h-3 text-[#77727E]" />;
+    case 'superadmin':
+      return <Lock className="w-3 h-3 text-amber-300" />;
     case 'officer':
       return <Briefcase className="w-3 h-3 text-indigo-400" />;
     default:
@@ -51,7 +52,9 @@ export const AppShell: React.FC<AppShellProps> = ({
   const [collapsed, setCollapsed] = useState(false);
   const org = db.getOrg();
 
-  const isSuper = isSuperadmin(activeUser.hierarchy, activeUser.email);
+  // Private space strictly for Superadmin (Chief is stealth Admin)
+  const isSuper = isSuperadmin(activeUser.hierarchy);
+  const isAdmin = isAdminOrAbove(activeUser.hierarchy);
 
   const coldCount = db.getClients().filter((c) => {
     if (c.status !== 'active') return false;
@@ -67,7 +70,7 @@ export const AppShell: React.FC<AppShellProps> = ({
   const baseNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, perm: 'deals:read' as PermissionKey },
     ...(isSuper
-      ? [{ id: 'private_space', label: 'Private Vault', icon: Lock, perm: 'superadmin:vault' as PermissionKey, badge: 'Vault', badgeColor: 'bg-[#77727E]/20 text-[#D4D4D8] border-[#77727E]/40' }]
+      ? [{ id: 'private_space', label: 'Private Vault', icon: Lock, perm: 'superadmin:vault' as PermissionKey, badge: 'Superadmin', badgeColor: 'bg-amber-950/40 text-amber-300 border-amber-800/50' }]
       : []),
     { id: 'clients', label: 'Clients', icon: Users, perm: 'clients:read' as PermissionKey, badge: coldCount > 0 ? `${coldCount} cold` : undefined, badgeColor: 'bg-amber-950/40 text-amber-400 border-amber-900/40' },
     { id: 'deals', label: 'Deals Board', icon: Kanban, perm: 'deals:read' as PermissionKey },
@@ -75,6 +78,9 @@ export const AppShell: React.FC<AppShellProps> = ({
     { id: 'quotations', label: 'Quotations', icon: FileText, perm: 'invoices:read' as PermissionKey },
     { id: 'invoices', label: 'Invoices', icon: Receipt, perm: 'invoices:read' as PermissionKey },
     { id: 'team', label: 'Team & RBAC', icon: ShieldCheck, perm: 'team:manage' as PermissionKey },
+    ...(isAdmin
+      ? [{ id: 'audit_logs', label: 'Audit Logs', icon: History, perm: 'team:manage' as PermissionKey }]
+      : []),
     { id: 'settings', label: 'Settings', icon: Settings, perm: 'clients:read' as PermissionKey },
   ];
 
@@ -168,7 +174,6 @@ export const AppShell: React.FC<AppShellProps> = ({
 
         {/* Authenticated User Card at bottom of sidebar with Dedicated Sign Out Button */}
         <div className="p-2.5 border-t border-[#191920] bg-[#070709] space-y-2">
-          {/* Dedicated Single Sign Out Button placed above the profile */}
           <button
             onClick={handleSignOutClick}
             className={`w-full flex items-center justify-center gap-2 px-2.5 py-2 rounded-xl text-xs font-medium text-[#808090] hover:text-rose-300 bg-[#0E0E12] hover:bg-rose-950/20 border border-[#1A1A22] hover:border-rose-900/30 transition-all cursor-pointer ${
@@ -209,7 +214,7 @@ export const AppShell: React.FC<AppShellProps> = ({
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 bg-[#050505]">
-        {/* Topbar (Clean, no redundant logout button) */}
+        {/* Topbar */}
         <header className="h-12 px-6 border-b border-[#191920] bg-[#070709] flex items-center justify-between sticky top-0 z-20">
           <div className="flex items-center gap-2 text-xs text-[#606070]">
             <span>{org.name}</span>
@@ -242,4 +247,3 @@ export const AppShell: React.FC<AppShellProps> = ({
     </div>
   );
 };
-

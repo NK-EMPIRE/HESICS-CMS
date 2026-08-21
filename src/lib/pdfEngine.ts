@@ -2,7 +2,7 @@
 import autoTable from 'jspdf-autotable';
 import { Invoice, Quotation, Organization, Client } from './types';
 
-export type TemplateType = 'executive' | 'corporate' | 'titanium' | 'commercial';
+export type TemplateType = 'titanium' | 'executive' | 'corporate' | 'commercial';
 
 export interface PDFExportOptions {
   template?: TemplateType;
@@ -13,10 +13,58 @@ export interface PDFExportOptions {
 
 export const AVAILABLE_TEMPLATES: { id: TemplateType; name: string; description: string; badge: string }[] = [
   { id: 'titanium', name: 'Titanium Luxury (Default)', description: 'Deep slate typography with #77727E metallic accents & verified security seal', badge: 'Recommended' },
-  { id: 'executive', name: 'Executive Minimalist', description: 'Ultra-clean high-ticket monochrome styling with generous whitespace', badge: 'Minimal' },
-  { id: 'corporate', name: 'Corporate Enterprise', description: 'Formal commercial structure with HSN tax breakdown & account coordinates', badge: 'Standard' },
+  { id: 'executive', name: 'Executive Minimalist', description: 'Ultra-clean high-ticket monochrome styling with generous whitespace & HESICS crest', badge: 'Executive' },
+  { id: 'corporate', name: 'Corporate Enterprise', description: 'Formal commercial structure with HSN tax breakdown & account coordinates', badge: 'Enterprise' },
   { id: 'commercial', name: 'Classic Commercial', description: 'Traditional multi-itemized layout designed for legal and audit compliance', badge: 'Commercial' },
 ];
+
+/**
+ * Draw crisp geometric vector HESICS emblem
+ */
+function drawHesicsLogo(doc: jsPDF, x: number, y: number, size: number = 10, isLight: boolean = false) {
+  // Outer shield / rounded square container
+  doc.setFillColor(isLight ? 24 : 12, isLight ? 24 : 12, isLight ? 28 : 16);
+  doc.roundedRect(x, y, size, size, 2, 2, 'F');
+
+  // Titanium metallic border
+  doc.setDrawColor(119, 114, 126);
+  doc.setLineWidth(0.4);
+  doc.roundedRect(x, y, size, size, 2, 2, 'S');
+
+  // Vector letter 'H' / geometric core
+  doc.setFillColor(119, 114, 126);
+  const pad = size * 0.22;
+  const colW = size * 0.16;
+  const barH = size * 0.14;
+
+  // Left pillar
+  doc.rect(x + pad, y + pad, colW, size - pad * 2, 'F');
+  // Right pillar
+  doc.rect(x + size - pad - colW, y + pad, colW, size - pad * 2, 'F');
+  // Crossbar
+  doc.rect(x + pad, y + (size - barH) / 2, size - pad * 2, barH, 'F');
+}
+
+/**
+ * Robust cross-browser PDF download helper
+ */
+export function downloadPDFDocument(doc: jsPDF, filename: string) {
+  try {
+    const blob = doc.output('blob');
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+    }, 200);
+  } catch (e) {
+    doc.save(filename);
+  }
+}
 
 export function generateInvoicePDF(invoice: Invoice, org: Organization, template: TemplateType = 'titanium'): jsPDF {
   const doc = new jsPDF({
@@ -29,60 +77,36 @@ export function generateInvoicePDF(invoice: Invoice, org: Organization, template
   const accentColor = [119, 114, 126]; // #77727E
   const darkSlate = [18, 18, 22];
 
-  // Header Background Bar for Titanium template
-  if (template === 'titanium') {
-    doc.setFillColor(18, 18, 22);
-    doc.rect(0, 0, 210, 38, 'F');
-    doc.setFillColor(accentColor[0], accentColor[1], accentColor[2]);
-    doc.rect(0, 37, 210, 1.2, 'F');
+  // Universal Luxury Header Bar with Vector HESICS Logo
+  doc.setFillColor(18, 18, 22);
+  doc.rect(0, 0, 210, 38, 'F');
+  doc.setFillColor(accentColor[0], accentColor[1], accentColor[2]);
+  doc.rect(0, 37, 210, 1.2, 'F');
 
-    doc.setTextColor(244, 244, 246);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(20);
-    doc.text(org.name || 'HESICS', 16, 20);
+  // Vector Logo Emblem
+  drawHesicsLogo(doc, 16, 12, 14, true);
 
-    doc.setFontSize(8.5);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(170, 170, 180);
-    doc.text(org.tagline || 'BUSINESS OPERATING SYSTEM', 16, 27);
+  // Brand Name & Tagline
+  doc.setTextColor(244, 244, 246);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.text(org.name || 'HESICS', 34, 20);
 
-    // Invoice Tag Badge
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(244, 244, 246);
-    doc.text('TAX INVOICE', 194, 20, { align: 'right' });
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(170, 170, 180);
+  doc.text(org.tagline || 'ENTERPRISE BUSINESS OPERATING SYSTEM', 34, 26);
 
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(170, 170, 180);
-    doc.text(`# ${invoice.invoice_number}`, 194, 27, { align: 'right' });
-  } else {
-    // Executive / Corporate Header
-    doc.setTextColor(darkSlate[0], darkSlate[1], darkSlate[2]);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(22);
-    doc.text(org.name || 'HESICS', 16, 22);
+  // Document Title & Number
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(244, 244, 246);
+  doc.text('TAX INVOICE', 194, 20, { align: 'right' });
 
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100, 100, 110);
-    doc.text(org.tagline || 'Business Operating System', 16, 28);
-
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
-    doc.text('INVOICE', 194, 22, { align: 'right' });
-
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(80, 80, 90);
-    doc.text(`# ${invoice.invoice_number}`, 194, 29, { align: 'right' });
-
-    // Decorative line
-    doc.setDrawColor(accentColor[0], accentColor[1], accentColor[2]);
-    doc.setLineWidth(0.6);
-    doc.line(16, 34, 194, 34);
-  }
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(170, 170, 180);
+  doc.text(`# ${invoice.invoice_number}`, 194, 27, { align: 'right' });
 
   // Meta Section: Billed From & Billed To
   const metaStartY = 48;
@@ -215,56 +239,36 @@ export function generateQuotationPDF(quote: Quotation, org: Organization, templa
   const accentColor = [119, 114, 126];
   const darkSlate = [18, 18, 22];
 
-  if (template === 'titanium') {
-    doc.setFillColor(18, 18, 22);
-    doc.rect(0, 0, 210, 38, 'F');
-    doc.setFillColor(accentColor[0], accentColor[1], accentColor[2]);
-    doc.rect(0, 37, 210, 1.2, 'F');
+  // Universal Luxury Header Bar with Vector HESICS Logo
+  doc.setFillColor(18, 18, 22);
+  doc.rect(0, 0, 210, 38, 'F');
+  doc.setFillColor(accentColor[0], accentColor[1], accentColor[2]);
+  doc.rect(0, 37, 210, 1.2, 'F');
 
-    doc.setTextColor(244, 244, 246);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(20);
-    doc.text(org.name || 'HESICS', 16, 20);
+  // Vector Logo Emblem
+  drawHesicsLogo(doc, 16, 12, 14, true);
 
-    doc.setFontSize(8.5);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(170, 170, 180);
-    doc.text(org.tagline || 'COMMERCIAL SCOPE & PROPOSAL', 16, 27);
+  // Brand Name & Tagline
+  doc.setTextColor(244, 244, 246);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.text(org.name || 'HESICS', 34, 20);
 
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(244, 244, 246);
-    doc.text('QUOTATION', 194, 20, { align: 'right' });
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(170, 170, 180);
+  doc.text(org.tagline || 'COMMERCIAL SCOPE & PROPOSAL', 34, 26);
 
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(170, 170, 180);
-    doc.text(`# ${quote.quotation_number || quote.quote_number || 'QT-001'}`, 194, 27, { align: 'right' });
-  } else {
-    doc.setTextColor(darkSlate[0], darkSlate[1], darkSlate[2]);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(22);
-    doc.text(org.name || 'HESICS', 16, 22);
+  // Title & Number
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(244, 244, 246);
+  doc.text('QUOTATION', 194, 20, { align: 'right' });
 
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100, 100, 110);
-    doc.text(org.tagline || 'Commercial Scope & Estimate', 16, 28);
-
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(accentColor[0], accentColor[1], accentColor[2]);
-    doc.text('QUOTATION', 194, 22, { align: 'right' });
-
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(80, 80, 90);
-    doc.text(`# ${quote.quotation_number || quote.quote_number || 'QT-001'}`, 194, 29, { align: 'right' });
-
-    doc.setDrawColor(accentColor[0], accentColor[1], accentColor[2]);
-    doc.setLineWidth(0.6);
-    doc.line(16, 34, 194, 34);
-  }
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(170, 170, 180);
+  doc.text(`# ${quote.quotation_number || quote.quote_number || 'QT-001'}`, 194, 27, { align: 'right' });
 
   const metaStartY = 48;
   doc.setTextColor(100, 100, 110);

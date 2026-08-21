@@ -1,5 +1,28 @@
 ﻿import * as XLSX from 'xlsx';
 import { Invoice, Quotation, Deal, IncomeEntry, ExpenseEntry } from './types';
+import { AuditLogEntry, formatAuditAction } from './auditLog';
+
+function saveExcelBlob(workbook: XLSX.WorkBook, filename: string) {
+  try {
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([excelBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }, 200);
+  } catch (err) {
+    console.error('Direct blob export error, falling back to XLSX.writeFile:', err);
+    XLSX.writeFile(workbook, filename);
+  }
+}
 
 export function exportInvoicesToExcel(invoices: Invoice[], filename = 'HESICS_Invoices_Register.xlsx') {
   const data = invoices.map((inv, idx) => ({
@@ -19,7 +42,7 @@ export function exportInvoicesToExcel(invoices: Invoice[], filename = 'HESICS_In
   const worksheet = XLSX.utils.json_to_sheet(data);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Invoices');
-  XLSX.writeFile(workbook, filename);
+  saveExcelBlob(workbook, filename);
 }
 
 export function exportQuotationsToExcel(quotations: Quotation[], filename = 'HESICS_Quotations_Register.xlsx') {
@@ -39,7 +62,7 @@ export function exportQuotationsToExcel(quotations: Quotation[], filename = 'HES
   const worksheet = XLSX.utils.json_to_sheet(data);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Quotations');
-  XLSX.writeFile(workbook, filename);
+  saveExcelBlob(workbook, filename);
 }
 
 export function exportFinanceToExcel(
@@ -73,5 +96,23 @@ export function exportFinanceToExcel(
 
   XLSX.utils.book_append_sheet(workbook, incSheet, 'Revenue Inflows');
   XLSX.utils.book_append_sheet(workbook, expSheet, 'Expenditures');
-  XLSX.writeFile(workbook, filename);
+  saveExcelBlob(workbook, filename);
+}
+
+export function exportAuditLogsToExcel(logs: AuditLogEntry[], filename = 'HESICS_Audit_Logs.xlsx') {
+  const data = logs.map((log, idx) => ({
+    'S.No': idx + 1,
+    'Timestamp': new Date(log.timestamp).toLocaleString(),
+    'Actor Email': log.actor_email,
+    'Actor Role': log.actor_role,
+    'Action': formatAuditAction(log.action),
+    'Action Code': log.action,
+    'Target Entity': log.entity_label || log.entity_id,
+    'Details / Payload': log.details ? JSON.stringify(log.details) : '',
+  }));
+
+  const worksheet = XLSX.utils.json_to_sheet(data);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Audit Logs');
+  saveExcelBlob(workbook, filename);
 }

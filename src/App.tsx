@@ -9,6 +9,7 @@ import { Invoices } from './pages/Invoices';
 import { TeamPermissions } from './pages/TeamPermissions';
 import { Settings } from './pages/Settings';
 import { PrivateSpace } from './pages/PrivateSpace';
+import { AuditLogs } from './pages/AuditLogs';
 import { Login } from './pages/Login';
 import { db } from './lib/firebaseDb';
 import { getLocalSession, setLocalSession, signOut, onAuthStateChange } from './lib/firebaseAuth';
@@ -28,7 +29,7 @@ export function App() {
     return unsubscribe;
   }, []);
 
-  // Keyboard shortcuts (c = clients, d = deals, f = finance, q = quotations)
+  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const activeEl = document.activeElement;
@@ -57,7 +58,6 @@ export function App() {
     setCurrentTab('dashboard');
   };
 
-  // Show Login if unauthenticated
   if (!activeUser) {
     return <Login onLogin={handleLogin} />;
   }
@@ -80,6 +80,8 @@ export function App() {
         return <Invoices activeUser={activeUser} />;
       case 'team':
         return <TeamPermissions activeUser={activeUser} />;
+      case 'audit_logs':
+        return <AuditLogs activeUser={activeUser} />;
       case 'settings':
         return <Settings activeUser={activeUser} />;
       default:

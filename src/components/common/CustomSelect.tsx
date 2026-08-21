@@ -37,6 +37,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   const [openUpward, setOpenUpward] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -60,15 +61,22 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       } else {
         setOpenUpward(false);
       }
+
+      if (searchable) {
+        setTimeout(() => {
+          searchInputRef.current?.focus();
+        }, 50);
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, searchable]);
 
   const selectedOption = options.find((o) => o.value === value);
 
   const filteredOptions = searchable
     ? options.filter((o) =>
         o.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (o.sublabel && o.sublabel.toLowerCase().includes(searchQuery.toLowerCase()))
+        (o.sublabel && o.sublabel.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (o.badge && o.badge.toLowerCase().includes(searchQuery.toLowerCase()))
       )
     : options;
 
@@ -129,70 +137,73 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         />
       )}
 
-      {/* Popover Menu */}
+      {/* Popover Menu with Dedicated Fixed Header & Clean Scroll Body */}
       {isOpen && (
         <div
           className={`absolute ${
             openUpward ? 'bottom-full mb-2' : 'top-full mt-2'
-          } left-0 z-[9999] w-full min-w-[240px] max-h-64 overflow-y-auto bg-[#0D0D12] border border-[#262632] rounded-2xl p-1.5 shadow-2xl space-y-1 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-100`}
+          } left-0 z-[99999] w-full min-w-[260px] bg-[#0E0E14] border border-[#282836] rounded-2xl shadow-2xl overflow-hidden backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-100`}
         >
           {searchable && (
-            <div className="p-1.5 border-b border-[#1C1C24] sticky top-0 bg-[#0D0D12] z-10">
+            <div className="p-2.5 border-b border-[#1C1C26] bg-[#0A0A0E]">
               <div className="relative">
-                <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-[#606070]" />
+                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#707080]" />
                 <input
+                  ref={searchInputRef}
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Filter options..."
-                  className="w-full pl-7 pr-2.5 py-1.5 bg-[#08080A] border border-[#1F1F28] rounded-lg text-xs text-[#F4F4F6] placeholder-[#505060] focus:outline-none focus:border-[#77727E]/60"
-                  autoFocus
+                  className="w-full pl-8 pr-3 py-1.5 bg-[#121218] border border-[#22222E] rounded-lg text-xs text-[#F4F4F6] placeholder-[#606070] focus:outline-none focus:border-[#77727E]"
+                  onClick={(e) => e.stopPropagation()}
                 />
               </div>
             </div>
           )}
 
-          {filteredOptions.length === 0 ? (
-            <div className="p-3.5 text-center text-xs text-[#606070]">No matches found</div>
-          ) : (
-            filteredOptions.map((opt) => {
-              const isSelected = opt.value === value;
-              return (
-                <div
-                  key={opt.value}
-                  onClick={() => handleSelect(opt.value)}
-                  className={`px-3 py-2.5 rounded-xl text-xs flex items-center justify-between gap-3 cursor-pointer transition-colors ${
-                    isSelected
-                      ? 'bg-[#77727E]/20 text-[#F4F4F6] font-semibold border border-[#77727E]/30'
-                      : 'text-[#D4D4D8] hover:bg-[#16161E] hover:text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    {opt.icon && <span className="shrink-0">{opt.icon}</span>}
-                    <div className="min-w-0">
-                      <div className="truncate text-xs">{opt.label}</div>
-                      {opt.sublabel && (
-                        <div className="text-[10px] text-[#707080] truncate mt-0.5">{opt.sublabel}</div>
+          <div className="max-h-56 overflow-y-auto p-1.5 space-y-1">
+            {filteredOptions.length === 0 ? (
+              <div className="p-4 text-center text-xs text-[#606070]">No matches found</div>
+            ) : (
+              filteredOptions.map((opt) => {
+                const isSelected = opt.value === value;
+                return (
+                  <div
+                    key={opt.value}
+                    onClick={() => handleSelect(opt.value)}
+                    className={`px-3 py-2.5 rounded-xl text-xs flex items-center justify-between gap-3 cursor-pointer transition-colors ${
+                      isSelected
+                        ? 'bg-[#77727E]/25 text-[#F4F4F6] font-semibold border border-[#77727E]/40'
+                        : 'text-[#D4D4D8] hover:bg-[#161620] hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      {opt.icon && <span className="shrink-0">{opt.icon}</span>}
+                      <div className="min-w-0">
+                        <div className="truncate text-xs">{opt.label}</div>
+                        {opt.sublabel && (
+                          <div className="text-[10px] text-[#707080] truncate mt-0.5">{opt.sublabel}</div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {opt.badge && (
+                        <span
+                          className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-md border ${
+                            opt.badgeColor || 'text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30'
+                          }`}
+                        >
+                          {opt.badge}
+                        </span>
                       )}
+                      {isSelected && <Check className="w-3.5 h-3.5 text-[#77727E]" />}
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    {opt.badge && (
-                      <span
-                        className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-md border ${
-                          opt.badgeColor || 'text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30'
-                        }`}
-                      >
-                        {opt.badge}
-                      </span>
-                    )}
-                    {isSelected && <Check className="w-3.5 h-3.5 text-[#77727E]" />}
-                  </div>
-                </div>
-              );
-            })
-          )}
+                );
+              })
+            )}
+          </div>
         </div>
       )}
     </div>
