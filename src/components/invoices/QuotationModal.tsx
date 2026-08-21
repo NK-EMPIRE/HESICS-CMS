@@ -1,11 +1,13 @@
 ﻿import React, { useState } from 'react';
-import { X, Plus, Trash2, Send, Download, FileText, Sparkles } from 'lucide-react';
+import { X, Plus, Trash2, Send, Download, FileText, Sparkles, Eye } from 'lucide-react';
 import { db } from '../../lib/firebaseDb';
-import { Quotation, QuotationStatus, LineItem, User as UserType } from '../../lib/types';
+import { Quotation, QuotationStatus, LineItem, User as UserType, HesicsService } from '../../lib/types';
 import { DatePicker } from '../common/DatePicker';
 import { CustomSelect, Option } from '../common/CustomSelect';
 import { generateQuotationPDF, AVAILABLE_TEMPLATES, TemplateType } from '../../lib/pdfEngine';
 import { EmailDispatchModal } from '../common/EmailDispatchModal';
+import { PDFPreviewModal } from '../common/PDFPreviewModal';
+import { showToast } from '../common/Toast';
 
 interface QuotationModalProps {
   isOpen: boolean;
@@ -32,6 +34,7 @@ export const QuotationModal: React.FC<QuotationModalProps> = ({
   const org = db.getOrg();
   const clients = db.getClients();
   const deals = db.getDeals();
+  const services = db.getServices();
 
   const isTaxEnabled = org.is_tax_enabled !== false;
 
@@ -53,11 +56,12 @@ export const QuotationModal: React.FC<QuotationModalProps> = ({
 
   const [items, setItems] = useState<LineItem[]>(
     quotation?.line_items || quotation?.items || [
-      { id: '1', description: 'Enterprise Platform Architecture & Design', quantity: 1, unit_price: 150000, tax_rate: isTaxEnabled ? 18 : 0, amount: 150000 },
+      { id: '1', description: 'Enterprise Business OS Architecture & Cloud Infra', quantity: 1, unit_price: 500000, tax_rate: isTaxEnabled ? 18 : 0, amount: 500000 },
     ]
   );
 
   const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showLivePreview, setShowLivePreview] = useState(false);
 
   if (!isOpen) return null;
 
@@ -74,6 +78,24 @@ export const QuotationModal: React.FC<QuotationModalProps> = ({
     badge: t.badge,
     badgeColor: 'text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30',
   }));
+
+  const handleAddFromService = (serviceName: string) => {
+    const srv = services.find((s) => s.name === serviceName);
+    if (!srv) return;
+
+    setItems([
+      ...items,
+      {
+        id: String(Date.now()),
+        description: srv.name,
+        quantity: 1,
+        unit_price: srv.default_rate,
+        tax_rate: isTaxEnabled ? 18 : 0,
+        amount: srv.default_rate,
+      },
+    ]);
+    showToast('Service Mapped', `Added "${srv.name}" (₹${srv.default_rate.toLocaleString('en-IN')}) to quotation.`);
+  };
 
   const addItem = () => {
     setItems([
@@ -107,25 +129,27 @@ export const QuotationModal: React.FC<QuotationModalProps> = ({
 
   const selectedClient = clients.find((c) => c.id === clientId);
 
+  const buildQuotationPayload = (): Quotation => ({
+    id: quotation?.id || 'temp',
+    org_id: org.id,
+    client_id: clientId,
+    client_name: selectedClient?.name || 'Client',
+    client_email: selectedClient?.email,
+    quotation_number: quoteNumber,
+    template_id: templateId,
+    issue_date: issueDate,
+    valid_until: validUntil,
+    status,
+    items,
+    line_items: items,
+    subtotal,
+    tax,
+    total,
+    created_at: new Date().toISOString(),
+  });
+
   const handleExportPDF = () => {
-    const quotePayload: Quotation = {
-      id: quotation?.id || 'temp',
-      org_id: org.id,
-      client_id: clientId,
-      client_name: selectedClient?.name || 'Client',
-      client_email: selectedClient?.email,
-      quotation_number: quoteNumber,
-      issue_date: issueDate,
-      valid_until: validUntil,
-      status,
-      items,
-      line_items: items,
-      subtotal,
-      tax,
-      total,
-      created_at: new Date().toISOString(),
-    };
-    const doc = generateQuotationPDF(quotePayload, org, templateId);
+    const doc = generateQuotationPDF(buildQuotationPayload(), org, templateId);
     doc.save(`HESICS_Quotation_${quoteNumber}.pdf`);
   };
 
@@ -154,8 +178,10 @@ export const QuotationModal: React.FC<QuotationModalProps> = ({
 
     if (quotation) {
       db.updateQuotation(quotation.id, payload);
+      showToast('Quotation Updated', `Commercial Quotation #${quoteNumber} updated.`);
     } else {
       db.addQuotation(payload);
+      showToast('Quotation Issued', `Commercial Quotation #${quoteNumber} created.`);
     }
 
     onSuccess();
@@ -165,7 +191,7 @@ export const QuotationModal: React.FC<QuotationModalProps> = ({
   return (
     <>
       <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
-        <div className="bg-[#0D0D11] border border-[#22222B] rounded-3xl w-full max-w-4xl max-h-[92vh] overflow-y-auto p-8 space-y-6 shadow-2xl shadow-black/80">
+        <div className="bg-[#0D0D11] border border-[#22222B] rounded-3xl w-full max-w-4xl max-h-[92vh] overflow-y-auto p-8 pb-16 space-y-6 shadow-2xl shadow-black/80">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-[#1C1C26] pb-4">
             <div className="flex items-center gap-3">
@@ -177,7 +203,7 @@ export const QuotationModal: React.FC<QuotationModalProps> = ({
                   {quotation ? 'Edit Commercial Quotation' : 'Create & Issue Quotation'}
                 </h2>
                 <p className="text-xs text-[#808090]">
-                  Configure scope line items, choose executive template, and export vector PDF.
+                  Configure scope line items, choose executive template, and preview live vector PDF.
                 </p>
               </div>
             </div>
@@ -249,8 +275,32 @@ export const QuotationModal: React.FC<QuotationModalProps> = ({
               </div>
             </div>
 
+            {/* Quick Add from HESICS Services Catalog */}
+            <div className="p-3.5 bg-[#09090D] border border-[#1E1E28] rounded-2xl space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-[#D4D4D8] flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#77727E]" /> Quick-Map from HESICS Services
+                </span>
+                <span className="text-[10px] text-[#606070]">Click to auto-populate deliverable and rate</span>
+              </div>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {services.map((srv) => (
+                  <button
+                    key={srv.id}
+                    type="button"
+                    onClick={() => handleAddFromService(srv.name)}
+                    className="text-[11px] px-2.5 py-1 bg-[#121217] hover:bg-[#1A1A22] border border-[#20202A] hover:border-[#77727E]/40 text-[#D4D4D8] hover:text-white rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3 text-[#77727E]" />
+                    <span>{srv.name}</span>
+                    <span className="font-mono text-[10px] text-[#808090]">₹{srv.default_rate.toLocaleString('en-IN')}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Scope / Line Items */}
-            <div className="space-y-3 pt-4 border-t border-[#1C1C26]">
+            <div className="space-y-3 pt-2 border-t border-[#1C1C26]">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-xs font-bold text-[#F4F4F6]">Line Items & Scope Deliverables</h3>
@@ -338,10 +388,17 @@ export const QuotationModal: React.FC<QuotationModalProps> = ({
               <div className="flex items-center gap-2">
                 <button
                   type="button"
+                  onClick={() => setShowLivePreview(true)}
+                  className="hesics-btn-secondary text-xs"
+                >
+                  <Eye className="w-3.5 h-3.5 text-[#77727E]" /> Preview PDF...
+                </button>
+                <button
+                  type="button"
                   onClick={handleExportPDF}
                   className="hesics-btn-secondary text-xs"
                 >
-                  <Download className="w-3.5 h-3.5 text-[#77727E]" /> Export PDF
+                  <Download className="w-3.5 h-3.5 text-[#77727E]" /> Download PDF
                 </button>
                 {selectedClient?.email && (
                   <button
@@ -367,7 +424,30 @@ export const QuotationModal: React.FC<QuotationModalProps> = ({
         </div>
       </div>
 
-      {/* Email Dispatch Modal */}
+      {/* Live PDF Preview Modal */}
+      {showLivePreview && (
+        <PDFPreviewModal
+          isOpen={showLivePreview}
+          onClose={() => setShowLivePreview(false)}
+          title={`Commercial Quotation #${quoteNumber}`}
+          pdfDocument={generateQuotationPDF(buildQuotationPayload(), org, templateId)}
+          fileName={`HESICS_Quotation_${quoteNumber}.pdf`}
+          emailDefaults={
+            selectedClient?.email
+              ? {
+                  to: selectedClient.email,
+                  recipientName: selectedClient.name || 'Client',
+                  documentType: 'Quotation',
+                  documentNumber: quoteNumber,
+                  defaultSubject: `Commercial Quotation #${quoteNumber} from HESICS`,
+                  defaultMessage: `We are pleased to present formal commercial quotation #${quoteNumber} for your review.\n\nTotal Estimate: ₹${total.toLocaleString('en-IN')}\nValid Until: ${validUntil}\n\nPlease let us know if you require any scope adjustments or milestone alignments.`,
+                }
+              : undefined
+          }
+        />
+      )}
+
+      {/* Direct Email Dispatch Modal */}
       {showEmailModal && (
         <EmailDispatchModal
           isOpen={showEmailModal}

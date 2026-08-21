@@ -1,11 +1,13 @@
 ﻿import React, { useState } from 'react';
-import { X, Plus, Trash2, Send, Download, FileText, Sparkles } from 'lucide-react';
+import { X, Plus, Trash2, Send, Download, FileText, Sparkles, Eye } from 'lucide-react';
 import { db } from '../../lib/firebaseDb';
-import { Invoice, InvoiceStatus, LineItem, User as UserType } from '../../lib/types';
+import { Invoice, InvoiceStatus, LineItem, User as UserType, HesicsService } from '../../lib/types';
 import { DatePicker } from '../common/DatePicker';
 import { CustomSelect, Option } from '../common/CustomSelect';
 import { generateInvoicePDF, AVAILABLE_TEMPLATES, TemplateType } from '../../lib/pdfEngine';
 import { EmailDispatchModal } from '../common/EmailDispatchModal';
+import { PDFPreviewModal } from '../common/PDFPreviewModal';
+import { showToast } from '../common/Toast';
 
 interface InvoiceModalProps {
   isOpen: boolean;
@@ -32,6 +34,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
 }) => {
   const org = db.getOrg();
   const clients = db.getClients();
+  const services = db.getServices();
 
   const isTaxEnabled = org.is_tax_enabled !== false;
 
@@ -52,11 +55,12 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
   const [items, setItems] = useState<LineItem[]>(
     invoice?.line_items || invoice?.items || [
-      { id: '1', description: 'Enterprise Business OS & Platform Licensing', quantity: 1, unit_price: 100000, tax_rate: isTaxEnabled ? 18 : 0, amount: 100000 },
+      { id: '1', description: 'Enterprise Business OS Architecture & Cloud Infra', quantity: 1, unit_price: 500000, tax_rate: isTaxEnabled ? 18 : 0, amount: 500000 },
     ]
   );
 
   const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showLivePreview, setShowLivePreview] = useState(false);
 
   if (!isOpen) return null;
 
@@ -73,6 +77,24 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
     badge: t.badge,
     badgeColor: 'text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30',
   }));
+
+  const handleAddFromService = (serviceName: string) => {
+    const srv = services.find((s) => s.name === serviceName);
+    if (!srv) return;
+
+    setItems([
+      ...items,
+      {
+        id: String(Date.now()),
+        description: srv.name,
+        quantity: 1,
+        unit_price: srv.default_rate,
+        tax_rate: isTaxEnabled ? 18 : 0,
+        amount: srv.default_rate,
+      },
+    ]);
+    showToast('Service Mapped', `Added "${srv.name}" (₹${srv.default_rate.toLocaleString('en-IN')}) to invoice.`);
+  };
 
   const addItem = () => {
     setItems([
@@ -106,25 +128,27 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
   const selectedClient = clients.find((c) => c.id === clientId);
 
+  const buildInvoicePayload = (): Invoice => ({
+    id: invoice?.id || 'temp',
+    org_id: org.id,
+    client_id: clientId,
+    client_name: selectedClient?.name || 'Client',
+    client_email: selectedClient?.email,
+    invoice_number: invoiceNumber,
+    template_id: templateId,
+    issue_date: issueDate,
+    due_date: dueDate,
+    status,
+    items,
+    line_items: items,
+    subtotal,
+    tax,
+    total,
+    created_at: new Date().toISOString(),
+  });
+
   const handleExportPDF = () => {
-    const invPayload: Invoice = {
-      id: invoice?.id || 'temp',
-      org_id: org.id,
-      client_id: clientId,
-      client_name: selectedClient?.name || 'Client',
-      client_email: selectedClient?.email,
-      invoice_number: invoiceNumber,
-      issue_date: issueDate,
-      due_date: dueDate,
-      status,
-      items,
-      line_items: items,
-      subtotal,
-      tax,
-      total,
-      created_at: new Date().toISOString(),
-    };
-    const doc = generateInvoicePDF(invPayload, org, templateId);
+    const doc = generateInvoicePDF(buildInvoicePayload(), org, templateId);
     doc.save(`HESICS_Invoice_${invoiceNumber}.pdf`);
   };
 
@@ -151,8 +175,10 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
     if (invoice) {
       db.updateInvoice(invoice.id, payload);
+      showToast('Invoice Updated', `Tax Invoice #${invoiceNumber} has been updated.`);
     } else {
       db.addInvoice(payload);
+      showToast('Invoice Issued', `Tax Invoice #${invoiceNumber} generated.`);
     }
 
     onSuccess();
@@ -162,7 +188,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   return (
     <>
       <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
-        <div className="bg-[#0D0D11] border border-[#22222B] rounded-3xl w-full max-w-4xl max-h-[92vh] overflow-y-auto p-8 space-y-6 shadow-2xl shadow-black/80">
+        <div className="bg-[#0D0D11] border border-[#22222B] rounded-3xl w-full max-w-4xl max-h-[92vh] overflow-y-auto p-8 pb-16 space-y-6 shadow-2xl shadow-black/80">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-[#1C1C26] pb-4">
             <div className="flex items-center gap-3">
@@ -174,7 +200,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   {invoice ? 'Edit Tax Invoice' : 'Issue Tax Invoice'}
                 </h2>
                 <p className="text-xs text-[#808090]">
-                  Configure commercial billing line items, select layout template, and export vector PDF.
+                  Configure commercial billing line items, select layout template, and preview live vector PDF.
                 </p>
               </div>
             </div>
@@ -246,8 +272,32 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
               </div>
             </div>
 
+            {/* Quick Add from HESICS Services Catalog */}
+            <div className="p-3.5 bg-[#09090D] border border-[#1E1E28] rounded-2xl space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-[#D4D4D8] flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#77727E]" /> Quick-Map from HESICS Services
+                </span>
+                <span className="text-[10px] text-[#606070]">Click to auto-populate deliverable and rate</span>
+              </div>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {services.map((srv) => (
+                  <button
+                    key={srv.id}
+                    type="button"
+                    onClick={() => handleAddFromService(srv.name)}
+                    className="text-[11px] px-2.5 py-1 bg-[#121217] hover:bg-[#1A1A22] border border-[#20202A] hover:border-[#77727E]/40 text-[#D4D4D8] hover:text-white rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Plus className="w-3 h-3 text-[#77727E]" />
+                    <span>{srv.name}</span>
+                    <span className="font-mono text-[10px] text-[#808090]">₹{srv.default_rate.toLocaleString('en-IN')}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Line Items */}
-            <div className="space-y-3 pt-4 border-t border-[#1C1C26]">
+            <div className="space-y-3 pt-2 border-t border-[#1C1C26]">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-xs font-bold text-[#F4F4F6]">Invoice Line Items</h3>
@@ -335,10 +385,17 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
               <div className="flex items-center gap-2">
                 <button
                   type="button"
+                  onClick={() => setShowLivePreview(true)}
+                  className="hesics-btn-secondary text-xs"
+                >
+                  <Eye className="w-3.5 h-3.5 text-[#77727E]" /> Preview PDF...
+                </button>
+                <button
+                  type="button"
                   onClick={handleExportPDF}
                   className="hesics-btn-secondary text-xs"
                 >
-                  <Download className="w-3.5 h-3.5 text-[#77727E]" /> Export PDF
+                  <Download className="w-3.5 h-3.5 text-[#77727E]" /> Download PDF
                 </button>
                 {selectedClient?.email && (
                   <button
@@ -364,7 +421,30 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
         </div>
       </div>
 
-      {/* Email Dispatch Modal */}
+      {/* Live PDF Preview Modal */}
+      {showLivePreview && (
+        <PDFPreviewModal
+          isOpen={showLivePreview}
+          onClose={() => setShowLivePreview(false)}
+          title={`Tax Invoice #${invoiceNumber}`}
+          pdfDocument={generateInvoicePDF(buildInvoicePayload(), org, templateId)}
+          fileName={`HESICS_Invoice_${invoiceNumber}.pdf`}
+          emailDefaults={
+            selectedClient?.email
+              ? {
+                  to: selectedClient.email,
+                  recipientName: selectedClient.name || 'Client',
+                  documentType: 'Invoice',
+                  documentNumber: invoiceNumber,
+                  defaultSubject: `Tax Invoice #${invoiceNumber} from HESICS — Due ${dueDate}`,
+                  defaultMessage: `Please find attached formal tax invoice #${invoiceNumber} for your account.\n\nTotal Payable: ₹${total.toLocaleString('en-IN')}\nPayment Due Date: ${dueDate}\n\nKindly process the remittance at your earliest convenience.`,
+                }
+              : undefined
+          }
+        />
+      )}
+
+      {/* Direct Email Dispatch Modal */}
       {showEmailModal && (
         <EmailDispatchModal
           isOpen={showEmailModal}

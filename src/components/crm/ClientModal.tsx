@@ -1,8 +1,9 @@
 ﻿import React, { useState } from 'react';
-import { X, Building2, User as UserIcon } from 'lucide-react';
+import { X, Building2, Briefcase } from 'lucide-react';
 import { db } from '../../lib/firebaseDb';
-import { Client, ClientStatus, ClientTier, User } from '../../lib/types';
+import { Client, ClientStatus, User } from '../../lib/types';
 import { CustomSelect, Option } from '../common/CustomSelect';
+import { showToast } from '../common/Toast';
 
 interface ClientModalProps {
   isOpen: boolean;
@@ -13,15 +14,9 @@ interface ClientModalProps {
 }
 
 const STATUS_OPTIONS: Option[] = [
-  { value: 'active', label: 'Active Retainer', badge: 'Active', badgeColor: 'text-emerald-400 bg-emerald-950/30 border-emerald-900/40' },
+  { value: 'active', label: 'Active Retainer', badge: 'Active', badgeColor: 'text-emerald-400 bg-emerald-950/40 border-emerald-800/50' },
   { value: 'lead', label: 'Prospective Lead', badge: 'Lead', badgeColor: 'text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30' },
   { value: 'churned', label: 'Archived / Closed', badge: 'Closed', badgeColor: 'text-[#707080] bg-[#14141A] border-[#202028]' },
-];
-
-const TIER_OPTIONS: Option[] = [
-  { value: 'enterprise', label: 'Enterprise Strategic (10000cr+)', badge: 'Tier 1', badgeColor: 'text-white bg-[#77727E]/30 border-[#77727E]/60' },
-  { value: 'growth', label: 'Growth & Mid-Market', badge: 'Tier 2', badgeColor: 'text-indigo-300 bg-indigo-950/40 border-indigo-800/50' },
-  { value: 'standard', label: 'Standard Commercial', badge: 'Tier 3', badgeColor: 'text-[#A0A0B0] bg-[#16161E] border-[#252530]' },
 ];
 
 export const ClientModal: React.FC<ClientModalProps> = ({
@@ -31,12 +26,23 @@ export const ClientModal: React.FC<ClientModalProps> = ({
   client,
   activeUser,
 }) => {
+  const services = db.getServices();
+  const serviceOptions: Option[] = services.map((s) => ({
+    value: s.name,
+    label: s.name,
+    sublabel: `Default: ₹${s.default_rate.toLocaleString('en-IN')}`,
+    badge: s.category,
+    badgeColor: 'text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30',
+  }));
+
   const [name, setName] = useState(client?.name || '');
   const [companyName, setCompanyName] = useState(client?.company_name || '');
   const [email, setEmail] = useState(client?.email || '');
   const [phone, setPhone] = useState(client?.phone || '');
   const [status, setStatus] = useState<ClientStatus>(client?.status || 'active');
-  const [tier, setTier] = useState<ClientTier>(client?.tier || 'enterprise');
+  const [primaryService, setPrimaryService] = useState(
+    client?.primary_service || services[0]?.name || 'Enterprise Business OS Architecture & Cloud Infra'
+  );
   const [gstin, setGstin] = useState(client?.gstin || '');
   const [industry, setIndustry] = useState(client?.industry || '');
   const [notes, setNotes] = useState(client?.notes || '');
@@ -53,7 +59,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({
       email: email.trim() || undefined,
       phone: phone.trim() || undefined,
       status,
-      tier,
+      primary_service: primaryService,
       gstin: gstin.trim() || undefined,
       industry: industry.trim() || undefined,
       notes: notes.trim() || undefined,
@@ -63,8 +69,10 @@ export const ClientModal: React.FC<ClientModalProps> = ({
 
     if (client) {
       db.updateClient(client.id, payload);
+      showToast('Client Updated', `Profile for "${name}" has been updated.`);
     } else {
       db.addClient(payload);
+      showToast('Client Created', `Client "${name}" has been added.`);
     }
 
     onSuccess();
@@ -73,7 +81,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div className="bg-[#0D0D11] border border-[#22222B] rounded-3xl w-full max-w-3xl max-h-[92vh] overflow-y-auto p-8 space-y-6 shadow-2xl shadow-black/80">
+      <div className="bg-[#0D0D11] border border-[#22222B] rounded-3xl w-full max-w-3xl max-h-[92vh] overflow-y-auto p-8 pb-12 space-y-6 shadow-2xl shadow-black/80">
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-[#1C1C26] pb-4">
           <div className="flex items-center gap-3">
@@ -85,7 +93,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({
                 {client ? 'Edit Client Account' : 'Add New Client Account'}
               </h2>
               <p className="text-xs text-[#808090]">
-                Configure corporate identity, contract tier, and key commercial contact points.
+                Configure client identity, primary service requirements, and key commercial contact points.
               </p>
             </div>
           </div>
@@ -147,7 +155,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({
             </div>
           </div>
 
-          {/* Row 3: Status & Tier */}
+          {/* Row 3: Status & Primary Service Requirement */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
               <label className="hesics-label">Account Status</label>
@@ -158,11 +166,12 @@ export const ClientModal: React.FC<ClientModalProps> = ({
               />
             </div>
             <div>
-              <label className="hesics-label">Client Tier</label>
+              <label className="hesics-label">Primary Service Required *</label>
               <CustomSelect
-                value={tier}
-                onChange={(v) => setTier(v as ClientTier)}
-                options={TIER_OPTIONS}
+                value={primaryService}
+                onChange={setPrimaryService}
+                options={serviceOptions}
+                searchable
               />
             </div>
           </div>

@@ -42,7 +42,7 @@ export const DealModal: React.FC<DealModalProps> = ({
     value: c.id,
     label: c.name,
     sublabel: c.company_name,
-    badge: c.tier || 'Enterprise',
+    badge: c.primary_service || 'Enterprise',
     badgeColor: 'text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30',
   }));
 
@@ -187,3 +187,4 @@ export const DealModal: React.FC<DealModalProps> = ({
     </div>
   );
 };
+

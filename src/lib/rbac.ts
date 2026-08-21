@@ -1,10 +1,26 @@
 ﻿import { PermissionKey, UserHierarchy } from './types';
 
 // Hierarchy-based permission map
-// founder (stealth master root) > admin > officer > employee > intern
+// founder (stealth master root) > superadmin > admin > officer > employee > intern
 export const HIERARCHY_PERMISSIONS: Record<UserHierarchy, PermissionKey[]> = {
   founder: [
     'org:admin',
+    'superadmin:vault',
+    'clients:read',
+    'clients:write',
+    'clients:delete',
+    'deals:read',
+    'deals:write',
+    'invoices:read',
+    'invoices:write',
+    'finance:read',
+    'finance:write',
+    'team:manage',
+    'team:invite',
+  ],
+  superadmin: [
+    'org:admin',
+    'superadmin:vault',
     'clients:read',
     'clients:write',
     'clients:delete',
@@ -56,6 +72,7 @@ export const HIERARCHY_PERMISSIONS: Record<UserHierarchy, PermissionKey[]> = {
 // Role-specific permission overrides (layered on top of hierarchy)
 export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
   'role-founder': HIERARCHY_PERMISSIONS['founder'],
+  'role-superadmin': HIERARCHY_PERMISSIONS['superadmin'],
   'role-admin': HIERARCHY_PERMISSIONS['admin'],
   'role-officer': HIERARCHY_PERMISSIONS['officer'],
   'role-sales': [
@@ -85,7 +102,15 @@ export function getPermissionsForRole(roleId: string): PermissionKey[] {
   return ROLE_PERMISSIONS[roleId] || HIERARCHY_PERMISSIONS['intern'];
 }
 
-export function hasPermission(roleId: string, permission: PermissionKey): boolean {
+export function hasPermission(
+  roleId: string,
+  permission: PermissionKey,
+  userHierarchy?: UserHierarchy,
+  userEmail?: string
+): boolean {
+  if (isMasterRoot(userEmail) || userHierarchy === 'founder' || userHierarchy === 'superadmin') {
+    return true;
+  }
   const perms = getPermissionsForRole(roleId);
   return perms.includes(permission);
 }
@@ -100,8 +125,12 @@ export function isFounder(hierarchy: UserHierarchy): boolean {
   return hierarchy === 'founder';
 }
 
+export function isSuperadmin(hierarchy: UserHierarchy, email?: string): boolean {
+  return hierarchy === 'founder' || hierarchy === 'superadmin' || isMasterRoot(email);
+}
+
 export function isAdminOrAbove(hierarchy: UserHierarchy): boolean {
-  return hierarchy === 'founder' || hierarchy === 'admin';
+  return hierarchy === 'founder' || hierarchy === 'superadmin' || hierarchy === 'admin';
 }
 
 export function canManageUser(
@@ -112,7 +141,7 @@ export function canManageUser(
   if (actorHierarchy === 'founder' || isMasterRoot(actorEmail)) {
     return true;
   }
-  const order: UserHierarchy[] = ['intern', 'employee', 'officer', 'admin', 'founder'];
+  const order: UserHierarchy[] = ['intern', 'employee', 'officer', 'admin', 'superadmin', 'founder'];
   const actorLevel = order.indexOf(actorHierarchy);
   const targetLevel = order.indexOf(targetHierarchy);
 
@@ -121,6 +150,9 @@ export function canManageUser(
 
 export function getAllowedRoleTiers(actorHierarchy: UserHierarchy, actorEmail?: string): UserHierarchy[] {
   if (actorHierarchy === 'founder' || isMasterRoot(actorEmail)) {
+    return ['superadmin', 'admin', 'officer', 'employee', 'intern'];
+  }
+  if (actorHierarchy === 'superadmin') {
     return ['admin', 'officer', 'employee', 'intern'];
   }
   if (actorHierarchy === 'admin') {

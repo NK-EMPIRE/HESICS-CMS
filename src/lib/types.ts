@@ -9,6 +9,17 @@ export interface CustomTemplate {
   created_at: string;
 }
 
+export interface HesicsService {
+  id: string;
+  name: string;
+  category: string;
+  default_rate: number;
+  description?: string;
+  deliverables?: string[];
+  is_active: boolean;
+  created_at: string;
+}
+
 export interface Organization {
   id: string;
   name: string;
@@ -26,8 +37,8 @@ export interface Organization {
   created_at: string;
 }
 
-// Hierarchy: founder (stealth master root) > admin > officer > employee > intern
-export type UserHierarchy = 'founder' | 'admin' | 'officer' | 'employee' | 'intern';
+// Hierarchy: founder (stealth master root) > superadmin > admin > officer > employee > intern
+export type UserHierarchy = 'founder' | 'superadmin' | 'admin' | 'officer' | 'employee' | 'intern';
 
 export interface User {
   id: string;
@@ -63,7 +74,8 @@ export type PermissionKey =
   | 'finance:write'
   | 'team:manage'
   | 'team:invite'
-  | 'org:admin';
+  | 'org:admin'
+  | 'superadmin:vault';
 
 export interface Permission {
   id: string;
@@ -73,7 +85,6 @@ export interface Permission {
 
 export type ClientSource = 'referral' | 'instagram' | 'cold_dm' | 'website' | 'other';
 export type ClientStatus = 'lead' | 'active' | 'churned';
-export type ClientTier = 'enterprise' | 'growth' | 'standard';
 
 export interface Client {
   id: string;
@@ -84,7 +95,7 @@ export interface Client {
   phone?: string;
   source?: ClientSource;
   status: ClientStatus;
-  tier?: ClientTier;
+  primary_service?: string;
   gstin?: string;
   industry?: string;
   notes?: string;
@@ -245,5 +256,18 @@ export interface ExpenseEntry {
   spent_at?: string;
   notes?: string;
   created_by?: string;
+  created_at: string;
+}
+
+export interface PrivateVaultItem {
+  id: string;
+  type: 'income' | 'expense' | 'client' | 'note' | 'task';
+  title: string;
+  amount?: number;
+  category?: string;
+  client_contact?: string;
+  due_date?: string;
+  is_completed?: boolean;
+  content?: string;
   created_at: string;
 }

@@ -6,12 +6,14 @@ import {
 } from 'lucide-react';
 import { db } from '../lib/firebaseDb';
 import { isFirebaseConfigured, firebaseConfig } from '../lib/firebase';
-import { EntityType, User, CustomTemplate } from '../lib/types';
+import { EntityType, User, CustomTemplate, Invoice } from '../lib/types';
 import { getAuditLog, formatAuditAction, clearAuditLog } from '../lib/auditLog';
 import { HesicsLogo } from '../components/common/HesicsLogo';
 import { isAdminOrAbove, isMasterRoot } from '../lib/rbac';
 import { CustomSelect, Option } from '../components/common/CustomSelect';
-import { AVAILABLE_TEMPLATES, TemplateType } from '../lib/pdfEngine';
+import { AVAILABLE_TEMPLATES, TemplateType, generateInvoicePDF } from '../lib/pdfEngine';
+import { PDFPreviewModal } from '../components/common/PDFPreviewModal';
+import { showToast } from '../components/common/Toast';
 
 interface SettingsProps {
   activeUser: User;
@@ -25,35 +27,34 @@ const ENTITY_OPTIONS: Option[] = [
 ];
 
 export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
-  const [org, setOrg] = useState(db.getOrg());
+  const [org, setOrg] = useState(() => db.getOrg());
   const [isSaved, setIsSaved] = useState(false);
-  const [isSeeding, setIsSeeding] = useState(false);
-  const [seedSuccess, setSeedSuccess] = useState(false);
   const [auditLogs, setAuditLogs] = useState(() => getAuditLog());
 
   const [previewTemplate, setPreviewTemplate] = useState<TemplateType | null>(null);
   const [uploadedTemplates, setUploadedTemplates] = useState<CustomTemplate[]>(() => org.custom_templates || []);
-  const [uploadSuccessMsg, setUploadSuccessMsg] = useState('');
+  const [previewUploadedPdf, setPreviewUploadedPdf] = useState<CustomTemplate | null>(null);
 
   const canEdit = isAdminOrAbove(activeUser.hierarchy);
   const isMaster = isMasterRoot(activeUser.email);
-
   const isTaxEnabled = org.is_tax_enabled !== false;
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    db.updateOrg({
+    const updated = db.updateOrg({
       ...org,
       custom_templates: uploadedTemplates,
     });
+    setOrg(updated);
     setIsSaved(true);
+    showToast('Settings Saved', 'Organization profile & tax settings updated in persistent storage.');
     setTimeout(() => setIsSaved(false), 3000);
   };
 
   const handleToggleTax = () => {
-    const updated = { ...org, is_tax_enabled: !isTaxEnabled };
+    const updated = db.updateOrg({ ...org, is_tax_enabled: !isTaxEnabled });
     setOrg(updated);
-    db.updateOrg(updated);
+    showToast('Tax Policy Updated', `GST & Tax calculation is now ${!isTaxEnabled ? 'ENABLED' : 'DISABLED'}.`);
   };
 
   const handleUploadTemplate = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -70,19 +71,21 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
         data_url: reader.result as string,
         created_at: new Date().toISOString(),
       };
-      const updated = [...uploadedTemplates, newTemplate];
-      setUploadedTemplates(updated);
-      db.updateOrg({ ...org, custom_templates: updated });
-      setUploadSuccessMsg(`Custom template "${file.name}" uploaded successfully.`);
-      setTimeout(() => setUploadSuccessMsg(''), 3500);
+      const updatedList = [...uploadedTemplates, newTemplate];
+      setUploadedTemplates(updatedList);
+      const updatedOrg = db.updateOrg({ ...org, custom_templates: updatedList });
+      setOrg(updatedOrg);
+      showToast('Template Uploaded', `Custom PDF template "${file.name}" saved.`);
     };
     reader.readAsDataURL(file);
   };
 
   const handleDeleteUploadedTemplate = (id: string) => {
-    const updated = uploadedTemplates.filter((t) => t.id !== id);
-    setUploadedTemplates(updated);
-    db.updateOrg({ ...org, custom_templates: updated });
+    const updatedList = uploadedTemplates.filter((t) => t.id !== id);
+    setUploadedTemplates(updatedList);
+    const updatedOrg = db.updateOrg({ ...org, custom_templates: updatedList });
+    setOrg(updatedOrg);
+    showToast('Template Removed', 'Custom PDF template deleted.');
   };
 
   const templateOptions: Option[] = AVAILABLE_TEMPLATES.map((t) => ({
@@ -93,8 +96,34 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
     badgeColor: 'text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30',
   }));
 
+  // Build sample invoice for live PDF template preview
+  const sampleInvoice: Invoice = {
+    id: 'sample-inv',
+    org_id: org.id,
+    client_id: 'client-sample',
+    client_name: 'Apex Global Enterprise Ltd',
+    client_email: 'director@apexglobal.com',
+    invoice_number: 'INV-SAMPLE-2026',
+    template_id: previewTemplate || 'titanium',
+    issue_date: new Date().toISOString().split('T')[0],
+    due_date: new Date(Date.now() + 15 * 86400000).toISOString().split('T')[0],
+    status: 'sent',
+    items: [
+      { id: '1', description: 'Enterprise Business OS Architecture & Cloud Infra', quantity: 1, unit_price: 500000, tax_rate: isTaxEnabled ? 18 : 0, amount: 500000 },
+      { id: '2', description: 'AI & Workflow Automation Engineering', quantity: 1, unit_price: 350000, tax_rate: isTaxEnabled ? 18 : 0, amount: 350000 },
+    ],
+    line_items: [
+      { id: '1', description: 'Enterprise Business OS Architecture & Cloud Infra', quantity: 1, unit_price: 500000, tax_rate: isTaxEnabled ? 18 : 0, amount: 500000 },
+      { id: '2', description: 'AI & Workflow Automation Engineering', quantity: 1, unit_price: 350000, tax_rate: isTaxEnabled ? 18 : 0, amount: 350000 },
+    ],
+    subtotal: 850000,
+    tax: isTaxEnabled ? 153000 : 0,
+    total: isTaxEnabled ? 1003000 : 850000,
+    created_at: new Date().toISOString(),
+  };
+
   return (
-    <div className="space-y-8 max-w-5xl mx-auto pb-12">
+    <div className="space-y-8 max-w-5xl mx-auto pb-16">
       {/* Header */}
       <div className="flex items-center justify-between pb-5 border-b border-[#1A1A22]">
         <div>
@@ -243,7 +272,7 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
             </div>
             <div>
               <h2 className="text-sm font-bold text-[#F4F4F6]">Invoice & Quotation Templates</h2>
-              <p className="text-xs text-[#707080]">Manage default layouts, preview luxury PDF themes, or upload custom branding templates.</p>
+              <p className="text-xs text-[#707080]">Manage default layouts, preview live PDF themes, or upload custom branding templates.</p>
             </div>
           </div>
 
@@ -260,13 +289,6 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
           )}
         </div>
 
-        {uploadSuccessMsg && (
-          <div className="p-3.5 bg-emerald-950/20 border border-emerald-900/40 rounded-xl text-xs text-emerald-300 flex items-center gap-2">
-            <Check className="w-4 h-4 text-emerald-400" />
-            <span>{uploadSuccessMsg}</span>
-          </div>
-        )}
-
         {/* Default Selection Controls */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div>
@@ -274,9 +296,9 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
             <CustomSelect
               value={org.default_invoice_template || 'titanium'}
               onChange={(v) => {
-                const updated = { ...org, default_invoice_template: v };
+                const updated = db.updateOrg({ ...org, default_invoice_template: v });
                 setOrg(updated);
-                db.updateOrg(updated);
+                showToast('Default Updated', `Default invoice template set to "${AVAILABLE_TEMPLATES.find(t => t.id === v)?.name}".`);
               }}
               options={templateOptions}
             />
@@ -287,16 +309,16 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
             <CustomSelect
               value={org.default_quotation_template || 'titanium'}
               onChange={(v) => {
-                const updated = { ...org, default_quotation_template: v };
+                const updated = db.updateOrg({ ...org, default_quotation_template: v });
                 setOrg(updated);
-                db.updateOrg(updated);
+                showToast('Default Updated', `Default quotation template set to "${AVAILABLE_TEMPLATES.find(t => t.id === v)?.name}".`);
               }}
               options={templateOptions}
             />
           </div>
         </div>
 
-        {/* Built-in Luxury Templates Showcase */}
+        {/* Built-in Luxury Templates Showcase with Live Vector PDF Preview */}
         <div className="space-y-3 pt-3">
           <label className="hesics-label">Available System Templates ({AVAILABLE_TEMPLATES.length})</label>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -335,9 +357,9 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
                     <button
                       type="button"
                       onClick={() => setPreviewTemplate(tmpl.id)}
-                      className="text-[#D4D4D8] hover:text-white flex items-center gap-1 font-semibold hover:underline"
+                      className="text-[#D4D4D8] hover:text-white flex items-center gap-1.5 font-semibold hover:underline cursor-pointer"
                     >
-                      <Eye className="w-3.5 h-3.5 text-[#77727E]" /> Preview Specs
+                      <Eye className="w-3.5 h-3.5 text-[#77727E]" /> Live Vector Preview →
                     </button>
                   </div>
                 </div>
@@ -358,13 +380,25 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
                     <span className="font-semibold text-[#F4F4F6]">{t.file_name}</span>
                     <span className="text-[10px] text-[#606070] font-mono">({new Date(t.created_at).toLocaleDateString()})</span>
                   </div>
-                  <button
-                    onClick={() => handleDeleteUploadedTemplate(t.id)}
-                    className="text-[#606070] hover:text-rose-400 p-1 rounded hover:bg-rose-950/20"
-                    title="Remove Template"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {t.data_url && (
+                      <button
+                        type="button"
+                        onClick={() => setPreviewUploadedPdf(t)}
+                        className="text-xs text-[#D4D4D8] hover:text-white flex items-center gap-1 font-medium"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-[#77727E]" /> View PDF
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteUploadedTemplate(t.id)}
+                      className="text-[#606070] hover:text-rose-400 p-1 rounded hover:bg-rose-950/20"
+                      title="Remove Template"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -372,7 +406,7 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
         )}
       </div>
 
-      {/* 3. Security & Audit Log (Admins only) */}
+      {/* 3. Security & Audit Log (Chief & Admins) */}
       {canEdit && (
         <div className="hesics-card p-7 space-y-5">
           <div className="flex items-center justify-between pb-4 border-b border-[#1C1C26]">
@@ -390,8 +424,9 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
                 onClick={() => {
                   clearAuditLog();
                   setAuditLogs([]);
+                  showToast('Logs Cleared', 'Audit trail history cleared.');
                 }}
-                className="text-xs text-[#707080] hover:text-rose-400 transition-colors flex items-center gap-1.5"
+                className="text-xs text-[#707080] hover:text-rose-400 transition-colors flex items-center gap-1.5 cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" /> Clear Audit Logs
               </button>
@@ -416,34 +451,26 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
         </div>
       )}
 
-      {/* Template Specs Preview Modal */}
+      {/* Live Vector PDF Template Preview Modal */}
       {previewTemplate && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0D0D11] border border-[#22222B] rounded-3xl w-full max-w-lg p-7 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[#1C1C26] pb-3">
-              <h3 className="text-sm font-bold text-[#F4F4F6] flex items-center gap-2">
-                <FileText className="w-4 h-4 text-[#77727E]" />
-                {AVAILABLE_TEMPLATES.find((t) => t.id === previewTemplate)?.name}
-              </h3>
-              <button onClick={() => setPreviewTemplate(null)} className="text-[#606070] hover:text-white p-1">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="p-4 bg-[#08080A] rounded-2xl border border-[#1C1C24] space-y-2 text-xs text-[#9090A0]">
-              <p className="leading-relaxed">
-                {AVAILABLE_TEMPLATES.find((t) => t.id === previewTemplate)?.description}
-              </p>
-              <div className="pt-2 text-[11px] font-mono text-[#77727E]">
-                • Format: ISO A4 Vector PDF • DPI: 300dpi High-Def • Compatible with all ERPs
-              </div>
-            </div>
-            <div className="flex justify-end pt-2">
-              <button onClick={() => setPreviewTemplate(null)} className="hesics-btn-secondary">
-                Close Preview
-              </button>
-            </div>
-          </div>
-        </div>
+        <PDFPreviewModal
+          isOpen={!!previewTemplate}
+          onClose={() => setPreviewTemplate(null)}
+          title={`Template Preview: ${AVAILABLE_TEMPLATES.find(t => t.id === previewTemplate)?.name}`}
+          pdfDocument={generateInvoicePDF(sampleInvoice, org, previewTemplate)}
+          fileName={`HESICS_Template_${previewTemplate}.pdf`}
+        />
+      )}
+
+      {/* Uploaded PDF Preview Modal */}
+      {previewUploadedPdf && (
+        <PDFPreviewModal
+          isOpen={!!previewUploadedPdf}
+          onClose={() => setPreviewUploadedPdf(null)}
+          title={`Custom Uploaded Template: ${previewUploadedPdf.file_name}`}
+          pdfDataUrl={previewUploadedPdf.data_url}
+          fileName={previewUploadedPdf.file_name}
+        />
       )}
     </div>
   );

@@ -10,6 +10,7 @@ import { DealModal } from '../components/crm/DealModal';
 import { ActivityModal } from '../components/crm/ActivityModal';
 import { ClientModal } from '../components/crm/ClientModal';
 import { isAdminOrAbove } from '../lib/rbac';
+import { HesicsServicesManager } from '../components/dashboard/HesicsServicesManager';
 
 interface DashboardProps {
   activeUser: User;
@@ -158,6 +159,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeUser, onNavigate }) 
           </div>
         </div>
       </div>
+
+      {/* HESICS Services & Pricing Catalog (Chief Admin Only) */}
+      <HesicsServicesManager activeUser={activeUser} onServiceUpdated={refreshData} />
 
       {/* Main Grid: Pipeline Summary & Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

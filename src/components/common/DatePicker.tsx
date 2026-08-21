@@ -24,6 +24,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   required = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [openUpward, setOpenUpward] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const parsedDate = value ? new Date(value) : new Date();
@@ -53,6 +54,20 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       }
     }
   }, [value]);
+
+  // Check if dropdown should render upward to prevent clipping
+  useEffect(() => {
+    if (isOpen && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+      const spaceBelow = windowHeight - rect.bottom;
+      if (spaceBelow < 330 && rect.top > 330) {
+        setOpenUpward(true);
+      } else {
+        setOpenUpward(false);
+      }
+    }
+  }, [isOpen]);
 
   const handlePrevMonth = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -161,7 +176,11 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 
       {/* Dropdown Calendar Popover */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 z-50 w-72 bg-[#0D0D12] border border-[#262632] rounded-2xl p-4 shadow-2xl space-y-3 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-100">
+        <div
+          className={`absolute ${
+            openUpward ? 'bottom-full mb-2' : 'top-full mt-2'
+          } left-0 z-[9999] w-72 bg-[#0D0D12] border border-[#262632] rounded-2xl p-4 shadow-2xl space-y-3 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-100`}
+        >
           <div className="flex items-center justify-between text-xs font-semibold text-[#F4F4F6]">
             <button
               type="button"

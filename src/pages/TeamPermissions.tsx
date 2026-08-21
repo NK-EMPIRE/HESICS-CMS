@@ -50,6 +50,7 @@ const HierarchyIcon: React.FC<{ h: UserHierarchy; className?: string }> = ({ h, 
 
 const hierarchyBadge: Record<UserHierarchy, string> = {
   founder: 'text-[#D4D4D8] bg-[#77727E]/20 border-[#77727E]/40',
+  superadmin: 'text-amber-300 bg-amber-950/40 border-amber-800/50',
   admin: 'text-[#D4D4D8] bg-[#77727E]/20 border-[#77727E]/40',
   officer: 'text-indigo-300 bg-indigo-950/40 border-indigo-800/50',
   employee: 'text-emerald-300 bg-emerald-950/40 border-emerald-800/50',
@@ -58,6 +59,7 @@ const hierarchyBadge: Record<UserHierarchy, string> = {
 
 const hierarchyDisplayName: Record<UserHierarchy, string> = {
   founder: 'Admin',
+  superadmin: 'Superadmin',
   admin: 'Admin',
   officer: 'Officer',
   employee: 'Employee',
@@ -719,3 +721,4 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
     </div>
   );
 };
+

@@ -6,9 +6,12 @@ import {
 import { db } from '../lib/firebaseDb';
 import { Invoice, InvoiceStatus, User } from '../lib/types';
 import { InvoiceModal } from '../components/invoices/InvoiceModal';
-import { generateInvoicePDF } from '../lib/pdfEngine';
+import { generateInvoicePDF, TemplateType } from '../lib/pdfEngine';
 import { exportInvoicesToExcel } from '../lib/excelExport';
 import { hasPermission } from '../lib/rbac';
+import { PDFPreviewModal } from '../components/common/PDFPreviewModal';
+import { CustomSelect, Option } from '../components/common/CustomSelect';
+import { showToast } from '../components/common/Toast';
 
 interface InvoicesProps {
   activeUser: User;
@@ -22,40 +25,51 @@ const statusBadge: Record<InvoiceStatus, string> = {
   cancelled: 'text-[#606070] bg-[#101014] border-[#181820]',
 };
 
+const INVOICE_STATUS_OPTIONS: Option[] = [
+  { value: 'draft', label: 'Draft', badge: 'Draft', badgeColor: statusBadge['draft'] },
+  { value: 'sent', label: 'Sent', badge: 'Sent', badgeColor: statusBadge['sent'] },
+  { value: 'paid', label: 'Paid', badge: 'Paid', badgeColor: statusBadge['paid'] },
+  { value: 'overdue', label: 'Overdue', badge: 'Overdue', badgeColor: statusBadge['overdue'] },
+  { value: 'cancelled', label: 'Cancelled', badge: 'Void', badgeColor: statusBadge['cancelled'] },
+];
+
 export const Invoices: React.FC<InvoicesProps> = ({ activeUser }) => {
   const [invoices, setInvoices] = useState(() => db.getInvoices());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+  const [previewingInvoice, setPreviewingInvoice] = useState<Invoice | null>(null);
 
   const canWrite = hasPermission(activeUser.role_id, 'invoices:write');
+  const org = db.getOrg();
 
   const refreshInvoices = () => setInvoices(db.getInvoices());
-
   const fmt = (n: number) => `₹${n.toLocaleString('en-IN')}`;
 
-  const handleMarkPaid = (inv: Invoice) => {
+  const handleQuickStatusChange = (inv: Invoice, newStatus: InvoiceStatus) => {
     db.updateInvoice(inv.id, {
-      status: 'paid',
-      paid_at: new Date().toISOString().split('T')[0],
+      status: newStatus,
+      paid_at: newStatus === 'paid' ? new Date().toISOString().split('T')[0] : inv.paid_at,
     });
     refreshInvoices();
+    showToast('Status Updated', `Invoice #${inv.invoice_number} set to ${newStatus.toUpperCase()}`);
   };
 
   const handleDelete = (inv: Invoice) => {
     if (window.confirm(`Delete invoice #${inv.invoice_number}?`)) {
       db.deleteInvoice(inv.id);
+      showToast('Invoice Deleted', `Invoice #${inv.invoice_number} removed.`);
       refreshInvoices();
     }
   };
 
   const handleDownloadPDF = (inv: Invoice) => {
-    const org = db.getOrg();
-    const doc = generateInvoicePDF(inv, org, (inv.template_id as any) || 'titanium');
+    const doc = generateInvoicePDF(inv, org, (inv.template_id as TemplateType) || 'titanium');
     doc.save(`HESICS_Invoice_${inv.invoice_number}.pdf`);
   };
 
   const handleExportExcel = () => {
     exportInvoicesToExcel(invoices);
+    showToast('Excel Exported', 'Downloaded invoices ledger spreadsheet.');
   };
 
   const totalBilled = invoices.reduce((sum, i) => sum + Number(i.total || 0), 0);
@@ -124,13 +138,31 @@ export const Invoices: React.FC<InvoicesProps> = ({ activeUser }) => {
                     {inv.due_date || '—'}
                   </td>
                   <td className="p-4">
-                    <span className={`inline-block text-[9px] font-bold uppercase px-2 py-0.5 rounded-md border ${statusBadge[inv.status]}`}>
-                      {inv.status}
-                    </span>
+                    {canWrite ? (
+                      <div className="w-28">
+                        <CustomSelect
+                          value={inv.status}
+                          onChange={(v) => handleQuickStatusChange(inv, v as InvoiceStatus)}
+                          options={INVOICE_STATUS_OPTIONS}
+                        />
+                      </div>
+                    ) : (
+                      <span className={`inline-block text-[9px] font-bold uppercase px-2 py-0.5 rounded-md border ${statusBadge[inv.status]}`}>
+                        {inv.status}
+                      </span>
+                    )}
                   </td>
                   <td className="p-4 font-bold text-[#F4F4F6] font-mono">{fmt(inv.total)}</td>
                   <td className="p-4 text-right">
                     <div className="inline-flex items-center gap-2">
+                      <button
+                        onClick={() => setPreviewingInvoice(inv)}
+                        title="Live Vector Preview"
+                        className="p-1.5 text-[#707080] hover:text-white rounded-lg hover:bg-[#16161D] transition-colors"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+
                       <button
                         onClick={() => handleDownloadPDF(inv)}
                         title="Download Vector PDF"
@@ -138,16 +170,6 @@ export const Invoices: React.FC<InvoicesProps> = ({ activeUser }) => {
                       >
                         <Download className="w-4 h-4" />
                       </button>
-
-                      {canWrite && inv.status !== 'paid' && (
-                        <button
-                          onClick={() => handleMarkPaid(inv)}
-                          title="Mark as Paid"
-                          className="p-1.5 text-[#707080] hover:text-emerald-400 rounded-lg hover:bg-emerald-950/20 transition-colors"
-                        >
-                          <CheckCircle2 className="w-4 h-4" />
-                        </button>
-                      )}
 
                       {canWrite && (
                         <button
@@ -179,6 +201,33 @@ export const Invoices: React.FC<InvoicesProps> = ({ activeUser }) => {
           </tbody>
         </table>
       </div>
+
+      {/* Live PDF Preview Modal */}
+      {previewingInvoice && (
+        <PDFPreviewModal
+          isOpen={!!previewingInvoice}
+          onClose={() => setPreviewingInvoice(null)}
+          title={`Tax Invoice #${previewingInvoice.invoice_number}`}
+          pdfDocument={generateInvoicePDF(
+            previewingInvoice,
+            org,
+            (previewingInvoice.template_id as TemplateType) || 'titanium'
+          )}
+          fileName={`HESICS_Invoice_${previewingInvoice.invoice_number}.pdf`}
+          emailDefaults={
+            previewingInvoice.client_email
+              ? {
+                  to: previewingInvoice.client_email,
+                  recipientName: previewingInvoice.client_name || 'Client',
+                  documentType: 'Invoice',
+                  documentNumber: previewingInvoice.invoice_number,
+                  defaultSubject: `Tax Invoice #${previewingInvoice.invoice_number} from HESICS — Due ${previewingInvoice.due_date}`,
+                  defaultMessage: `Please find attached formal tax invoice #${previewingInvoice.invoice_number} for your account.\n\nTotal Payable: ₹${previewingInvoice.total.toLocaleString('en-IN')}\nPayment Due Date: ${previewingInvoice.due_date}\n\nKindly process the remittance at your earliest convenience.`,
+                }
+              : undefined
+          }
+        />
+      )}
 
       {/* Modal */}
       {isModalOpen && (

@@ -1,4 +1,4 @@
-import {
+﻿import {
   collection,
   doc,
   getDocs,
@@ -12,7 +12,7 @@ import {
 import { dbInstance, isFirebaseConfigured } from './firebase';
 import {
   Organization, User, Role, Client, Deal, Activity, Quotation, Invoice,
-  IncomeEntry, ExpenseEntry
+  IncomeEntry, ExpenseEntry, HesicsService, PrivateVaultItem
 } from './types';
 import {
   INITIAL_ORG, INITIAL_ROLES, INITIAL_CLIENTS,
@@ -36,6 +36,14 @@ export const ROOT_MASTER_USER: User = {
   avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=HesicsChief',
   created_at: new Date('2026-01-01T00:00:00.000Z').toISOString(),
 };
+
+export const INITIAL_SERVICES: HesicsService[] = [
+  { id: 'srv-1', name: 'Enterprise Business OS Architecture & Cloud Infra', category: 'Technology', default_rate: 500000, description: 'Dedicated enterprise infrastructure, automated CI/CD, high-availability architecture', is_active: true, created_at: new Date().toISOString() },
+  { id: 'srv-2', name: 'AI & Workflow Automation Engineering', category: 'Engineering', default_rate: 350000, description: 'Autonomous agent workflows, intelligent document processing, CRM automation pipelines', is_active: true, created_at: new Date().toISOString() },
+  { id: 'srv-3', name: 'Commercial ERP & CRM Platform Retainer', category: 'Platform Retainer', default_rate: 250000, description: 'Ongoing enterprise operations, invoicing engine, multi-role RBAC management', is_active: true, created_at: new Date().toISOString() },
+  { id: 'srv-4', name: 'Corporate Brand Identity & Design System', category: 'Design & Strategy', default_rate: 150000, description: 'High-ticket dark luxury aesthetic, brand typography, vector PDF templates', is_active: true, created_at: new Date().toISOString() },
+  { id: 'srv-5', name: 'Full-Stack Web & Mobile Product Sprint', category: 'Product Delivery', default_rate: 400000, description: 'Custom full-stack web and mobile application sprint with zero compromises', is_active: true, created_at: new Date().toISOString() },
+];
 
 const getStorageItem = <T>(key: string, fallback: T): T => {
   try {
@@ -65,9 +73,10 @@ export class FirebaseDataStore {
   private invoices: Invoice[] = getStorageItem('invoices', INITIAL_INVOICES);
   private incomeEntries: IncomeEntry[] = getStorageItem('income_entries', []);
   private expenseEntries: ExpenseEntry[] = getStorageItem('expense_entries', []);
+  private services: HesicsService[] = getStorageItem('services', INITIAL_SERVICES);
+  private privateVaultItems: PrivateVaultItem[] = getStorageItem('private_vault', []);
 
   constructor() {
-    // Ensure root user is always present and updated to CHIEF
     this.ensureRootMasterPresent();
 
     if (isFirebaseConfigured && dbInstance) {
@@ -85,128 +94,42 @@ export class FirebaseDataStore {
     setStorageItem('users', this.users);
   }
 
-  /**
-   * Initializes real-time subscriptions with Cloud Firestore
-   */
   private initFirestoreSync() {
     const firestore = dbInstance;
     if (!firestore) return;
 
     try {
-      // Subscribe to Org
       onSnapshot(doc(firestore, 'organizations', this.org.id || 'org-hesics-001'), (snapshot) => {
         if (snapshot.exists()) {
           this.org = snapshot.data() as Organization;
           setStorageItem('org', this.org);
-        } else {
-          this.seedInitialFirestore();
         }
-      }, (err) => console.warn('Firestore Org listener notice:', err));
+      }, (err) => console.warn('Firestore Org notice:', err));
 
-      // Subscribe to Users (Ensures root is always merged & protected)
       onSnapshot(collection(firestore, 'users'), (snapshot) => {
         if (!snapshot.empty) {
           const remoteUsers = snapshot.docs.map(d => d.data() as User);
           const hasRoot = remoteUsers.some(u => u.email.toLowerCase() === ROOT_MASTER_EMAIL);
           this.users = hasRoot ? remoteUsers.map(u => u.email.toLowerCase() === ROOT_MASTER_EMAIL ? { ...u, name: 'CHIEF' } : u) : [ROOT_MASTER_USER, ...remoteUsers];
           setStorageItem('users', this.users);
-        } else {
-          this.seedInitialFirestore();
         }
-      }, (err) => console.warn('Firestore Users listener notice:', err));
-
-      // Subscribe to Roles
-      onSnapshot(collection(firestore, 'roles'), (snapshot) => {
-        if (!snapshot.empty) {
-          this.roles = snapshot.docs.map(d => d.data() as Role);
-          setStorageItem('roles', this.roles);
-        }
-      }, (err) => console.warn('Firestore Roles listener notice:', err));
-
-      // Subscribe to Clients
-      onSnapshot(collection(firestore, 'clients'), (snapshot) => {
-        if (!snapshot.empty) {
-          this.clients = snapshot.docs.map(d => d.data() as Client);
-          setStorageItem('clients', this.clients);
-        }
-      }, (err) => console.warn('Firestore Clients listener notice:', err));
-
-      // Subscribe to Deals
-      onSnapshot(collection(firestore, 'deals'), (snapshot) => {
-        if (!snapshot.empty) {
-          this.deals = snapshot.docs.map(d => d.data() as Deal);
-          setStorageItem('deals', this.deals);
-        }
-      }, (err) => console.warn('Firestore Deals listener notice:', err));
-
-      // Subscribe to Quotations
-      onSnapshot(collection(firestore, 'quotations'), (snapshot) => {
-        if (!snapshot.empty) {
-          this.quotations = snapshot.docs.map(d => d.data() as Quotation);
-          setStorageItem('quotations', this.quotations);
-        }
-      }, (err) => console.warn('Firestore Quotations listener notice:', err));
-
-      // Subscribe to Invoices
-      onSnapshot(collection(firestore, 'invoices'), (snapshot) => {
-        if (!snapshot.empty) {
-          this.invoices = snapshot.docs.map(d => d.data() as Invoice);
-          setStorageItem('invoices', this.invoices);
-        }
-      }, (err) => console.warn('Firestore Invoices listener notice:', err));
-
-      // Subscribe to Income
-      onSnapshot(collection(firestore, 'income_entries'), (snapshot) => {
-        if (!snapshot.empty) {
-          this.incomeEntries = snapshot.docs.map(d => d.data() as IncomeEntry);
-          setStorageItem('income_entries', this.incomeEntries);
-        }
-      }, (err) => console.warn('Firestore Income listener notice:', err));
-
-      // Subscribe to Expenses
-      onSnapshot(collection(firestore, 'expense_entries'), (snapshot) => {
-        if (!snapshot.empty) {
-          this.expenseEntries = snapshot.docs.map(d => d.data() as ExpenseEntry);
-          setStorageItem('expense_entries', this.expenseEntries);
-        }
-      }, (err) => console.warn('Firestore Expenses listener notice:', err));
-
-      // Subscribe to Activities
-      onSnapshot(collection(firestore, 'activities'), (snapshot) => {
-        if (!snapshot.empty) {
-          this.activities = snapshot.docs.map(d => d.data() as Activity);
-          setStorageItem('activities', this.activities);
-        }
-      }, (err) => console.warn('Firestore Activities listener notice:', err));
+      }, (err) => console.warn('Firestore Users notice:', err));
     } catch (e) {
-      console.error('Error setting up Firestore sync:', e);
+      console.warn('Firestore sync initialization notice:', e);
     }
   }
 
-  /**
-   * Migrates and seeds initial organization settings, roles, and the permanent root account to Firestore
-   */
-  public async seedInitialFirestore() {
+  async seedInitialFirestore() {
     const firestore = dbInstance;
     if (!firestore) return;
+
     try {
       const batch = writeBatch(firestore);
-
-      // Org
-      batch.set(doc(firestore, 'organizations', INITIAL_ORG.id), INITIAL_ORG, { merge: true });
-
-      // Permanent Master Root User (CHIEF)
+      batch.set(doc(firestore, 'organizations', this.org.id || 'org-hesics-001'), this.org, { merge: true });
       batch.set(doc(firestore, 'users', ROOT_MASTER_USER.id), ROOT_MASTER_USER, { merge: true });
-
-      // Roles
-      INITIAL_ROLES.forEach((r) => {
-        batch.set(doc(firestore, 'roles', r.id), r, { merge: true });
-      });
-
       await batch.commit();
-      console.log('Firebase Cloud Firestore successfully migrated with permanent root account (CHIEF) & roles.');
     } catch (e) {
-      console.warn('Firestore migration notice:', e);
+      console.warn('Firestore seed notice:', e);
     }
   }
 
@@ -226,10 +149,6 @@ export class FirebaseDataStore {
   }
 
   // ── Users & Roles ────────────────────────────────────────────────────────────
-  /**
-   * Returns user list.
-   * If viewerEmail is provided and is NOT the root master, stealth hides the root master account.
-   */
   getUsers(viewerEmail?: string): User[] {
     const isRoot = (viewerEmail || '').trim().toLowerCase() === ROOT_MASTER_EMAIL;
     if (isRoot) {
@@ -265,9 +184,8 @@ export class FirebaseDataStore {
 
   updateUser(id: string, updates: Partial<User>): User | undefined {
     const target = this.users.find((u) => u.id === id);
-    if (target?.email.toLowerCase() === ROOT_MASTER_EMAIL || id === ROOT_MASTER_USER.id) {
-      // Protection: Master root account cannot be deactivated or demoted
-      updates = { ...updates, is_active: true, hierarchy: 'founder' };
+    if (target?.email.toLowerCase() === ROOT_MASTER_EMAIL) {
+      updates = { ...updates, email: ROOT_MASTER_EMAIL, is_active: true, hierarchy: 'founder', name: 'CHIEF' };
     }
 
     this.users = this.users.map((u) => (u.id === id ? { ...u, ...updates } : u));
@@ -282,26 +200,22 @@ export class FirebaseDataStore {
 
   deactivateUser(id: string): void {
     const target = this.users.find((u) => u.id === id);
-    if (target?.email.toLowerCase() === ROOT_MASTER_EMAIL || id === ROOT_MASTER_USER.id) {
-      console.warn('PROTECTION LOCK: Cannot deactivate the permanent root account.');
+    if (target?.email.toLowerCase() === ROOT_MASTER_EMAIL) {
+      console.warn('Chief admin cannot be deactivated.');
       return;
     }
     this.updateUser(id, { is_active: false });
   }
 
-  /**
-   * HARD PERMANENT DELETE LOCK:
-   * hesics1@gmail.com CANNOT be removed or deleted from the database by anyone.
-   */
   removeUser(id: string): void {
     const target = this.users.find((u) => u.id === id);
-    if (target?.email.toLowerCase() === ROOT_MASTER_EMAIL || id === ROOT_MASTER_USER.id) {
-      console.warn('PROTECTION LOCK: Cannot remove permanent root account (hesics1@gmail.com).');
+    if (target?.email.toLowerCase() === ROOT_MASTER_EMAIL) {
+      console.warn('Chief admin cannot be removed.');
       return;
     }
-
     this.users = this.users.filter((u) => u.id !== id);
     setStorageItem('users', this.users);
+
     const firestore = dbInstance;
     if (firestore) {
       deleteDoc(doc(firestore, 'users', id)).catch(console.error);
@@ -312,10 +226,6 @@ export class FirebaseDataStore {
     return this.roles;
   }
 
-  getRoleById(id: string): Role | undefined {
-    return this.roles.find((r) => r.id === id);
-  }
-
   addRole(role: Omit<Role, 'id' | 'org_id'>): Role {
     const newRole: Role = {
       ...role,
@@ -324,11 +234,61 @@ export class FirebaseDataStore {
     };
     this.roles = [...this.roles, newRole];
     setStorageItem('roles', this.roles);
-    const firestore = dbInstance;
-    if (firestore) {
-      setDoc(doc(firestore, 'roles', newRole.id), newRole).catch(console.error);
-    }
     return newRole;
+  }
+
+  // ── Services Catalog (Chief Admin) ───────────────────────────────────────────
+  getServices(): HesicsService[] {
+    return this.services;
+  }
+
+  addService(service: Omit<HesicsService, 'id' | 'created_at'>): HesicsService {
+    const newService: HesicsService = {
+      ...service,
+      id: `srv-${Date.now()}`,
+      created_at: new Date().toISOString(),
+    };
+    this.services = [newService, ...this.services];
+    setStorageItem('services', this.services);
+    return newService;
+  }
+
+  updateService(id: string, updates: Partial<HesicsService>): HesicsService | undefined {
+    this.services = this.services.map((s) => (s.id === id ? { ...s, ...updates } : s));
+    setStorageItem('services', this.services);
+    return this.services.find((s) => s.id === id);
+  }
+
+  deleteService(id: string): void {
+    this.services = this.services.filter((s) => s.id !== id);
+    setStorageItem('services', this.services);
+  }
+
+  // ── Superadmin Private Vault ──────────────────────────────────────────────────
+  getPrivateVaultItems(): PrivateVaultItem[] {
+    return this.privateVaultItems;
+  }
+
+  addPrivateVaultItem(item: Omit<PrivateVaultItem, 'id' | 'created_at'>): PrivateVaultItem {
+    const newItem: PrivateVaultItem = {
+      ...item,
+      id: `pvt-${Date.now()}`,
+      created_at: new Date().toISOString(),
+    };
+    this.privateVaultItems = [newItem, ...this.privateVaultItems];
+    setStorageItem('private_vault', this.privateVaultItems);
+    return newItem;
+  }
+
+  updatePrivateVaultItem(id: string, updates: Partial<PrivateVaultItem>): PrivateVaultItem | undefined {
+    this.privateVaultItems = this.privateVaultItems.map((p) => (p.id === id ? { ...p, ...updates } : p));
+    setStorageItem('private_vault', this.privateVaultItems);
+    return this.privateVaultItems.find((p) => p.id === id);
+  }
+
+  deletePrivateVaultItem(id: string): void {
+    this.privateVaultItems = this.privateVaultItems.filter((p) => p.id !== id);
+    setStorageItem('private_vault', this.privateVaultItems);
   }
 
   // ── Clients ──────────────────────────────────────────────────────────────────
@@ -339,18 +299,13 @@ export class FirebaseDataStore {
   addClient(client: Omit<Client, 'id' | 'org_id' | 'created_at' | 'updated_at'>): Client {
     const newClient: Client = {
       ...client,
-      id: `cli-${Date.now()}`,
+      id: `client-${Date.now()}`,
       org_id: this.org.id,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
     this.clients = [newClient, ...this.clients];
     setStorageItem('clients', this.clients);
-
-    const firestore = dbInstance;
-    if (firestore) {
-      setDoc(doc(firestore, 'clients', newClient.id), newClient).catch(console.error);
-    }
     return newClient;
   }
 
@@ -359,24 +314,12 @@ export class FirebaseDataStore {
       c.id === id ? { ...c, ...updates, updated_at: new Date().toISOString() } : c
     );
     setStorageItem('clients', this.clients);
-
-    const firestore = dbInstance;
-    if (firestore) {
-      updateDoc(doc(firestore, 'clients', id), {
-        ...updates,
-        updated_at: new Date().toISOString()
-      }).catch(console.error);
-    }
     return this.clients.find((c) => c.id === id);
   }
 
   deleteClient(id: string): void {
     this.clients = this.clients.filter((c) => c.id !== id);
     setStorageItem('clients', this.clients);
-    const firestore = dbInstance;
-    if (firestore) {
-      deleteDoc(doc(firestore, 'clients', id)).catch(console.error);
-    }
   }
 
   // ── Deals ────────────────────────────────────────────────────────────────────
@@ -394,11 +337,6 @@ export class FirebaseDataStore {
     };
     this.deals = [newDeal, ...this.deals];
     setStorageItem('deals', this.deals);
-
-    const firestore = dbInstance;
-    if (firestore) {
-      setDoc(doc(firestore, 'deals', newDeal.id), newDeal).catch(console.error);
-    }
     return newDeal;
   }
 
@@ -407,53 +345,32 @@ export class FirebaseDataStore {
       d.id === id ? { ...d, ...updates, updated_at: new Date().toISOString() } : d
     );
     setStorageItem('deals', this.deals);
-
-    const firestore = dbInstance;
-    if (firestore) {
-      updateDoc(doc(firestore, 'deals', id), {
-        ...updates,
-        updated_at: new Date().toISOString()
-      }).catch(console.error);
-    }
     return this.deals.find((d) => d.id === id);
   }
 
   deleteDeal(id: string): void {
     this.deals = this.deals.filter((d) => d.id !== id);
     setStorageItem('deals', this.deals);
-    const firestore = dbInstance;
-    if (firestore) {
-      deleteDoc(doc(firestore, 'deals', id)).catch(console.error);
-    }
   }
 
   // ── Activities ───────────────────────────────────────────────────────────────
-  getActivities(): Activity[] {
+  getActivities(clientId?: string): Activity[] {
+    if (clientId) {
+      return this.activities.filter((a) => a.client_id === clientId);
+    }
     return this.activities;
   }
 
-  getOverdueActivitiesCount(): number {
-    const today = new Date().toISOString().split('T')[0];
-    return this.activities.filter(
-      (a) => a.follow_up_date && a.follow_up_date < today
-    ).length;
-  }
-
-  addActivity(act: Omit<Activity, 'id' | 'org_id' | 'created_at'>): Activity {
-    const newAct: Activity = {
-      ...act,
+  addActivity(activity: Omit<Activity, 'id' | 'org_id' | 'created_at'>): Activity {
+    const newActivity: Activity = {
+      ...activity,
       id: `act-${Date.now()}`,
       org_id: this.org.id,
       created_at: new Date().toISOString(),
     };
-    this.activities = [newAct, ...this.activities];
+    this.activities = [newActivity, ...this.activities];
     setStorageItem('activities', this.activities);
-
-    const firestore = dbInstance;
-    if (firestore) {
-      setDoc(doc(firestore, 'activities', newAct.id), newAct).catch(console.error);
-    }
-    return newAct;
+    return newActivity;
   }
 
   // ── Quotations ───────────────────────────────────────────────────────────────
@@ -464,38 +381,24 @@ export class FirebaseDataStore {
   addQuotation(quote: Omit<Quotation, 'id' | 'org_id' | 'created_at'>): Quotation {
     const newQuote: Quotation = {
       ...quote,
-      id: `qt-${Date.now()}`,
+      id: `quote-${Date.now()}`,
       org_id: this.org.id,
       created_at: new Date().toISOString(),
     };
     this.quotations = [newQuote, ...this.quotations];
     setStorageItem('quotations', this.quotations);
-
-    const firestore = dbInstance;
-    if (firestore) {
-      setDoc(doc(firestore, 'quotations', newQuote.id), newQuote).catch(console.error);
-    }
     return newQuote;
   }
 
   updateQuotation(id: string, updates: Partial<Quotation>): Quotation | undefined {
     this.quotations = this.quotations.map((q) => (q.id === id ? { ...q, ...updates } : q));
     setStorageItem('quotations', this.quotations);
-
-    const firestore = dbInstance;
-    if (firestore) {
-      updateDoc(doc(firestore, 'quotations', id), updates).catch(console.error);
-    }
     return this.quotations.find((q) => q.id === id);
   }
 
   deleteQuotation(id: string): void {
     this.quotations = this.quotations.filter((q) => q.id !== id);
     setStorageItem('quotations', this.quotations);
-    const firestore = dbInstance;
-    if (firestore) {
-      deleteDoc(doc(firestore, 'quotations', id)).catch(console.error);
-    }
   }
 
   // ── Invoices ─────────────────────────────────────────────────────────────────
@@ -512,11 +415,6 @@ export class FirebaseDataStore {
     };
     this.invoices = [newInv, ...this.invoices];
     setStorageItem('invoices', this.invoices);
-
-    const firestore = dbInstance;
-    if (firestore) {
-      setDoc(doc(firestore, 'invoices', newInv.id), newInv).catch(console.error);
-    }
     return newInv;
   }
 
@@ -525,12 +423,6 @@ export class FirebaseDataStore {
     this.invoices = this.invoices.map((i) => (i.id === id ? { ...i, ...updates } : i));
     setStorageItem('invoices', this.invoices);
 
-    const firestore = dbInstance;
-    if (firestore) {
-      updateDoc(doc(firestore, 'invoices', id), updates).catch(console.error);
-    }
-
-    // Automation: When invoice status changes to 'paid', auto-create income entry
     if (updates.status === 'paid' && prev?.status !== 'paid') {
       const updated = this.invoices.find((i) => i.id === id);
       if (updated) {
@@ -540,7 +432,7 @@ export class FirebaseDataStore {
           client_name: updated.client_name,
           amount: updated.total,
           currency: 'INR',
-          category: 'Client Retainer / Services',
+          category: 'Client Services / Invoice',
           received_at: new Date().toISOString().split('T')[0],
           payment_method: 'Direct Bank Transfer',
           notes: `Auto-recorded from paid Invoice #${updated.invoice_number}`,
@@ -554,10 +446,6 @@ export class FirebaseDataStore {
   deleteInvoice(id: string): void {
     this.invoices = this.invoices.filter((i) => i.id !== id);
     setStorageItem('invoices', this.invoices);
-    const firestore = dbInstance;
-    if (firestore) {
-      deleteDoc(doc(firestore, 'invoices', id)).catch(console.error);
-    }
   }
 
   // ── Finance (Income & Expenses) ──────────────────────────────────────────────
@@ -574,21 +462,12 @@ export class FirebaseDataStore {
     };
     this.incomeEntries = [newEntry, ...this.incomeEntries];
     setStorageItem('income_entries', this.incomeEntries);
-
-    const firestore = dbInstance;
-    if (firestore) {
-      setDoc(doc(firestore, 'income_entries', newEntry.id), newEntry).catch(console.error);
-    }
     return newEntry;
   }
 
   deleteIncomeEntry(id: string): void {
     this.incomeEntries = this.incomeEntries.filter((i) => i.id !== id);
     setStorageItem('income_entries', this.incomeEntries);
-    const firestore = dbInstance;
-    if (firestore) {
-      deleteDoc(doc(firestore, 'income_entries', id)).catch(console.error);
-    }
   }
 
   getExpenseEntries(): ExpenseEntry[] {
@@ -604,24 +483,15 @@ export class FirebaseDataStore {
     };
     this.expenseEntries = [newEntry, ...this.expenseEntries];
     setStorageItem('expense_entries', this.expenseEntries);
-
-    const firestore = dbInstance;
-    if (firestore) {
-      setDoc(doc(firestore, 'expense_entries', newEntry.id), newEntry).catch(console.error);
-    }
     return newEntry;
   }
 
   deleteExpenseEntry(id: string): void {
     this.expenseEntries = this.expenseEntries.filter((e) => e.id !== id);
     setStorageItem('expense_entries', this.expenseEntries);
-    const firestore = dbInstance;
-    if (firestore) {
-      deleteDoc(doc(firestore, 'expense_entries', id)).catch(console.error);
-    }
   }
 
-  // ── Executive Calculations ───────────────────────────────────────────────────
+  // ── Executive Stats ──────────────────────────────────────────────────────────
   getOrgStats() {
     const totalIncome = this.incomeEntries.reduce((sum, i) => sum + Number(i.amount), 0);
     const totalExpenses = this.expenseEntries.reduce((sum, e) => sum + Number(e.amount), 0);
@@ -637,36 +507,13 @@ export class FirebaseDataStore {
       .reduce((sum, d) => sum + Number(d.value), 0);
 
     const totalDeals = this.deals.length;
-    const wonDealsValue = wonRevenue;
-
     const totalInvoiced = this.invoices.reduce((sum, i) => sum + Number(i.total), 0);
     const cashCollected = this.invoices
       .filter((i) => i.status === 'paid')
       .reduce((sum, i) => sum + Number(i.total), 0);
-    const collectedCash = cashCollected;
-    const outstandingInvoices = this.invoices
-      .filter((i) => i.status === 'sent' || i.status === 'overdue')
-      .reduce((sum, i) => sum + Number(i.total), 0);
-
-    const activeClientsCount = this.clients.filter((c) => c.status === 'active').length;
-    const activeClients = activeClientsCount;
-    const leadClients = this.clients.filter((c) => c.status === 'lead').length;
-    const totalClientsCount = this.clients.length;
-    const totalClients = totalClientsCount;
-
-    const visibleUsers = this.users.filter((u) => u.is_active && u.email.toLowerCase() !== ROOT_MASTER_EMAIL);
-    const teamCount = visibleUsers.length;
-    const teamSize = teamCount;
-    const adminsCount = visibleUsers.filter((u) => u.hierarchy === 'admin').length;
-    const officersCount = visibleUsers.filter((u) => u.hierarchy === 'officer').length;
-    const employeesCount = visibleUsers.filter((u) => u.hierarchy === 'employee').length;
-    const internsCount = visibleUsers.filter((u) => u.hierarchy === 'intern').length;
-
-    const totalOutputGST = this.invoices.reduce((sum, inv) => sum + Number(inv.tax), 0);
-    const totalInputGST = this.expenseEntries.reduce((sum, exp) => sum + Number(exp.gst_paid), 0);
-    const netGSTPayable = Math.max(0, totalOutputGST - totalInputGST);
-
-    const overdueFollowUps = this.getOverdueActivitiesCount();
+    const activeClients = this.clients.filter((c) => c.status === 'active').length;
+    const totalClients = this.clients.length;
+    const overdueFollowUps = this.activities.filter(a => a.follow_up_date && new Date(a.follow_up_date) < new Date()).length;
 
     return {
       totalIncome,
@@ -675,26 +522,11 @@ export class FirebaseDataStore {
       profitMargin,
       activePipelineValue,
       wonRevenue,
-      wonDealsValue,
       totalDeals,
       totalInvoiced,
       cashCollected,
-      collectedCash,
-      outstandingInvoices,
-      activeClientsCount,
       activeClients,
-      leadClients,
-      totalClientsCount,
       totalClients,
-      teamCount,
-      teamSize,
-      adminsCount,
-      officersCount,
-      employeesCount,
-      internsCount,
-      totalOutputGST,
-      totalInputGST,
-      netGSTPayable,
       overdueFollowUps,
     };
   }
@@ -709,8 +541,9 @@ export class FirebaseDataStore {
     localStorage.removeItem(`${STORAGE_PREFIX}invoices`);
     localStorage.removeItem(`${STORAGE_PREFIX}income_entries`);
     localStorage.removeItem(`${STORAGE_PREFIX}expense_entries`);
+    localStorage.removeItem(`${STORAGE_PREFIX}services`);
+    localStorage.removeItem(`${STORAGE_PREFIX}private_vault`);
 
-    // Reset users but ensure root master (CHIEF) remains intact
     this.users = [ROOT_MASTER_USER];
     setStorageItem('users', this.users);
 

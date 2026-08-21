@@ -1,14 +1,17 @@
 ﻿import React, { useState } from 'react';
 import {
   Plus, FileText, Download, CheckCircle2,
-  Trash2, Edit3, ArrowRight, DollarSign, FileSpreadsheet
+  Trash2, Edit3, ArrowRight, DollarSign, FileSpreadsheet, Eye
 } from 'lucide-react';
 import { db } from '../lib/firebaseDb';
 import { Quotation, QuotationStatus, User } from '../lib/types';
 import { QuotationModal } from '../components/invoices/QuotationModal';
-import { generateQuotationPDF } from '../lib/pdfEngine';
+import { generateQuotationPDF, TemplateType } from '../lib/pdfEngine';
 import { exportQuotationsToExcel } from '../lib/excelExport';
 import { hasPermission } from '../lib/rbac';
+import { PDFPreviewModal } from '../components/common/PDFPreviewModal';
+import { CustomSelect, Option } from '../components/common/CustomSelect';
+import { showToast } from '../components/common/Toast';
 
 interface QuotationsProps {
   activeUser: User;
@@ -22,32 +25,48 @@ const statusBadge: Record<QuotationStatus, string> = {
   expired: 'text-[#606070] bg-[#101014] border-[#181820]',
 };
 
+const QUOTATION_STATUS_OPTIONS: Option[] = [
+  { value: 'draft', label: 'Draft', badge: 'Draft', badgeColor: statusBadge['draft'] },
+  { value: 'sent', label: 'Sent', badge: 'Sent', badgeColor: statusBadge['sent'] },
+  { value: 'accepted', label: 'Accepted', badge: 'Accepted', badgeColor: statusBadge['accepted'] },
+  { value: 'rejected', label: 'Rejected', badge: 'Rejected', badgeColor: statusBadge['rejected'] },
+  { value: 'expired', label: 'Expired', badge: 'Expired', badgeColor: statusBadge['expired'] },
+];
+
 export const Quotations: React.FC<QuotationsProps> = ({ activeUser }) => {
   const [quotations, setQuotations] = useState(() => db.getQuotations());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingQuotation, setEditingQuotation] = useState<Quotation | null>(null);
+  const [previewingQuotation, setPreviewingQuotation] = useState<Quotation | null>(null);
 
   const canWrite = hasPermission(activeUser.role_id, 'invoices:write');
+  const org = db.getOrg();
 
   const refreshQuotations = () => setQuotations(db.getQuotations());
-
   const fmt = (n: number) => `₹${n.toLocaleString('en-IN')}`;
+
+  const handleQuickStatusChange = (q: Quotation, newStatus: QuotationStatus) => {
+    db.updateQuotation(q.id, { status: newStatus });
+    refreshQuotations();
+    showToast('Status Updated', `Quotation #${q.quotation_number || q.quote_number} set to ${newStatus.toUpperCase()}`);
+  };
 
   const handleDelete = (q: Quotation) => {
     if (window.confirm(`Delete quotation #${q.quotation_number || q.quote_number}?`)) {
       db.deleteQuotation(q.id);
+      showToast('Quotation Deleted', `Quotation #${q.quotation_number || q.quote_number} removed.`);
       refreshQuotations();
     }
   };
 
   const handleDownloadPDF = (q: Quotation) => {
-    const org = db.getOrg();
-    const doc = generateQuotationPDF(q, org, (q.template_id as any) || 'titanium');
+    const doc = generateQuotationPDF(q, org, (q.template_id as TemplateType) || 'titanium');
     doc.save(`HESICS_Quotation_${q.quotation_number || q.quote_number || 'QT'}.pdf`);
   };
 
   const handleExportExcel = () => {
     exportQuotationsToExcel(quotations);
+    showToast('Excel Exported', 'Downloaded quotations register spreadsheet.');
   };
 
   const totalQuoted = quotations.reduce((sum, q) => sum + Number(q.total || 0), 0);
@@ -115,13 +134,31 @@ export const Quotations: React.FC<QuotationsProps> = ({ activeUser }) => {
                     {q.valid_until || q.expiry_date || '—'}
                   </td>
                   <td className="p-4">
-                    <span className={`inline-block text-[9px] font-bold uppercase px-2 py-0.5 rounded-md border ${statusBadge[q.status]}`}>
-                      {q.status}
-                    </span>
+                    {canWrite ? (
+                      <div className="w-28">
+                        <CustomSelect
+                          value={q.status}
+                          onChange={(v) => handleQuickStatusChange(q, v as QuotationStatus)}
+                          options={QUOTATION_STATUS_OPTIONS}
+                        />
+                      </div>
+                    ) : (
+                      <span className={`inline-block text-[9px] font-bold uppercase px-2 py-0.5 rounded-md border ${statusBadge[q.status]}`}>
+                        {q.status}
+                      </span>
+                    )}
                   </td>
                   <td className="p-4 font-bold text-[#F4F4F6] font-mono">{fmt(q.total)}</td>
                   <td className="p-4 text-right">
                     <div className="inline-flex items-center gap-2">
+                      <button
+                        onClick={() => setPreviewingQuotation(q)}
+                        title="Live Vector Preview"
+                        className="p-1.5 text-[#707080] hover:text-white rounded-lg hover:bg-[#16161D] transition-colors"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+
                       <button
                         onClick={() => handleDownloadPDF(q)}
                         title="Download Vector PDF"
@@ -160,6 +197,33 @@ export const Quotations: React.FC<QuotationsProps> = ({ activeUser }) => {
           </tbody>
         </table>
       </div>
+
+      {/* Live PDF Preview Modal */}
+      {previewingQuotation && (
+        <PDFPreviewModal
+          isOpen={!!previewingQuotation}
+          onClose={() => setPreviewingQuotation(null)}
+          title={`Commercial Quotation #${previewingQuotation.quotation_number || previewingQuotation.quote_number}`}
+          pdfDocument={generateQuotationPDF(
+            previewingQuotation,
+            org,
+            (previewingQuotation.template_id as TemplateType) || 'titanium'
+          )}
+          fileName={`HESICS_Quotation_${previewingQuotation.quotation_number || previewingQuotation.quote_number || 'QT'}.pdf`}
+          emailDefaults={
+            previewingQuotation.client_email
+              ? {
+                  to: previewingQuotation.client_email,
+                  recipientName: previewingQuotation.client_name || 'Client',
+                  documentType: 'Quotation',
+                  documentNumber: previewingQuotation.quotation_number || previewingQuotation.quote_number || 'QT',
+                  defaultSubject: `Commercial Quotation #${previewingQuotation.quotation_number || previewingQuotation.quote_number} from HESICS`,
+                  defaultMessage: `We are pleased to present formal commercial quotation #${previewingQuotation.quotation_number || previewingQuotation.quote_number} for your review.\n\nTotal Estimate: ₹${previewingQuotation.total.toLocaleString('en-IN')}\nValid Until: ${previewingQuotation.valid_until || previewingQuotation.expiry_date}\n\nPlease let us know if you require any scope adjustments or milestone alignments.`,
+                }
+              : undefined
+          }
+        />
+      )}
 
       {/* Modal */}
       {isModalOpen && (

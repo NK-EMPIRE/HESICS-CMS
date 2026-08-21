@@ -8,6 +8,7 @@ import { Quotations } from './pages/Quotations';
 import { Invoices } from './pages/Invoices';
 import { TeamPermissions } from './pages/TeamPermissions';
 import { Settings } from './pages/Settings';
+import { PrivateSpace } from './pages/PrivateSpace';
 import { Login } from './pages/Login';
 import { db } from './lib/firebaseDb';
 import { getLocalSession, setLocalSession, signOut, onAuthStateChange } from './lib/firebaseAuth';
@@ -65,6 +66,8 @@ export function App() {
     switch (currentTab) {
       case 'dashboard':
         return <Dashboard activeUser={activeUser} onNavigate={setCurrentTab} />;
+      case 'private_space':
+        return <PrivateSpace activeUser={activeUser} />;
       case 'clients':
         return <Clients activeUser={activeUser} />;
       case 'deals':

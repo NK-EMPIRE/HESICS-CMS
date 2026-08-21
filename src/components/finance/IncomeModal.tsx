@@ -1,9 +1,10 @@
 ﻿import React, { useState } from 'react';
-import { X, DollarSign } from 'lucide-react';
+import { X, DollarSign, Building2, User as UserIcon } from 'lucide-react';
 import { db } from '../../lib/firebaseDb';
 import { User as UserType } from '../../lib/types';
 import { DatePicker } from '../common/DatePicker';
 import { CustomSelect, Option } from '../common/CustomSelect';
+import { showToast } from '../common/Toast';
 
 interface IncomeModalProps {
   isOpen: boolean;
@@ -25,7 +26,11 @@ export const IncomeModal: React.FC<IncomeModalProps> = ({
   onSuccess,
   activeUser,
 }) => {
-  const [clientName, setClientName] = useState('');
+  const clients = db.getClients();
+  const [isManualInput, setIsManualInput] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState(clients[0]?.id || '');
+  const [manualClientName, setManualClientName] = useState('');
+
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('Enterprise Retainer');
   const [receivedAt, setReceivedAt] = useState(new Date().toISOString().split('T')[0]);
@@ -34,13 +39,25 @@ export const IncomeModal: React.FC<IncomeModalProps> = ({
 
   if (!isOpen) return null;
 
+  const clientOptions: Option[] = clients.map((c) => ({
+    value: c.id,
+    label: c.name,
+    sublabel: c.company_name || c.email,
+  }));
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!amount || Number(amount) <= 0) return;
 
+    let finalClientName = manualClientName.trim();
+    if (!isManualInput) {
+      const selected = clients.find((c) => c.id === selectedClientId);
+      finalClientName = selected ? selected.name : 'Direct Source';
+    }
+
     db.addIncomeEntry({
       source_type: 'direct',
-      client_name: clientName.trim() || undefined,
+      client_name: finalClientName || 'Direct Revenue',
       amount: Number(amount),
       currency: 'INR',
       category: category.trim() || 'Direct Revenue',
@@ -50,13 +67,14 @@ export const IncomeModal: React.FC<IncomeModalProps> = ({
       created_by: activeUser.id,
     });
 
+    showToast('Inflow Recorded', `Recorded ₹${Number(amount).toLocaleString('en-IN')} from ${finalClientName || 'Direct Source'}.`);
     onSuccess();
     onClose();
   };
 
   return (
     <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div className="bg-[#0D0D11] border border-[#22222B] rounded-3xl w-full max-w-2xl max-h-[92vh] overflow-y-auto p-8 space-y-6 shadow-2xl shadow-black/80">
+      <div className="bg-[#0D0D11] border border-[#22222B] rounded-3xl w-full max-w-2xl max-h-[92vh] overflow-y-auto p-8 pb-16 space-y-6 shadow-2xl shadow-black/80">
         <div className="flex items-center justify-between border-b border-[#1C1C26] pb-4">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-[#77727E]/15 border border-[#77727E]/30 flex items-center justify-center">
@@ -77,15 +95,38 @@ export const IncomeModal: React.FC<IncomeModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Client Account Selector / Manual Mode */}
           <div>
-            <label className="hesics-label">Client / Commercial Source</label>
-            <input
-              type="text"
-              value={clientName}
-              onChange={(e) => setClientName(e.target.value)}
-              placeholder="e.g. Apex Global Technologies Ltd"
-              className="hesics-input text-xs"
-            />
+            <div className="flex items-center justify-between mb-2">
+              <label className="hesics-label mb-0">Client / Commercial Source Entity *</label>
+              <button
+                type="button"
+                onClick={() => setIsManualInput(!isManualInput)}
+                className="text-[11px] text-[#D4D4D8] hover:text-white font-medium hover:underline"
+              >
+                {isManualInput ? '← Select from client roster' : '+ Or type custom entity manually'}
+              </button>
+            </div>
+
+            {isManualInput ? (
+              <input
+                type="text"
+                required
+                value={manualClientName}
+                onChange={(e) => setManualClientName(e.target.value)}
+                placeholder="e.g. Apex Global Technologies Ltd / Direct Consulting"
+                className="hesics-input text-xs"
+                autoFocus
+              />
+            ) : (
+              <CustomSelect
+                value={selectedClientId}
+                onChange={setSelectedClientId}
+                options={clientOptions}
+                placeholder="Select client account..."
+                searchable
+              />
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">

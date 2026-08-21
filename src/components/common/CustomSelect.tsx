@@ -34,10 +34,10 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   required = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [openUpward, setOpenUpward] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Close on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -48,6 +48,20 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Smart upward/downward positioning
+  useEffect(() => {
+    if (isOpen && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+      const spaceBelow = windowHeight - rect.bottom;
+      if (spaceBelow < 280 && rect.top > 280) {
+        setOpenUpward(true);
+      } else {
+        setOpenUpward(false);
+      }
+    }
+  }, [isOpen]);
 
   const selectedOption = options.find((o) => o.value === value);
 
@@ -104,7 +118,6 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         />
       </div>
 
-      {/* Hidden input for form validation */}
       {required && (
         <input
           type="text"
@@ -118,7 +131,11 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
 
       {/* Popover Menu */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 z-50 w-full min-w-[240px] max-h-64 overflow-y-auto bg-[#0D0D12] border border-[#262632] rounded-2xl p-1.5 shadow-2xl space-y-1 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-100">
+        <div
+          className={`absolute ${
+            openUpward ? 'bottom-full mb-2' : 'top-full mt-2'
+          } left-0 z-[9999] w-full min-w-[240px] max-h-64 overflow-y-auto bg-[#0D0D12] border border-[#262632] rounded-2xl p-1.5 shadow-2xl space-y-1 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-100`}
+        >
           {searchable && (
             <div className="p-1.5 border-b border-[#1C1C24] sticky top-0 bg-[#0D0D12] z-10">
               <div className="relative">

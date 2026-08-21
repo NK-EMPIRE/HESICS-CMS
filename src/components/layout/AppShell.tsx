@@ -2,12 +2,13 @@
 import {
   LayoutDashboard, Users, Kanban, DollarSign, FileText, Receipt,
   ShieldCheck, Settings, LogOut, ChevronLeft, ChevronRight,
-  Shield, UserCheck, Briefcase
+  Shield, UserCheck, Briefcase, Lock, Sparkles
 } from 'lucide-react';
 import { db } from '../../lib/firebaseDb';
 import { User, PermissionKey, UserHierarchy } from '../../lib/types';
-import { hasPermission } from '../../lib/rbac';
+import { hasPermission, isSuperadmin } from '../../lib/rbac';
 import { HesicsLogo } from '../common/HesicsLogo';
+import { ToastContainer, showToast } from '../common/Toast';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -21,6 +22,7 @@ interface AppShellProps {
 const HierarchyIcon: React.FC<{ h: UserHierarchy }> = ({ h }) => {
   switch (h) {
     case 'founder':
+    case 'superadmin':
     case 'admin':
       return <Shield className="w-3 h-3 text-[#77727E]" />;
     case 'officer':
@@ -33,6 +35,7 @@ const HierarchyIcon: React.FC<{ h: UserHierarchy }> = ({ h }) => {
 const displayTierName = (h: UserHierarchy, roleName?: string) => {
   if (roleName) return roleName;
   if (h === 'founder' || h === 'admin') return 'Admin';
+  if (h === 'superadmin') return 'Superadmin';
   if (h === 'officer') return 'Officer';
   if (h === 'employee') return 'Employee';
   return 'Intern';
@@ -48,8 +51,8 @@ export const AppShell: React.FC<AppShellProps> = ({
   const [collapsed, setCollapsed] = useState(false);
   const org = db.getOrg();
 
-  // Calculate overdue count for badge
-  const overdueCount = db.getOverdueActivitiesCount();
+  const isSuper = isSuperadmin(activeUser.hierarchy, activeUser.email);
+
   const coldCount = db.getClients().filter((c) => {
     if (c.status !== 'active') return false;
     const acts = db.getActivities().filter((a) => a.client_id === c.id);
@@ -61,8 +64,11 @@ export const AppShell: React.FC<AppShellProps> = ({
     return Math.floor((Date.now() - latest) / (1000 * 60 * 60 * 24)) >= 30;
   }).length;
 
-  const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, perm: 'deals:read' as PermissionKey, badge: overdueCount > 0 ? overdueCount : undefined },
+  const baseNavItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, perm: 'deals:read' as PermissionKey },
+    ...(isSuper
+      ? [{ id: 'private_space', label: 'Private Vault', icon: Lock, perm: 'superadmin:vault' as PermissionKey, badge: 'Vault', badgeColor: 'bg-[#77727E]/20 text-[#D4D4D8] border-[#77727E]/40' }]
+      : []),
     { id: 'clients', label: 'Clients', icon: Users, perm: 'clients:read' as PermissionKey, badge: coldCount > 0 ? `${coldCount} cold` : undefined, badgeColor: 'bg-amber-950/40 text-amber-400 border-amber-900/40' },
     { id: 'deals', label: 'Deals Board', icon: Kanban, perm: 'deals:read' as PermissionKey },
     { id: 'finance', label: 'Finance & Tax', icon: DollarSign, perm: 'finance:read' as PermissionKey },
@@ -72,8 +78,18 @@ export const AppShell: React.FC<AppShellProps> = ({
     { id: 'settings', label: 'Settings', icon: Settings, perm: 'clients:read' as PermissionKey },
   ];
 
+  const handleSignOutClick = () => {
+    showToast('Signed Out', 'You have been securely signed out of HESICS OS.', 'info');
+    setTimeout(() => {
+      onLogout();
+    }, 400);
+  };
+
   return (
     <div className="flex h-screen bg-[#050505] text-[#A1A1AA] font-sans overflow-hidden select-none">
+      {/* Global Toast Alerts */}
+      <ToastContainer />
+
       {/* Sidebar */}
       <aside
         className={`${
@@ -112,10 +128,10 @@ export const AppShell: React.FC<AppShellProps> = ({
 
           {/* Navigation Links */}
           <div className="p-2 space-y-0.5">
-            {navItems.map((item) => {
+            {baseNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = currentTab === item.id;
-              const isAllowed = hasPermission(activeUser.role_id, item.perm);
+              const isAllowed = hasPermission(activeUser.role_id, item.perm, activeUser.hierarchy, activeUser.email);
 
               return (
                 <button
@@ -123,9 +139,9 @@ export const AppShell: React.FC<AppShellProps> = ({
                   disabled={!isAllowed}
                   onClick={() => onTabChange(item.id)}
                   title={collapsed ? item.label : undefined}
-                  className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-all ${
+                  className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-medium transition-all ${
                     isActive
-                      ? 'bg-[#77727E]/15 text-[#77727E] border border-[#77727E]/30'
+                      ? 'bg-[#77727E]/20 text-[#F4F4F6] border border-[#77727E]/40 font-semibold'
                       : isAllowed
                       ? 'text-[#888896] hover:text-[#F4F4F6] hover:bg-[#14141A]'
                       : 'text-[#353540] cursor-not-allowed opacity-40'
@@ -136,7 +152,7 @@ export const AppShell: React.FC<AppShellProps> = ({
                     <div className="flex items-center justify-between flex-1 min-w-0">
                       <span className="truncate">{item.label}</span>
                       {item.badge && (
-                        <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full border ${
+                        <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded-md border ${
                           item.badgeColor || 'bg-rose-950/50 text-rose-400 border-rose-900/40'
                         }`}>
                           {item.badge}
@@ -150,8 +166,20 @@ export const AppShell: React.FC<AppShellProps> = ({
           </div>
         </div>
 
-        {/* Authenticated User Card at bottom of sidebar */}
-        <div className="p-2.5 border-t border-[#191920] bg-[#070709]">
+        {/* Authenticated User Card at bottom of sidebar with Dedicated Sign Out Button */}
+        <div className="p-2.5 border-t border-[#191920] bg-[#070709] space-y-2">
+          {/* Dedicated Single Sign Out Button placed above the profile */}
+          <button
+            onClick={handleSignOutClick}
+            className={`w-full flex items-center justify-center gap-2 px-2.5 py-2 rounded-xl text-xs font-medium text-[#808090] hover:text-rose-300 bg-[#0E0E12] hover:bg-rose-950/20 border border-[#1A1A22] hover:border-rose-900/30 transition-all cursor-pointer ${
+              collapsed ? 'p-2' : ''
+            }`}
+            title="Sign Out of Session"
+          >
+            <LogOut className="w-3.5 h-3.5 shrink-0 text-[#707080] group-hover:text-rose-300" />
+            {!collapsed && <span>Sign Out</span>}
+          </button>
+
           {!collapsed ? (
             <div className="flex items-center justify-between gap-2 p-1.5 rounded-xl bg-[#0D0D11] border border-[#181820]">
               <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -170,36 +198,24 @@ export const AppShell: React.FC<AppShellProps> = ({
                   </div>
                 </div>
               </div>
-
-              <button
-                onClick={onLogout}
-                title="Sign Out"
-                className="p-1.5 text-[#606070] hover:text-rose-400 hover:bg-rose-950/20 rounded-lg transition-colors shrink-0"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-              </button>
             </div>
           ) : (
-            <button
-              onClick={onLogout}
-              title={`Sign Out (${activeUser.name})`}
-              className="w-full p-2 flex items-center justify-center text-[#606070] hover:text-rose-400 hover:bg-[#14141A] rounded-lg transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
+            <div className="w-7 h-7 rounded-full bg-[#14141A] ring-1 ring-[#77727E]/40 mx-auto overflow-hidden">
+              <img src={activeUser.avatar_url} alt={activeUser.name} className="w-full h-full object-cover" />
+            </div>
           )}
         </div>
       </aside>
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 bg-[#050505]">
-        {/* Topbar */}
+        {/* Topbar (Clean, no redundant logout button) */}
         <header className="h-12 px-6 border-b border-[#191920] bg-[#070709] flex items-center justify-between sticky top-0 z-20">
           <div className="flex items-center gap-2 text-xs text-[#606070]">
             <span>{org.name}</span>
             <span>/</span>
             <span className="text-[#F4F4F6] font-medium capitalize">
-              {navItems.find((n) => n.id === currentTab)?.label || currentTab}
+              {baseNavItems.find((n) => n.id === currentTab)?.label || currentTab}
             </span>
           </div>
 
@@ -215,14 +231,6 @@ export const AppShell: React.FC<AppShellProps> = ({
                 <span className="ml-1 text-[10px] text-[#606070] capitalize font-mono">· {displayTierName(activeUser.hierarchy, activeUser.role_name)}</span>
               </div>
             </div>
-            <button
-              onClick={onLogout}
-              className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-[#888896] hover:text-white hover:bg-[#14141A] border border-[#1C1C22] rounded-md transition-colors"
-              title="Sign Out"
-            >
-              <LogOut className="w-3 h-3" />
-              <span className="hidden md:inline">Sign Out</span>
-            </button>
           </div>
         </header>
 
@@ -234,3 +242,4 @@ export const AppShell: React.FC<AppShellProps> = ({
     </div>
   );
 };
+
