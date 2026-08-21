@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
-import { X, Plus, Trash2, FileText, User } from 'lucide-react';
+﻿import React, { useState } from 'react';
+import { X, Plus, Trash2, Send } from 'lucide-react';
 import { db } from '../../lib/firebaseDb';
 import { Quotation, QuotationStatus, LineItem, User as UserType } from '../../lib/types';
 import { DatePicker } from '../common/DatePicker';
+import { CustomSelect, Option } from '../common/CustomSelect';
+import { sendQuotationEmail } from '../../lib/emailService';
 
 interface QuotationModalProps {
   isOpen: boolean;
@@ -11,6 +13,13 @@ interface QuotationModalProps {
   quotation?: Quotation;
   activeUser: UserType;
 }
+
+const STATUS_OPTIONS: Option[] = [
+  { value: 'draft', label: 'Draft Scope', badge: 'Draft', badgeColor: 'text-[#808090] bg-[#14141A] border-[#202028]' },
+  { value: 'sent', label: 'Sent to Client', badge: 'Sent', badgeColor: 'text-[#1E9EFF] bg-[#1E9EFF]/10 border-[#1E9EFF]/30' },
+  { value: 'accepted', label: 'Accepted by Client', badge: 'Accepted', badgeColor: 'text-emerald-400 bg-emerald-950/30 border-emerald-900/40' },
+  { value: 'rejected', label: 'Rejected / Superseded', badge: 'Declined', badgeColor: 'text-rose-400 bg-rose-950/30 border-rose-900/40' },
+];
 
 export const QuotationModal: React.FC<QuotationModalProps> = ({
   isOpen,
@@ -34,6 +43,7 @@ export const QuotationModal: React.FC<QuotationModalProps> = ({
     quotation?.expiry_date || quotation?.valid_until || new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0]
   );
   const [status, setStatus] = useState<QuotationStatus>(quotation?.status || 'sent');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [items, setItems] = useState<LineItem[]>(
     quotation?.line_items || quotation?.items || [
@@ -42,6 +52,12 @@ export const QuotationModal: React.FC<QuotationModalProps> = ({
   );
 
   if (!isOpen) return null;
+
+  const clientOptions: Option[] = clients.map((c) => ({
+    value: c.id,
+    label: c.name,
+    sublabel: c.company_name || c.email,
+  }));
 
   const addItem = () => {
     setItems([
@@ -71,10 +87,11 @@ export const QuotationModal: React.FC<QuotationModalProps> = ({
   const tax = Math.round(items.reduce((sum, item) => sum + (Number(item.amount) * ((item.tax_rate ?? 18) / 100)), 0));
   const total = subtotal + tax;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!clientId || items.length === 0) return;
 
+    setIsSubmitting(true);
     const selectedClient = clients.find((c) => c.id === clientId);
 
     const payload = {
@@ -101,6 +118,18 @@ export const QuotationModal: React.FC<QuotationModalProps> = ({
       db.addQuotation(payload);
     }
 
+    // Automated Quotation Email Dispatch if client email is present
+    if (selectedClient?.email && status === 'sent') {
+      await sendQuotationEmail({
+        to: selectedClient.email,
+        clientName: selectedClient.name,
+        quoteNumber,
+        totalAmount: total,
+        validUntil,
+      });
+    }
+
+    setIsSubmitting(false);
     onSuccess();
     onClose();
   };
@@ -110,7 +139,7 @@ export const QuotationModal: React.FC<QuotationModalProps> = ({
       <div className="bg-[#0D0D11] border border-[#1E1E26] rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 space-y-4 shadow-2xl">
         <div className="flex items-center justify-between border-b border-[#1A1A22] pb-3">
           <h2 className="text-sm font-bold text-[#F4F4F6]">
-            {quotation ? 'Edit Quotation' : 'Create Quotation'}
+            {quotation ? 'Edit Quotation' : 'Create & Issue Quotation'}
           </h2>
           <button onClick={onClose} className="text-[#606070] hover:text-white p-1 rounded">
             <X className="w-4 h-4" />
@@ -121,18 +150,13 @@ export const QuotationModal: React.FC<QuotationModalProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
               <label className="hesics-label">Client Account *</label>
-              <select
-                required
+              <CustomSelect
                 value={clientId}
-                onChange={(e) => setClientId(e.target.value)}
-                className="hesics-input"
-              >
-                {clients.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} {c.company_name ? `(${c.company_name})` : ''}
-                  </option>
-                ))}
-              </select>
+                onChange={setClientId}
+                options={clientOptions}
+                placeholder="Select client..."
+                searchable
+              />
             </div>
 
             <div>
@@ -154,6 +178,15 @@ export const QuotationModal: React.FC<QuotationModalProps> = ({
                 placeholder="Select expiry date..."
               />
             </div>
+          </div>
+
+          <div>
+            <label className="hesics-label">Quotation Status</label>
+            <CustomSelect
+              value={status}
+              onChange={(v) => setStatus(v as QuotationStatus)}
+              options={STATUS_OPTIONS}
+            />
           </div>
 
           {/* Line Items */}
@@ -231,15 +264,11 @@ export const QuotationModal: React.FC<QuotationModalProps> = ({
           </div>
 
           <div className="flex items-center justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="hesics-btn-ghost"
-            >
+            <button type="button" onClick={onClose} className="hesics-btn-ghost">
               Cancel
             </button>
-            <button type="submit" className="hesics-btn-primary">
-              {quotation ? 'Save Quotation' : 'Issue Quotation'}
+            <button type="submit" disabled={isSubmitting} className="hesics-btn-primary">
+              {isSubmitting ? 'Issuing & Emailing...' : quotation ? 'Save Quotation' : 'Issue Quotation'}
             </button>
           </div>
         </form>

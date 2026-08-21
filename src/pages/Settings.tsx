@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   Building, Database, RefreshCw,
   CheckCircle2, Save, Shield, History, Trash2, Cloud, UploadCloud, Server, Image as ImageIcon
@@ -9,10 +9,18 @@ import { EntityType, User } from '../lib/types';
 import { getAuditLog, formatAuditAction, clearAuditLog } from '../lib/auditLog';
 import { HesicsLogo } from '../components/common/HesicsLogo';
 import { isAdminOrAbove, isMasterRoot } from '../lib/rbac';
+import { CustomSelect, Option } from '../components/common/CustomSelect';
 
 interface SettingsProps {
   activeUser: User;
 }
+
+const ENTITY_OPTIONS: Option[] = [
+  { value: 'proprietorship', label: 'Proprietorship', badge: 'Sole', badgeColor: 'text-[#808090] bg-[#14141A] border-[#202028]' },
+  { value: 'partnership', label: 'Partnership Firm', badge: 'Partnership', badgeColor: 'text-indigo-400 bg-indigo-950/30 border-indigo-900/40' },
+  { value: 'llp', label: 'LLP (Limited Liability Partnership)', badge: 'LLP', badgeColor: 'text-amber-400 bg-amber-950/30 border-amber-900/40' },
+  { value: 'pvt_ltd', label: 'Private Limited Company (Pvt Ltd)', badge: 'Pvt Ltd', badgeColor: 'text-[#1E9EFF] bg-[#1E9EFF]/10 border-[#1E9EFF]/30' },
+];
 
 export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
   const [org, setOrg] = useState(db.getOrg());
@@ -49,129 +57,76 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
     }
   };
 
-  const handleClearAudit = () => {
-    if (window.confirm('Clear all audit logs?')) {
-      clearAuditLog();
-      setAuditLogs([]);
-    }
-  };
-
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-
       {/* Header */}
-      <div className="space-y-1 pb-4 border-b border-[#1A1A20]">
-        <h1 className="text-xl font-bold text-[#F4F4F6] tracking-tight font-display">Settings & Infrastructure</h1>
-        <p className="text-xs text-[#828290]">
-          Firebase Backend & Database, Organization parameters, brand assets, tax configuration, and audit logs.
-        </p>
-      </div>
-
-      {/* Active User Info */}
-      <div className="hesics-card p-4 flex items-center gap-3">
-        <img
-          src={activeUser.avatar_url}
-          alt={activeUser.name}
-          className="w-9 h-9 rounded-full ring-1 ring-[#1E9EFF]/30 bg-[#15151C]"
-        />
+      <div className="flex items-center justify-between pb-4 border-b border-[#1A1A20]">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-bold text-[#F4F4F6]">{activeUser.name}</span>
-            <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border text-[#1E9EFF] bg-[#1E9EFF]/10 border-[#1E9EFF]/30">
-              <Shield className="w-2.5 h-2.5" /> {activeUser.role_name || 'Admin'}
-            </span>
-          </div>
-          <div className="text-xs text-[#707080]">{activeUser.email} · {activeUser.department || 'Operations'}</div>
+          <h1 className="text-xl font-bold text-[#F4F4F6] tracking-tight font-display">System & Settings</h1>
+          <p className="text-xs text-[#828290] mt-1">
+            Enterprise infrastructure, brand identity, and operational security logs.
+          </p>
         </div>
       </div>
 
-      {/* Brand & Logo Card */}
-      <div className="hesics-card p-5 space-y-3">
-        <h3 className="text-xs font-bold text-[#F4F4F6] flex items-center gap-2">
-          <ImageIcon className="w-4 h-4 text-[#1E9EFF]" /> Brand Identity & Logo
-        </h3>
-        <div className="flex items-center gap-4 p-3 bg-[#08080B] border border-[#181820] rounded-xl">
-          <div className="w-14 h-14 rounded-xl bg-[#050505] border border-[#1E9EFF]/30 flex items-center justify-center p-2 shadow-lg shadow-[#1E9EFF]/10">
-            <HesicsLogo size={42} variant="glow" />
-          </div>
-          <div>
-            <div className="text-xs font-semibold text-[#F4F4F6]">HESICS Official Emblem</div>
-            <p className="text-[11px] text-[#707080] mt-0.5">
-              Active across System Header, Navigation Sidebar, Login Portal, Favicon, Quotations & PDF Invoices.
-            </p>
-            <span className="inline-block mt-1.5 text-[9px] font-mono text-[#1E9EFF] bg-[#1E9EFF]/10 px-2 py-0.5 rounded border border-[#1E9EFF]/20">
-              public/hesics-logo.png
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Firebase Backend & Database Status Card */}
-      <div className="hesics-card p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold text-[#F4F4F6] flex items-center gap-2">
-            <Cloud className="w-4 h-4 text-[#1E9EFF]" /> Firebase Cloud Infrastructure & Database
-          </h3>
-          {isFirebaseConfigured && (
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950/40 text-emerald-400 border border-emerald-900/40">
-              Project: {firebaseConfig.projectId}
-            </span>
-          )}
-        </div>
-
-        {isFirebaseConfigured ? (
-          <div className="space-y-3">
-            <div className="p-3 bg-emerald-950/20 border border-emerald-900/40 rounded-xl flex items-center justify-between text-xs text-emerald-300 font-semibold">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                <span>Google Firebase Auth & Cloud Firestore Connected in Realtime</span>
-              </div>
-              <button
-                type="button"
-                onClick={handleSeedFirestore}
-                disabled={isSeeding}
-                className="hesics-btn-primary py-1 px-2.5 text-[10px]"
-              >
-                <UploadCloud className="w-3 h-3" />
-                {isSeeding ? 'Syncing...' : 'Sync Local to Firestore'}
-              </button>
-            </div>
-
-            {seedSuccess && (
-              <div className="p-2.5 bg-emerald-950/30 border border-emerald-900/50 rounded-lg text-xs text-emerald-300">
-                ✓ Firestore database successfully synced with initial schema & permanent root account!
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="p-3 bg-amber-950/20 border border-amber-900/30 rounded-xl space-y-2">
-            <div className="text-xs text-amber-400 font-semibold flex items-center gap-2">
-              <Server className="w-4 h-4" /> Running in Local Offline Mode
-            </div>
-            <p className="text-[11px] text-[#808090]">
-              To connect your live Firebase project, configure your Firebase credentials in <code className="text-[#1E9EFF]">.env</code>.
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Org Profile Form */}
+      {/* Organization Details Form */}
       <form onSubmit={handleSave} className="hesics-card p-5 space-y-4">
-        <h3 className="text-xs font-bold text-[#F4F4F6] flex items-center gap-2">
-          <Building className="w-4 h-4 text-[#1E9EFF]" /> Organisation Profile
-        </h3>
+        <div className="flex items-center gap-2 pb-3 border-b border-[#181820]">
+          <Building className="w-4 h-4 text-[#1E9EFF]" />
+          <h2 className="text-xs font-bold text-[#F4F4F6]">Organization Profile</h2>
+        </div>
 
-        <div className="space-y-3">
-          <div>
-            <label className="hesics-label">Organisation Name</label>
-            <input
-              type="text"
-              required
-              disabled={!canEdit}
-              value={org.name}
-              onChange={(e) => setOrg({ ...org, name: e.target.value })}
-              className="hesics-input disabled:opacity-50 disabled:cursor-not-allowed"
-            />
+        <div className="space-y-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="hesics-label">Enterprise Entity Name *</label>
+              <input
+                type="text"
+                required
+                disabled={!canEdit}
+                value={org.name}
+                onChange={(e) => setOrg({ ...org, name: e.target.value })}
+                className="hesics-input disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+            </div>
+
+            <div>
+              <label className="hesics-label">Brand Tagline</label>
+              <input
+                type="text"
+                disabled={!canEdit}
+                value={org.tagline || ''}
+                onChange={(e) => setOrg({ ...org, tagline: e.target.value })}
+                placeholder="Make It Simple."
+                className="hesics-input disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="hesics-label">Primary Operational Email</label>
+              <input
+                type="email"
+                disabled={!canEdit}
+                value={org.email || ''}
+                onChange={(e) => setOrg({ ...org, email: e.target.value })}
+                placeholder="operations@hesics.com"
+                className="hesics-input disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+            </div>
+
+            <div>
+              <label className="hesics-label">Headquarters Address</label>
+              <input
+                type="text"
+                disabled={!canEdit}
+                value={org.address || ''}
+                onChange={(e) => setOrg({ ...org, address: e.target.value })}
+                placeholder="Chennai, Tamil Nadu, India"
+                className="hesics-input disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -189,17 +144,12 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
 
             <div>
               <label className="hesics-label">Legal Entity Type</label>
-              <select
+              <CustomSelect
                 disabled={!canEdit}
-                value={org.entity_type}
-                onChange={(e) => setOrg({ ...org, entity_type: e.target.value as EntityType })}
-                className="hesics-input disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <option value="proprietorship">Proprietorship</option>
-                <option value="partnership">Partnership</option>
-                <option value="llp">LLP (Limited Liability Partnership)</option>
-                <option value="pvt_ltd">Private Limited Company</option>
-              </select>
+                value={org.entity_type || 'pvt_ltd'}
+                onChange={(v) => setOrg({ ...org, entity_type: v as EntityType })}
+                options={ENTITY_OPTIONS}
+              />
             </div>
           </div>
         </div>
@@ -224,80 +174,41 @@ export const Settings: React.FC<SettingsProps> = ({ activeUser }) => {
       {/* Security & Audit Log (Admins only) */}
       {canEdit && (
         <div className="hesics-card p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-xs font-bold text-[#F4F4F6] flex items-center gap-2">
-                <History className="w-4 h-4 text-[#1E9EFF]" /> Security & Operations Audit Log
-              </h3>
-              <p className="text-xs text-[#707080] mt-0.5">
-                Tamper-evident record of data modifications across the organisation
-              </p>
+          <div className="flex items-center justify-between pb-3 border-b border-[#181820]">
+            <div className="flex items-center gap-2">
+              <History className="w-4 h-4 text-[#1E9EFF]" />
+              <h2 className="text-xs font-bold text-[#F4F4F6]">Security & Audit Trail</h2>
             </div>
-            {auditLogs.length > 0 && (
+            {isMaster && auditLogs.length > 0 && (
               <button
-                type="button"
-                onClick={handleClearAudit}
-                className="flex items-center gap-1 text-xs text-[#606070] hover:text-rose-400 transition-colors"
+                onClick={() => {
+                  clearAuditLog();
+                  setAuditLogs([]);
+                }}
+                className="text-[11px] text-[#707080] hover:text-rose-400 transition-colors flex items-center gap-1"
               >
-                <Trash2 className="w-3 h-3" /> Clear Log
+                <Trash2 className="w-3 h-3" /> Clear Audit Logs
               </button>
             )}
           </div>
 
-          <div className="border border-[#1A1A22] rounded-xl overflow-hidden max-h-64 overflow-y-auto">
+          <div className="space-y-2 max-h-60 overflow-y-auto">
             {auditLogs.length === 0 ? (
-              <div className="p-6 text-center text-xs text-[#505060]">
-                No audit entries recorded yet.
-              </div>
+              <div className="p-4 text-center text-xs text-[#505060]">No system events logged yet.</div>
             ) : (
-              <table className="w-full text-left text-xs">
-                <thead className="bg-[#09090C] text-[#606070] border-b border-[#181820]">
-                  <tr>
-                    <th className="p-2.5 font-medium">Timestamp</th>
-                    <th className="p-2.5 font-medium">User</th>
-                    <th className="p-2.5 font-medium">Action</th>
-                    <th className="p-2.5 font-medium">Entity</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#15151C] font-mono text-[11px]">
-                  {auditLogs.map((log) => (
-                    <tr key={log.id} className="hover:bg-[#111116] transition-colors">
-                      <td className="p-2.5 text-[#606070] whitespace-nowrap">
-                        {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                      </td>
-                      <td className="p-2.5 text-[#9090A0] whitespace-nowrap">{log.user_name}</td>
-                      <td className="p-2.5 text-[#1E9EFF] whitespace-nowrap">{formatAuditAction(log.action)}</td>
-                      <td className="p-2.5 text-[#D4D4D8] font-sans text-xs">{log.entity_label || log.entity_type}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              auditLogs.map((log) => (
+                <div key={log.id} className="p-2.5 bg-[#08080B] border border-[#16161D] rounded-lg flex items-center justify-between text-xs">
+                  <div>
+                    <div className="font-medium text-[#F4F4F6]">{formatAuditAction(log.action)}</div>
+                    <div className="text-[10px] text-[#606070]">{log.entity_label || log.entity_id}</div>
+                  </div>
+                  <div className="text-[10px] font-mono text-[#505060]">{new Date(log.timestamp).toLocaleTimeString()}</div>
+                </div>
+              ))
             )}
           </div>
         </div>
       )}
-
-      {/* System Reset Zone (Master Root Authority Only) */}
-      {isMaster && (
-        <div className="p-5 bg-rose-950/10 border border-rose-900/20 rounded-xl space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-xs font-bold text-rose-400">System State Management</h3>
-              <p className="text-xs text-[#707080]">
-                Reset organizational data and state parameters.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleResetData}
-              className="hesics-btn-secondary text-rose-400 hover:text-rose-300 border-rose-900/40 hover:bg-rose-950/30"
-            >
-              <RefreshCw className="w-3.5 h-3.5" /> Reset System State
-            </button>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 };

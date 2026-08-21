@@ -1,58 +1,74 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
-  Plus, DollarSign, Calendar,
-  MoreVertical, Edit3, Trash2,
-  ChevronRight, Kanban, CheckCircle2
+  Plus, MoreVertical, Calendar, User as UserIcon,
+  CheckCircle, ArrowRight, Pencil, Trash2
 } from 'lucide-react';
 import { db } from '../lib/firebaseDb';
 import { Deal, DealStage, User } from '../lib/types';
+import { canPerform } from '../lib/rbac';
 import { DealModal } from '../components/crm/DealModal';
-import { hasPermission } from '../lib/rbac';
+import { CustomSelect, Option } from '../components/common/CustomSelect';
 
 interface DealsKanbanProps {
   activeUser: User;
 }
 
-const STAGES: { id: DealStage; label: string; color: string }[] = [
-  { id: 'discovery', label: 'Discovery', color: 'border-blue-500/30 text-blue-400' },
-  { id: 'proposal', label: 'Proposal Sent', color: 'border-indigo-500/30 text-indigo-400' },
-  { id: 'negotiation', label: 'Negotiation', color: 'border-amber-500/30 text-amber-400' },
-  { id: 'won', label: 'Closed Won', color: 'border-emerald-500/30 text-emerald-400' },
-  { id: 'lost', label: 'Closed Lost', color: 'border-rose-500/30 text-rose-400' },
+const STAGES: { id: DealStage; label: string; dotColor: string }[] = [
+  { id: 'discovery', label: 'Discovery', dotColor: 'bg-slate-400' },
+  { id: 'proposal', label: 'Proposal Sent', dotColor: 'bg-indigo-400' },
+  { id: 'negotiation', label: 'Negotiation', dotColor: 'bg-amber-400' },
+  { id: 'won', label: 'Closed Won', dotColor: 'bg-emerald-400' },
+  { id: 'lost', label: 'Closed Lost', dotColor: 'bg-rose-400' },
 ];
 
+const STAGE_MOVE_OPTIONS: Option[] = STAGES.map((s) => ({
+  value: s.id,
+  label: `Move: ${s.label}`,
+  badge: s.label,
+  badgeColor: 'text-[#1E9EFF] bg-[#1E9EFF]/10 border-[#1E9EFF]/30',
+}));
+
 export const DealsKanban: React.FC<DealsKanbanProps> = ({ activeUser }) => {
-  const [deals, setDeals] = useState(() => db.getDeals());
+  const [deals, setDeals] = useState<Deal[]>(() => db.getDeals());
   const [isDealModalOpen, setIsDealModalOpen] = useState(false);
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
 
-  const canWrite = hasPermission(activeUser.role_id, 'deals:write');
+  const canWrite = canPerform(activeUser.role_id, 'deals:write');
 
-  const refreshDeals = () => setDeals(db.getDeals());
-
-  const fmt = (n: number) => `₹${n.toLocaleString('en-IN')}`;
+  const refreshDeals = () => {
+    setDeals(db.getDeals());
+  };
 
   const handleStageChange = (deal: Deal, newStage: DealStage) => {
     db.updateDeal(deal.id, { stage: newStage });
     refreshDeals();
   };
 
-  const handleDeleteDeal = (deal: Deal) => {
-    if (window.confirm(`Delete deal "${deal.title}"?`)) {
-      db.deleteDeal(deal.id);
+  const handleDeleteDeal = (id: string) => {
+    if (window.confirm('Delete this deal opportunity?')) {
+      db.deleteDeal(id);
       refreshDeals();
     }
   };
 
+  const fmt = (n: number) => `₹${n.toLocaleString('en-IN')}`;
+
+  const totalPipeline = deals
+    .filter((d) => d.stage !== 'won' && d.stage !== 'lost')
+    .reduce((sum, d) => sum + Number(d.value), 0);
+
+  const totalWon = deals
+    .filter((d) => d.stage === 'won')
+    .reduce((sum, d) => sum + Number(d.value), 0);
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1A1A20]">
         <div>
-          <h1 className="text-xl font-bold text-[#F4F4F6] tracking-tight font-display">Deals Board</h1>
+          <h1 className="text-xl font-bold text-[#F4F4F6] tracking-tight font-display">Revenue Pipeline</h1>
           <p className="text-xs text-[#828290] mt-1">
-            Visual revenue pipeline stages and deal momentum.
+            Active pipeline velocity: <span className="font-mono text-[#1E9EFF] font-semibold">{fmt(totalPipeline)}</span> • Won Revenue: <span className="font-mono text-emerald-400 font-semibold">{fmt(totalWon)}</span>
           </p>
         </div>
 
@@ -62,59 +78,72 @@ export const DealsKanban: React.FC<DealsKanbanProps> = ({ activeUser }) => {
               setEditingDeal(null);
               setIsDealModalOpen(true);
             }}
-            className="hesics-btn-primary self-start sm:self-auto"
+            className="hesics-btn-primary"
           >
-            <Plus className="w-3.5 h-3.5" /> Create Deal
+            <Plus className="w-3.5 h-3.5" /> New Deal
           </button>
         )}
       </div>
 
       {/* Kanban Board Columns */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3.5 overflow-x-auto pb-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3.5 items-start">
         {STAGES.map((stage) => {
           const stageDeals = deals.filter((d) => d.stage === stage.id);
           const stageTotal = stageDeals.reduce((sum, d) => sum + Number(d.value), 0);
 
           return (
-            <div key={stage.id} className="bg-[#09090C] border border-[#1A1A20] rounded-xl p-3 space-y-3 min-w-[220px]">
+            <div
+              key={stage.id}
+              className="bg-[#09090C] border border-[#181820] rounded-xl p-3 space-y-3 min-h-[450px] flex flex-col"
+            >
               {/* Column Header */}
-              <div className="flex items-center justify-between border-b border-[#16161D] pb-2 text-xs">
-                <div className="flex items-center gap-1.5 font-semibold text-[#F4F4F6]">
-                  <span className={`w-2 h-2 rounded-full border ${stage.color}`} />
-                  <span>{stage.label}</span>
-                  <span className="text-[10px] text-[#606070] font-mono">({stageDeals.length})</span>
+              <div className="flex items-center justify-between pb-2.5 border-b border-[#16161E]">
+                <div className="flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${stage.dotColor}`} />
+                  <h3 className="text-xs font-bold text-[#F4F4F6] tracking-tight font-display">{stage.label}</h3>
                 </div>
-                <span className="font-mono text-[10px] text-[#808090]">{fmt(stageTotal)}</span>
+                <span className="text-[10px] text-[#606070] font-mono px-1.5 py-0.5 bg-[#121218] rounded">
+                  {stageDeals.length}
+                </span>
+              </div>
+
+              {/* Total Value pill */}
+              <div className="text-[11px] font-mono text-[#808090] font-medium">
+                Total: <span className="text-[#D4D4D8]">{fmt(stageTotal)}</span>
               </div>
 
               {/* Deal Cards Container */}
-              <div className="space-y-2.5 min-h-[300px]">
+              <div className="space-y-2.5 flex-1">
                 {stageDeals.length === 0 ? (
-                  <div className="h-32 border border-dashed border-[#181820] rounded-lg flex items-center justify-center text-[10px] text-[#454555]">
+                  <div className="h-28 border border-dashed border-[#16161E] rounded-lg flex items-center justify-center text-[11px] text-[#404050]">
                     No active deals
                   </div>
                 ) : (
                   stageDeals.map((deal) => (
                     <div
                       key={deal.id}
-                      className="bg-[#0F0F14] border border-[#1E1E26] hover:border-[#2C2C38] rounded-xl p-3 space-y-2.5 transition-all shadow-md group"
+                      className="p-3 bg-[#0D0D11] border border-[#1C1C22] hover:border-[#1E9EFF]/40 rounded-xl space-y-2 transition-all shadow-md group"
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className="text-xs font-bold text-[#F4F4F6] line-clamp-1 leading-snug">{deal.title}</h3>
+                        <h4 className="text-xs font-semibold text-[#F4F4F6] leading-tight group-hover:text-[#1E9EFF] transition-colors">
+                          {deal.title}
+                        </h4>
                         {canWrite && (
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button
                               onClick={() => {
                                 setEditingDeal(deal);
                                 setIsDealModalOpen(true);
                               }}
-                              className="p-1 text-[#707080] hover:text-white rounded"
+                              className="p-1 text-[#707080] hover:text-white"
+                              title="Edit Deal"
                             >
-                              <Edit3 className="w-3 h-3" />
+                              <Pencil className="w-3 h-3" />
                             </button>
                             <button
-                              onClick={() => handleDeleteDeal(deal)}
-                              className="p-1 text-[#707080] hover:text-rose-400 rounded"
+                              onClick={() => handleDeleteDeal(deal.id)}
+                              className="p-1 text-[#707080] hover:text-rose-400"
+                              title="Delete Deal"
                             >
                               <Trash2 className="w-3 h-3" />
                             </button>
@@ -138,19 +167,15 @@ export const DealsKanban: React.FC<DealsKanbanProps> = ({ activeUser }) => {
                         )}
                       </div>
 
-                      {/* Quick Move Stage dropdown */}
+                      {/* Quick Move Stage with CustomSelect */}
                       {canWrite && (
-                        <select
+                        <CustomSelect
                           value={deal.stage}
-                          onChange={(e) => handleStageChange(deal, e.target.value as DealStage)}
-                          className="w-full text-[10px] bg-[#09090C] border border-[#1A1A22] rounded px-2 py-1 text-[#9090A0] focus:outline-none focus:border-[#1E9EFF]/40"
-                        >
-                          {STAGES.map((s) => (
-                            <option key={s.id} value={s.id}>
-                              Move to: {s.label}
-                            </option>
-                          ))}
-                        </select>
+                          onChange={(newStg) => handleStageChange(deal, newStg as DealStage)}
+                          options={STAGE_MOVE_OPTIONS}
+                          placeholder="Move Stage..."
+                          className="w-full text-[10px]"
+                        />
                       )}
                     </div>
                   ))
@@ -174,7 +199,6 @@ export const DealsKanban: React.FC<DealsKanbanProps> = ({ activeUser }) => {
           activeUser={activeUser}
         />
       )}
-
     </div>
   );
 };

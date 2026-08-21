@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { X, DollarSign, Tag, User } from 'lucide-react';
+﻿import React, { useState } from 'react';
+import { X } from 'lucide-react';
 import { db } from '../../lib/firebaseDb';
 import { ExpenseCategory, User as UserType } from '../../lib/types';
 import { DatePicker } from '../common/DatePicker';
+import { CustomSelect, Option } from '../common/CustomSelect';
 
 interface ExpenseModalProps {
   isOpen: boolean;
@@ -10,6 +11,16 @@ interface ExpenseModalProps {
   onSuccess: () => void;
   activeUser: UserType;
 }
+
+const CATEGORY_OPTIONS: Option[] = [
+  { value: 'software', label: 'Software, Servers & Cloud (AWS/GCP)', badge: 'Tech', badgeColor: 'text-[#1E9EFF] bg-[#1E9EFF]/10 border-[#1E9EFF]/30' },
+  { value: 'salary', label: 'Executive & Team Payroll', badge: 'Payroll', badgeColor: 'text-emerald-400 bg-emerald-950/30 border-emerald-900/40' },
+  { value: 'marketing', label: 'Marketing, PR & Campaigns', badge: 'Growth', badgeColor: 'text-indigo-400 bg-indigo-950/30 border-indigo-900/40' },
+  { value: 'rent', label: 'Corporate Office & Real Estate', badge: 'Facility', badgeColor: 'text-amber-400 bg-amber-950/30 border-amber-900/40' },
+  { value: 'travel', label: 'Client Meetings & Executive Travel', badge: 'Travel', badgeColor: 'text-purple-400 bg-purple-950/30 border-purple-900/40' },
+  { value: 'legal', label: 'Legal, Audit & Professional Fees', badge: 'Legal', badgeColor: 'text-rose-400 bg-rose-950/30 border-rose-900/40' },
+  { value: 'other', label: 'Other Operational Expenses', badge: 'General', badgeColor: 'text-[#707080] bg-[#14141A] border-[#202028]' },
+];
 
 export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   isOpen,
@@ -62,7 +73,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
               type="text"
               value={vendor}
               onChange={(e) => setVendor(e.target.value)}
-              placeholder="e.g. AWS, Figma, Office Rent"
+              placeholder="e.g. Amazon Web Services / Google Cloud"
               className="hesics-input"
             />
           </div>
@@ -96,19 +107,11 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="hesics-label">Category</label>
-              <select
+              <CustomSelect
                 value={category}
-                onChange={(e) => setCategory(e.target.value as ExpenseCategory)}
-                className="hesics-input"
-              >
-                <option value="software">Software & SaaS</option>
-                <option value="salary">Payroll & Team</option>
-                <option value="marketing">Marketing & Ads</option>
-                <option value="rent">Office & Rent</option>
-                <option value="travel">Travel & Client Meetings</option>
-                <option value="legal">Legal & Professional</option>
-                <option value="other">Other Operational</option>
-              </select>
+                onChange={(v) => setCategory(v as ExpenseCategory)}
+                options={CATEGORY_OPTIONS}
+              />
             </div>
             <div>
               <label className="hesics-label">Expense Date *</label>
@@ -132,11 +135,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           </div>
 
           <div className="flex items-center justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="hesics-btn-ghost"
-            >
+            <button type="button" onClick={onClose} className="hesics-btn-ghost">
               Cancel
             </button>
             <button type="submit" className="hesics-btn-primary">

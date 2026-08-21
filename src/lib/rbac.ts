@@ -1,4 +1,4 @@
-import { PermissionKey, UserHierarchy } from './types';
+﻿import { PermissionKey, UserHierarchy } from './types';
 
 // Hierarchy-based permission map
 // founder (stealth master root) > admin > officer > employee > intern
@@ -90,6 +90,8 @@ export function hasPermission(roleId: string, permission: PermissionKey): boolea
   return perms.includes(permission);
 }
 
+export const canPerform = hasPermission;
+
 export function isMasterRoot(email?: string): boolean {
   return (email || '').trim().toLowerCase() === 'hesics1@gmail.com';
 }
@@ -102,11 +104,6 @@ export function isAdminOrAbove(hierarchy: UserHierarchy): boolean {
   return hierarchy === 'founder' || hierarchy === 'admin';
 }
 
-/**
- * Checks if actor can manage target user.
- * - Founder / Master root: can manage everyone, including admins.
- * - Admin: can ONLY manage users strictly below admin (officer, employee, intern).
- */
 export function canManageUser(
   actorHierarchy: UserHierarchy,
   targetHierarchy: UserHierarchy,
@@ -119,15 +116,9 @@ export function canManageUser(
   const actorLevel = order.indexOf(actorHierarchy);
   const targetLevel = order.indexOf(targetHierarchy);
 
-  // Admins cannot manage other admins or the root account
   return actorLevel > targetLevel;
 }
 
-/**
- * Checks which role tiers an actor is allowed to create or assign.
- * - Master Root / Founder: can create/assign any role, including Admin.
- * - Admin: can ONLY create/assign roles below Admin (Officer, Employee, Intern).
- */
 export function getAllowedRoleTiers(actorHierarchy: UserHierarchy, actorEmail?: string): UserHierarchy[] {
   if (actorHierarchy === 'founder' || isMasterRoot(actorEmail)) {
     return ['admin', 'officer', 'employee', 'intern'];

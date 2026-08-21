@@ -1,8 +1,11 @@
-export type EntityType = 'proprietorship' | 'partnership' | 'pvt_ltd' | 'other';
+﻿export type EntityType = 'proprietorship' | 'partnership' | 'llp' | 'pvt_ltd' | 'other';
 
 export interface Organization {
   id: string;
   name: string;
+  tagline?: string;
+  email?: string;
+  address?: string;
   gstin?: string;
   entity_type?: EntityType;
   logo_url?: string;
@@ -56,6 +59,7 @@ export interface Permission {
 
 export type ClientSource = 'referral' | 'instagram' | 'cold_dm' | 'website' | 'other';
 export type ClientStatus = 'lead' | 'active' | 'churned';
+export type ClientTier = 'enterprise' | 'growth' | 'standard';
 
 export interface Client {
   id: string;
@@ -64,11 +68,15 @@ export interface Client {
   company_name?: string;
   email?: string;
   phone?: string;
-  source: ClientSource;
+  source?: ClientSource;
   status: ClientStatus;
+  tier?: ClientTier;
+  gstin?: string;
+  industry?: string;
   notes?: string;
   tags?: string[];
   owner_id?: string;
+  owner_name?: string;
   total_revenue?: number;
   created_at: string;
   updated_at: string;

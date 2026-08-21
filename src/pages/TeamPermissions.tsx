@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   ShieldCheck, Users, CheckCircle2, XCircle,
   UserPlus, Shield, UserCheck, Trash2,
-  UserX, Pencil, X, ChevronDown, Plus, Briefcase
+  UserX, Pencil, X, ChevronDown, Plus, Briefcase,
+  Layers, Lock, Check, Mail, Send
 } from 'lucide-react';
 import { db } from '../lib/firebaseDb';
 import { PermissionKey, User, UserHierarchy, Role } from '../lib/types';
@@ -10,11 +11,35 @@ import {
   isAdminOrAbove, canManageUser, getAllowedRoleTiers,
   isMasterRoot, getPermissionsForRole
 } from '../lib/rbac';
+import { CustomSelect, Option } from '../components/common/CustomSelect';
+import { sendInvitationEmail } from '../lib/emailService';
 
 interface TeamPermissionsProps {
   activeUser: User;
 }
+const ALL_PERMISSIONS_CATALOG: { key: PermissionKey; title: string; category: string; description: string }[] = [
+  { key: 'clients:read', title: 'View Clients Directory', category: 'CRM & Pipeline', description: 'Access organization client accounts, histories, and contact points' },
+  { key: 'clients:write', title: 'Create & Edit Clients', category: 'CRM & Pipeline', description: 'Provision new client accounts and modify contact parameters' },
+  { key: 'clients:delete', title: 'Delete Clients', category: 'CRM & Pipeline', description: 'Permanently archive and delete client profiles' },
+  { key: 'deals:read', title: 'View Pipeline & Deals', category: 'CRM & Pipeline', description: 'Inspect real-time revenue pipeline and deal velocity' },
+  { key: 'deals:write', title: 'Manage Deals & Stages', category: 'CRM & Pipeline', description: 'Create deals, update probabilities, and advance pipeline stages' },
+  { key: 'invoices:read', title: 'View Invoices & Quotations', category: 'Billing & Commercials', description: 'Read formal quotations and billing tax invoices' },
+  { key: 'invoices:write', title: 'Issue Invoices & Quotations', category: 'Billing & Commercials', description: 'Generate PDF quotations, convert to invoices, and mark paid' },
+  { key: 'finance:read', title: 'View Financial Statements', category: 'Finance & Taxation', description: 'Inspect cash inflow, outflow, and net profit margins' },
+  { key: 'finance:write', title: 'Record Inflows & Outflows', category: 'Finance & Taxation', description: 'Log operational expenditures, revenue receipts, and GST credits' },
+  { key: 'team:manage', title: 'Manage Roles & Members', category: 'Governance & Security', description: 'Deactivate members, delete accounts, and adjust authority tiers' },
+  { key: 'team:invite', title: 'Provision Team Members', category: 'Governance & Security', description: 'Authorize new work emails and send invitation access links' },
+  { key: 'org:admin', title: 'Executive Admin Control', category: 'Governance & Security', description: 'Full organization-level control and audit logs' },
+];
 
+const PREDEFINED_DEPARTMENTS: Option[] = [
+  { value: 'Enterprise Sales & Key Accounts', label: 'Enterprise Sales & Key Accounts', sublabel: 'Revenue & client acquisition' },
+  { value: 'Growth & Strategic Marketing', label: 'Growth & Strategic Marketing', sublabel: 'Brand campaigns & lead generation' },
+  { value: 'Finance, Tax & Treasury', label: 'Finance, Tax & Treasury', sublabel: 'Cash flow, invoicing & compliance' },
+  { value: 'Client Success & Delivery', label: 'Client Success & Delivery', sublabel: 'Account retention & operational delivery' },
+  { value: 'Product & Technology Operations', label: 'Product & Technology Operations', sublabel: 'Engineering & systems infrastructure' },
+  { value: 'Legal & Corporate Affairs', label: 'Legal & Corporate Affairs', sublabel: 'Contracts, NDAs & corporate governance' },
+];
 const HierarchyIcon: React.FC<{ h: UserHierarchy; className?: string }> = ({ h, className = 'w-3.5 h-3.5' }) => {
   if (h === 'founder' || h === 'admin') return <Shield className={`${className} text-[#1E9EFF]`} />;
   if (h === 'officer') return <Briefcase className={`${className} text-indigo-400`} />;
@@ -37,13 +62,6 @@ const hierarchyDisplayName: Record<UserHierarchy, string> = {
   intern: 'Intern',
 };
 
-interface InviteFormData {
-  name: string;
-  email: string;
-  role_id: string;
-  department: string;
-}
-
 export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) => {
   const [users, setUsers] = useState(() => db.getUsers(activeUser.email));
   const roles = db.getRoles();
@@ -53,52 +71,83 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
 
   const [showInviteForm, setShowInviteForm] = useState(false);
   const [showCreateRoleForm, setShowCreateRoleForm] = useState(false);
+  const [selectedRoleForDetail, setSelectedRoleForDetail] = useState<Role | null>(null);
+
   const [newRoleName, setNewRoleName] = useState('');
   const [newRoleDesc, setNewRoleDesc] = useState('');
   const [newRoleTier, setNewRoleTier] = useState<UserHierarchy>('employee');
 
-  const [inviteData, setInviteData] = useState<InviteFormData>({
-    name: '', email: '', role_id: roles[0]?.id || 'role-admin', department: '',
-  });
+  const [inviteName, setInviteName] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRoleId, setInviteRoleId] = useState(roles[0]?.id || 'role-admin');
+  const [inviteDepartment, setInviteDepartment] = useState(PREDEFINED_DEPARTMENTS[0].value);
+  const [isCustomDept, setIsCustomDept] = useState(false);
+  const [customDeptText, setCustomDeptText] = useState('');
+
+  const [isSendingInvite, setIsSendingInvite] = useState(false);
   const [inviteSuccess, setInviteSuccess] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
   const refreshUsers = () => setUsers(db.getUsers(activeUser.email));
-
   const availableRoles = roles.filter((r) => allowedTiers.includes(r.hierarchy_level));
+  const selectedInviteRole = roles.find((r) => r.id === inviteRoleId);
+  const isInviteRoleAdmin = selectedInviteRole?.hierarchy_level === 'admin' || selectedInviteRole?.hierarchy_level === 'founder';
 
-  const handleInvite = (e: React.FormEvent) => {
+  const roleOptions: Option[] = availableRoles.map((r) => ({
+    value: r.id,
+    label: r.name,
+    sublabel: r.description,
+    badge: hierarchyDisplayName[r.hierarchy_level] || r.hierarchy_level,
+    badgeColor: hierarchyBadge[r.hierarchy_level],
+  }));
+  const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
-    if (!inviteData.name || !inviteData.email || !inviteData.role_id) return;
+    if (!inviteName.trim() || !inviteEmail.trim() || !inviteRoleId) return;
 
-    const role = roles.find((r) => r.id === inviteData.role_id);
+    const role = roles.find((r) => r.id === inviteRoleId);
     const targetHierarchy = role?.hierarchy_level || 'employee';
 
-    // Verify permission: Only master root can create admin
     if (targetHierarchy === 'admin' && !isMaster) {
       setErrorMessage('Permission Denied: Only organization owners can provision new Admins.');
       return;
     }
 
-    db.addUser({
-      name: inviteData.name,
-      email: inviteData.email.trim().toLowerCase(),
-      role_id: inviteData.role_id,
+    const assignedDept = isInviteRoleAdmin
+      ? 'Executive Operations'
+      : isCustomDept
+      ? customDeptText.trim() || 'Operations'
+      : inviteDepartment;
+
+    setIsSendingInvite(true);
+
+    const newUser = db.addUser({
+      name: inviteName.trim(),
+      email: inviteEmail.trim().toLowerCase(),
+      role_id: inviteRoleId,
       role_name: role?.name || 'Team Member',
       hierarchy: targetHierarchy,
-      department: inviteData.department || 'Operations',
+      department: assignedDept,
       is_active: true,
-      avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(inviteData.name)}`,
+      avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(inviteName)}`,
     });
 
+    await sendInvitationEmail({
+      to: inviteEmail.trim().toLowerCase(),
+      recipientName: inviteName.trim(),
+      roleName: role?.name || 'Team Member',
+      department: assignedDept,
+    });
+
+    setIsSendingInvite(false);
     refreshUsers();
-    setInviteSuccess(`${inviteData.name} added to the team roster.`);
-    setInviteData({ name: '', email: '', role_id: availableRoles[0]?.id || 'role-officer', department: '' });
+    setInviteSuccess(`Provisioned ${inviteName} and dispatched official welcome email to ${inviteEmail}.`);
+    setInviteName('');
+    setInviteEmail('');
     setTimeout(() => {
       setInviteSuccess('');
       setShowInviteForm(false);
-    }, 2000);
+    }, 2500);
   };
 
   const handleCreateCustomRole = (e: React.FormEvent) => {
@@ -149,7 +198,6 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
       refreshUsers();
     }
   };
-
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       {/* Header */}
@@ -157,7 +205,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
         <div>
           <h1 className="text-xl font-bold text-[#F4F4F6] tracking-tight font-display">Team & Access Control</h1>
           <p className="text-xs text-[#828290] mt-1">
-            Role-Based Access Control, team roster, and operational permissions.
+            Enterprise role-based governance, team rosters, and automated email operations.
           </p>
         </div>
 
@@ -167,7 +215,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
               onClick={() => setShowCreateRoleForm(true)}
               className="hesics-btn-secondary"
             >
-              <Plus className="w-3.5 h-3.5 text-[#1E9EFF]" /> Create Role
+              <Plus className="w-3.5 h-3.5 text-[#1E9EFF]" /> Create Custom Role
             </button>
             <button
               onClick={() => setShowInviteForm(true)}
@@ -179,7 +227,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
         )}
       </div>
 
-      {/* Add Team Member Modal */}
+      {/* Provision Team Member Modal */}
       {showInviteForm && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[#0D0D11] border border-[#1E1E26] rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
@@ -201,60 +249,89 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
               </div>
             )}
             {inviteSuccess && (
-              <div className="p-3 bg-emerald-950/20 border border-emerald-900/40 rounded-xl text-xs text-emerald-300 flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" /> {inviteSuccess}
+              <div className="p-3 bg-emerald-950/20 border border-emerald-900/40 rounded-xl text-xs text-emerald-300 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span className="leading-relaxed">{inviteSuccess}</span>
               </div>
             )}
 
             <form onSubmit={handleInvite} className="space-y-3.5">
               <div>
-                <label className="hesics-label">Full Name *</label>
+                <label className="hesics-label">Full Legal / Team Name *</label>
                 <input
                   type="text"
                   required
-                  value={inviteData.name}
-                  onChange={(e) => setInviteData({ ...inviteData, name: e.target.value })}
+                  value={inviteName}
+                  onChange={(e) => setInviteName(e.target.value)}
                   placeholder="e.g. Sheik Mydeen"
                   className="hesics-input"
                 />
               </div>
 
               <div>
-                <label className="hesics-label">Work Email *</label>
+                <label className="hesics-label">Authorized Work Email *</label>
                 <input
                   type="email"
                   required
-                  value={inviteData.email}
-                  onChange={(e) => setInviteData({ ...inviteData, email: e.target.value })}
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
                   placeholder="name@hesics.com"
                   className="hesics-input"
                 />
               </div>
 
               <div>
-                <label className="hesics-label">Assigned Role *</label>
-                <select
-                  value={inviteData.role_id}
-                  onChange={(e) => setInviteData({ ...inviteData, role_id: e.target.value })}
-                  className="hesics-input"
-                >
-                  {availableRoles.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.name} ({hierarchyDisplayName[r.hierarchy_level] || r.hierarchy_level})
-                    </option>
-                  ))}
-                </select>
+                <label className="hesics-label">Assigned Organization Role *</label>
+                <CustomSelect
+                  value={inviteRoleId}
+                  onChange={setInviteRoleId}
+                  options={roleOptions}
+                  placeholder="Select role..."
+                />
               </div>
 
+              {/* Dynamic Department Logic */}
               <div>
-                <label className="hesics-label">Department</label>
-                <input
-                  type="text"
-                  value={inviteData.department}
-                  onChange={(e) => setInviteData({ ...inviteData, department: e.target.value })}
-                  placeholder="e.g. Sales, Marketing, Tech"
-                  className="hesics-input"
-                />
+                <label className="hesics-label">Assigned Department</label>
+                {isInviteRoleAdmin ? (
+                  <div className="p-2.5 bg-[#09090C] border border-[#1C1C22] rounded-lg text-xs text-[#9090A0] flex items-center justify-between">
+                    <span className="font-medium text-[#F4F4F6]">Executive Operations</span>
+                    <span className="text-[9px] uppercase font-mono px-2 py-0.5 rounded bg-[#1E9EFF]/10 text-[#1E9EFF] border border-[#1E9EFF]/20">
+                      Org-Wide Admin
+                    </span>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {!isCustomDept ? (
+                      <CustomSelect
+                        value={inviteDepartment}
+                        onChange={setInviteDepartment}
+                        options={PREDEFINED_DEPARTMENTS}
+                        placeholder="Select department..."
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        required
+                        value={customDeptText}
+                        onChange={(e) => setCustomDeptText(e.target.value)}
+                        placeholder="Enter custom department name..."
+                        className="hesics-input"
+                        autoFocus
+                      />
+                    )}
+
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setIsCustomDept(!isCustomDept)}
+                        className="text-[11px] text-[#1E9EFF] hover:underline"
+                      >
+                        {isCustomDept ? '← Choose predefined department' : '+ Or type custom department'}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-2">
@@ -267,16 +344,23 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                 </button>
                 <button
                   type="submit"
+                  disabled={isSendingInvite}
                   className="hesics-btn-primary"
                 >
-                  Provision User
+                  {isSendingInvite ? (
+                    <span>Dispatching Invite...</span>
+                  ) : (
+                    <>
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Provision & Send Email</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
-
       {/* Create Custom Role Modal */}
       {showCreateRoleForm && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -301,33 +385,32 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                   required
                   value={newRoleName}
                   onChange={(e) => setNewRoleName(e.target.value)}
-                  placeholder="e.g. Senior Creative Lead"
+                  placeholder="e.g. Senior Commercial Director"
                   className="hesics-input"
                 />
               </div>
 
               <div>
                 <label className="hesics-label">Hierarchy Tier *</label>
-                <select
+                <CustomSelect
                   value={newRoleTier}
-                  onChange={(e) => setNewRoleTier(e.target.value as UserHierarchy)}
-                  className="hesics-input"
-                >
-                  {allowedTiers.map((t) => (
-                    <option key={t} value={t}>
-                      {hierarchyDisplayName[t] || t} Tier
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => setNewRoleTier(v as UserHierarchy)}
+                  options={allowedTiers.map((t) => ({
+                    value: t,
+                    label: `${hierarchyDisplayName[t] || t} Tier`,
+                    badge: hierarchyDisplayName[t] || t,
+                    badgeColor: hierarchyBadge[t],
+                  }))}
+                />
               </div>
 
               <div>
-                <label className="hesics-label">Description</label>
+                <label className="hesics-label">Operational Scope</label>
                 <input
                   type="text"
                   value={newRoleDesc}
                   onChange={(e) => setNewRoleDesc(e.target.value)}
-                  placeholder="Operational responsibilities and scope"
+                  placeholder="Responsibilities, pipeline authority, and deliverables"
                   className="hesics-input"
                 />
               </div>
@@ -352,6 +435,102 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
         </div>
       )}
 
+      {/* Role Detailed Capability Drawer / Modal */}
+      {selectedRoleForDetail && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0D0D11] border border-[#1E1E26] rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-6 space-y-4 shadow-2xl">
+            <div className="flex items-start justify-between border-b border-[#1A1A22] pb-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-base font-bold text-[#F4F4F6]">{selectedRoleForDetail.name}</h2>
+                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${hierarchyBadge[selectedRoleForDetail.hierarchy_level]}`}>
+                    {hierarchyDisplayName[selectedRoleForDetail.hierarchy_level]} Tier
+                  </span>
+                </div>
+                <p className="text-xs text-[#808090] mt-1">
+                  {selectedRoleForDetail.description || 'Configured operational boundaries and authorizations.'}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedRoleForDetail(null)}
+                className="text-[#606070] hover:text-white p-1 rounded"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Authorized Operations Breakdown */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold text-[#F4F4F6] flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#1E9EFF]" />
+                Authorized Operations ({getPermissionsForRole(selectedRoleForDetail.id).length})
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {ALL_PERMISSIONS_CATALOG.map((perm) => {
+                  const isGranted = getPermissionsForRole(selectedRoleForDetail.id).includes(perm.key);
+                  return (
+                    <div
+                      key={perm.key}
+                      className={`p-3 rounded-xl border text-xs space-y-1 transition-colors ${
+                        isGranted
+                          ? 'bg-[#0E1520] border-[#1E9EFF]/30 text-[#F4F4F6]'
+                          : 'bg-[#08080A] border-[#16161D] text-[#454555]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between font-semibold">
+                        <span className="truncate">{perm.title}</span>
+                        {isGranted ? (
+                          <Check className="w-3.5 h-3.5 text-[#1E9EFF] shrink-0" />
+                        ) : (
+                          <span className="text-[9px] uppercase font-mono text-[#353540]">Denied</span>
+                        )}
+                      </div>
+                      <p className="text-[10px] leading-relaxed line-clamp-2" style={{ color: isGranted ? '#8AAAC8' : '#303038' }}>
+                        {perm.description}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Active Members with this Role */}
+            <div className="pt-3 border-t border-[#1A1A22] space-y-2">
+              <h3 className="text-xs font-bold text-[#F4F4F6] flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-indigo-400" />
+                Active Assigned Members ({users.filter((u) => u.role_id === selectedRoleForDetail.id).length})
+              </h3>
+
+              <div className="space-y-1.5 max-h-36 overflow-y-auto">
+                {users.filter((u) => u.role_id === selectedRoleForDetail.id).length === 0 ? (
+                  <div className="p-3 text-center text-xs text-[#505060]">No members currently hold this role.</div>
+                ) : (
+                  users.filter((u) => u.role_id === selectedRoleForDetail.id).map((u) => (
+                    <div key={u.id} className="p-2 bg-[#08080B] border border-[#16161D] rounded-lg flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <img src={u.avatar_url} alt={u.name} className="w-5 h-5 rounded-full bg-[#15151C]" />
+                        <span className="font-medium text-[#F4F4F6]">{u.name}</span>
+                        <span className="text-[10px] text-[#606070] font-mono">({u.email})</span>
+                      </div>
+                      <span className="text-[10px] text-[#707080] font-mono">{u.department || 'Operations'}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => setSelectedRoleForDetail(null)}
+                className="hesics-btn-secondary"
+              >
+                Close Drawer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Team Roster Table */}
       <div className="hesics-card overflow-hidden">
         <div className="p-4 border-b border-[#181820] flex items-center justify-between">
@@ -413,7 +592,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                       </td>
 
                       <td className="p-3.5 text-[#808090] font-mono text-[11px]">
-                        {u.department || 'Operations'}
+                        {u.department || 'Executive Operations'}
                       </td>
 
                       <td className="p-3.5">
@@ -469,32 +648,44 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
         </div>
       </div>
 
-      {/* Role Permission Matrix Card */}
+      {/* Interactive Role Capability Matrix */}
       <div className="hesics-card p-5 space-y-4">
-        <h2 className="text-xs font-bold text-[#F4F4F6] flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-[#1E9EFF]" /> Role Capability Matrix
-        </h2>
-        <p className="text-xs text-[#707080]">
-          Configured capability boundaries per organization role.
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xs font-bold text-[#F4F4F6] flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-[#1E9EFF]" /> Role Capability Matrix
+            </h2>
+            <p className="text-xs text-[#707080] mt-0.5">
+              Click any role card to view full authorized operations, capability scopes, and member allocations.
+            </p>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           {roles.map((r) => {
             const perms = getPermissionsForRole(r.id);
             return (
-              <div key={r.id} className="p-4 bg-[#08080B] border border-[#181820] rounded-xl space-y-2.5">
+              <div
+                key={r.id}
+                onClick={() => setSelectedRoleForDetail(r)}
+                className="p-4 bg-[#08080B] border border-[#181820] hover:border-[#1E9EFF]/50 rounded-xl space-y-2.5 cursor-pointer transition-all hover:scale-[1.01] shadow-lg group"
+              >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#F4F4F6]">{r.name}</span>
+                  <span className="text-xs font-bold text-[#F4F4F6] group-hover:text-[#1E9EFF] transition-colors">
+                    {r.name}
+                  </span>
                   <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${hierarchyBadge[r.hierarchy_level]}`}>
                     {hierarchyDisplayName[r.hierarchy_level] || r.hierarchy_level}
                   </span>
                 </div>
                 <p className="text-[10px] text-[#707080] min-h-[28px] leading-relaxed">
-                  {r.description || 'Standard role permissions.'}
+                  {r.description || 'Standard enterprise operational capability boundary.'}
                 </p>
                 <div className="pt-2 border-t border-[#14141A] text-[10px] text-[#808090] flex items-center justify-between">
                   <span>Authorized Actions:</span>
-                  <span className="font-mono text-[#1E9EFF] font-semibold">{perms.length}</span>
+                  <span className="font-mono text-[#1E9EFF] font-semibold flex items-center gap-1">
+                    {perms.length} <span className="text-[8px] text-[#505060]">View →</span>
+                  </span>
                 </div>
               </div>
             );

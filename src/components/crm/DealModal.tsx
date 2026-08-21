@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { X, Sparkles, DollarSign, Target, User } from 'lucide-react';
+﻿import React, { useState } from 'react';
+import { X } from 'lucide-react';
 import { db } from '../../lib/firebaseDb';
 import { Deal, DealStage, User as UserType } from '../../lib/types';
 import { DatePicker } from '../common/DatePicker';
+import { CustomSelect, Option } from '../common/CustomSelect';
 
 interface DealModalProps {
   isOpen: boolean;
@@ -11,6 +12,14 @@ interface DealModalProps {
   deal?: Deal;
   activeUser: UserType;
 }
+
+const STAGE_OPTIONS: Option[] = [
+  { value: 'discovery', label: 'Discovery', badge: '10%', badgeColor: 'text-[#808090] bg-[#14141A] border-[#202028]' },
+  { value: 'proposal', label: 'Proposal Sent', badge: '40%', badgeColor: 'text-indigo-400 bg-indigo-950/30 border-indigo-900/40' },
+  { value: 'negotiation', label: 'Commercial Negotiation', badge: '75%', badgeColor: 'text-amber-400 bg-amber-950/30 border-amber-900/40' },
+  { value: 'won', label: 'Closed Won', badge: '100%', badgeColor: 'text-emerald-400 bg-emerald-950/30 border-emerald-900/40' },
+  { value: 'lost', label: 'Closed Lost', badge: '0%', badgeColor: 'text-rose-400 bg-rose-950/30 border-rose-900/40' },
+];
 
 export const DealModal: React.FC<DealModalProps> = ({
   isOpen,
@@ -28,6 +37,13 @@ export const DealModal: React.FC<DealModalProps> = ({
   const [notes, setNotes] = useState(deal?.notes || '');
 
   if (!isOpen) return null;
+
+  const clientOptions: Option[] = clients.map((c) => ({
+    value: c.id,
+    label: c.name,
+    sublabel: c.company_name,
+    badge: c.tier || 'Enterprise',
+  }));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,19 +94,13 @@ export const DealModal: React.FC<DealModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-3.5">
           <div>
             <label className="hesics-label">Associated Client Account *</label>
-            <select
-              required
+            <CustomSelect
               value={clientId}
-              onChange={(e) => setClientId(e.target.value)}
-              className="hesics-input"
-            >
-              {clients.length === 0 && <option value="">No clients found — add client first</option>}
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} {c.company_name ? `(${c.company_name})` : ''}
-                </option>
-              ))}
-            </select>
+              onChange={setClientId}
+              options={clientOptions}
+              placeholder="Select client account..."
+              searchable
+            />
           </div>
 
           <div>
@@ -120,17 +130,11 @@ export const DealModal: React.FC<DealModalProps> = ({
             </div>
             <div>
               <label className="hesics-label">Pipeline Stage</label>
-              <select
+              <CustomSelect
                 value={stage}
-                onChange={(e) => setStage(e.target.value as DealStage)}
-                className="hesics-input"
-              >
-                <option value="discovery">Discovery</option>
-                <option value="proposal">Proposal Sent</option>
-                <option value="negotiation">Negotiation</option>
-                <option value="won">Closed Won</option>
-                <option value="lost">Closed Lost</option>
-              </select>
+                onChange={(v) => setStage(v as DealStage)}
+                options={STAGE_OPTIONS}
+              />
             </div>
           </div>
 
@@ -155,11 +159,7 @@ export const DealModal: React.FC<DealModalProps> = ({
           </div>
 
           <div className="flex items-center justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="hesics-btn-ghost"
-            >
+            <button type="button" onClick={onClose} className="hesics-btn-ghost">
               Cancel
             </button>
             <button type="submit" className="hesics-btn-primary">
