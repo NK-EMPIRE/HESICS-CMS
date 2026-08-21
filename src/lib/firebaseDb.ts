@@ -15,12 +15,27 @@ import {
   IncomeEntry, ExpenseEntry
 } from './types';
 import {
-  INITIAL_ORG, INITIAL_USERS, INITIAL_ROLES, INITIAL_CLIENTS,
+  INITIAL_ORG, INITIAL_ROLES, INITIAL_CLIENTS,
   INITIAL_DEALS, INITIAL_ACTIVITIES, INITIAL_QUOTATIONS, INITIAL_INVOICES
 } from './mockData';
 
 const STORAGE_PREFIX = 'hesics_v3_';
-const ROOT_MASTER_EMAIL = 'hesics1@gmail.com';
+export const ROOT_MASTER_EMAIL = 'hesics1@gmail.com';
+
+// Permanent Immutable Root Account
+export const ROOT_MASTER_USER: User = {
+  id: 'usr-root-hesics',
+  org_id: 'org-hesics-001',
+  name: 'HESICS Executive',
+  email: ROOT_MASTER_EMAIL,
+  hierarchy: 'founder',
+  role_id: 'role-admin',
+  role_name: 'Admin',
+  department: 'Executive Operations',
+  is_active: true,
+  avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=HesicsExecutive',
+  created_at: new Date('2026-01-01T00:00:00.000Z').toISOString(),
+};
 
 const getStorageItem = <T>(key: string, fallback: T): T => {
   try {
@@ -41,7 +56,7 @@ const setStorageItem = <T>(key: string, value: T): void => {
 
 export class FirebaseDataStore {
   private org: Organization = getStorageItem('org', INITIAL_ORG);
-  private users: User[] = getStorageItem('users', INITIAL_USERS);
+  private users: User[] = getStorageItem('users', [ROOT_MASTER_USER]);
   private roles: Role[] = getStorageItem('roles', INITIAL_ROLES);
   private clients: Client[] = getStorageItem('clients', INITIAL_CLIENTS);
   private deals: Deal[] = getStorageItem('deals', INITIAL_DEALS);
@@ -52,8 +67,19 @@ export class FirebaseDataStore {
   private expenseEntries: ExpenseEntry[] = getStorageItem('expense_entries', []);
 
   constructor() {
+    // Ensure root user is always present
+    this.ensureRootMasterPresent();
+
     if (isFirebaseConfigured && dbInstance) {
       this.initFirestoreSync();
+    }
+  }
+
+  private ensureRootMasterPresent() {
+    const exists = this.users.some(u => u.email.toLowerCase() === ROOT_MASTER_EMAIL);
+    if (!exists) {
+      this.users = [ROOT_MASTER_USER, ...this.users];
+      setStorageItem('users', this.users);
     }
   }
 
@@ -75,11 +101,15 @@ export class FirebaseDataStore {
         }
       }, (err) => console.warn('Firestore Org listener notice:', err));
 
-      // Subscribe to Users
+      // Subscribe to Users (Ensures root is always merged & protected)
       onSnapshot(collection(firestore, 'users'), (snapshot) => {
         if (!snapshot.empty) {
-          this.users = snapshot.docs.map(d => d.data() as User);
+          const remoteUsers = snapshot.docs.map(d => d.data() as User);
+          const hasRoot = remoteUsers.some(u => u.email.toLowerCase() === ROOT_MASTER_EMAIL);
+          this.users = hasRoot ? remoteUsers : [ROOT_MASTER_USER, ...remoteUsers];
           setStorageItem('users', this.users);
+        } else {
+          this.seedInitialFirestore();
         }
       }, (err) => console.warn('Firestore Users listener notice:', err));
 
@@ -152,7 +182,7 @@ export class FirebaseDataStore {
   }
 
   /**
-   * Automatically seeds initial organization settings & roles to Cloud Firestore on first setup
+   * Migrates and seeds initial organization settings, roles, and the permanent root account to Firestore
    */
   public async seedInitialFirestore() {
     const firestore = dbInstance;
@@ -161,17 +191,20 @@ export class FirebaseDataStore {
       const batch = writeBatch(firestore);
 
       // Org
-      batch.set(doc(firestore, 'organizations', INITIAL_ORG.id), INITIAL_ORG);
+      batch.set(doc(firestore, 'organizations', INITIAL_ORG.id), INITIAL_ORG, { merge: true });
+
+      // Permanent Master Root User
+      batch.set(doc(firestore, 'users', ROOT_MASTER_USER.id), ROOT_MASTER_USER, { merge: true });
 
       // Roles
       INITIAL_ROLES.forEach((r) => {
-        batch.set(doc(firestore, 'roles', r.id), r);
+        batch.set(doc(firestore, 'roles', r.id), r, { merge: true });
       });
 
       await batch.commit();
-      console.log('Firebase Firestore initialized with organization settings & roles.');
+      console.log('Firebase Cloud Firestore successfully migrated with permanent root account & roles.');
     } catch (e) {
-      console.warn('Firestore seed notice:', e);
+      console.warn('Firestore migration notice:', e);
     }
   }
 
@@ -229,6 +262,12 @@ export class FirebaseDataStore {
   }
 
   updateUser(id: string, updates: Partial<User>): User | undefined {
+    const target = this.users.find((u) => u.id === id);
+    if (target?.email.toLowerCase() === ROOT_MASTER_EMAIL || id === ROOT_MASTER_USER.id) {
+      // Protection: Master root account cannot be deactivated or demoted
+      updates = { ...updates, is_active: true, hierarchy: 'founder' };
+    }
+
     this.users = this.users.map((u) => (u.id === id ? { ...u, ...updates } : u));
     setStorageItem('users', this.users);
 
@@ -240,10 +279,25 @@ export class FirebaseDataStore {
   }
 
   deactivateUser(id: string): void {
+    const target = this.users.find((u) => u.id === id);
+    if (target?.email.toLowerCase() === ROOT_MASTER_EMAIL || id === ROOT_MASTER_USER.id) {
+      console.warn('PROTECTION LOCK: Cannot deactivate the permanent root account.');
+      return;
+    }
     this.updateUser(id, { is_active: false });
   }
 
+  /**
+   * HARD PERMANENT DELETE LOCK:
+   * hesics1@gmail.com CANNOT be removed or deleted from the database by anyone.
+   */
   removeUser(id: string): void {
+    const target = this.users.find((u) => u.id === id);
+    if (target?.email.toLowerCase() === ROOT_MASTER_EMAIL || id === ROOT_MASTER_USER.id) {
+      console.warn('PROTECTION LOCK: Cannot remove permanent root account (hesics1@gmail.com).');
+      return;
+    }
+
     this.users = this.users.filter((u) => u.id !== id);
     setStorageItem('users', this.users);
     const firestore = dbInstance;
@@ -645,7 +699,6 @@ export class FirebaseDataStore {
 
   resetAll(): void {
     localStorage.removeItem(`${STORAGE_PREFIX}org`);
-    localStorage.removeItem(`${STORAGE_PREFIX}users`);
     localStorage.removeItem(`${STORAGE_PREFIX}roles`);
     localStorage.removeItem(`${STORAGE_PREFIX}clients`);
     localStorage.removeItem(`${STORAGE_PREFIX}deals`);
@@ -654,6 +707,11 @@ export class FirebaseDataStore {
     localStorage.removeItem(`${STORAGE_PREFIX}invoices`);
     localStorage.removeItem(`${STORAGE_PREFIX}income_entries`);
     localStorage.removeItem(`${STORAGE_PREFIX}expense_entries`);
+
+    // Reset users but ensure root master remains intact
+    this.users = [ROOT_MASTER_USER];
+    setStorageItem('users', this.users);
+
     window.location.reload();
   }
 }
