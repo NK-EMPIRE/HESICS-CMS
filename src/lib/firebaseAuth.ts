@@ -24,7 +24,7 @@ export interface AuthSession {
 
 const SESSION_KEY = "hesics_auth_v3";
 export const ROOT_MASTER_EMAIL = "hesics1@gmail.com";
-const ROOT_MASTER_PASS = "ngng786$Money";
+const ROOT_MASTER_PASS = import.meta.env.VITE_ROOT_MASTER_PASS;
 
 function getOrCreateRootUser(): User {
   let root = db.getUserByEmail(ROOT_MASTER_EMAIL);
@@ -57,7 +57,7 @@ export async function signInWithPassword(
 
   // Root Master Account immediate authorization
   if (normalizedEmail === ROOT_MASTER_EMAIL) {
-    if (password === ROOT_MASTER_PASS) {
+    if (Boolean(ROOT_MASTER_PASS) && password === ROOT_MASTER_PASS) {
       const rootUser = getOrCreateRootUser();
       setLocalSession(rootUser);
       return { user: rootUser, error: null };

@@ -8,18 +8,33 @@ export default async function handler(req: any, res: any) {
 
   let bodyData = req.body;
   if (typeof bodyData === 'string') {
-    try { bodyData = JSON.parse(bodyData); } catch {}
+    try {
+      bodyData = JSON.parse(bodyData);
+    } catch {}
   }
 
   const { to, subject, html, text } = bodyData || {};
 
   if (!to || !subject || !html) {
     res.statusCode = 400;
-    return res.end(JSON.stringify({ error: 'Missing required email fields (to, subject, html)' }));
+    return res.end(
+      JSON.stringify({ error: 'Missing required email fields (to, subject, html)' })
+    );
   }
 
-  const smtpUser = process.env.SMTP_USER || process.env.GMAIL_USER || 'hesics1@gmail.com';
-  const smtpPass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || 'fqvtdbtzbuqfikfn';
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPass = process.env.SMTP_PASS;
+
+  if (!smtpUser || !smtpPass) {
+    res.statusCode = 500;
+    res.setHeader('Content-Type', 'application/json');
+    return res.end(
+      JSON.stringify({
+        error:
+          'Email service not configured: Missing SMTP_USER or SMTP_PASS environment variables.',
+      })
+    );
+  }
 
   try {
     const transporter = nodemailer.createTransport({

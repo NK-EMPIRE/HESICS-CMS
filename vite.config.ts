@@ -6,11 +6,21 @@ import nodemailer from 'nodemailer';
 const emailApiPlugin = (): Plugin => ({
   name: 'local-email-api',
   configureServer(server) {
+    const smtpUser = process.env.SMTP_USER;
+    const smtpPass = process.env.SMTP_PASS;
+
+    if (!smtpUser || !smtpPass) {
+      console.warn(
+        '[HESICS Dev Server Warning] SMTP_USER or SMTP_PASS missing in environment variables. Local email dispatch middleware skipped.'
+      );
+      return;
+    }
+
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: 'hesics1@gmail.com',
-        pass: 'fqvt dbtz buqf ikfn',
+        user: smtpUser,
+        pass: smtpPass,
       },
     });
 
@@ -40,7 +50,7 @@ const emailApiPlugin = (): Plugin => ({
           }
 
           const info = await transporter.sendMail({
-            from: '"HESICS Operations" <hesics1@gmail.com>',
+            from: `"HESICS Operations" <${smtpUser}>`,
             to,
             subject,
             text: text || undefined,
