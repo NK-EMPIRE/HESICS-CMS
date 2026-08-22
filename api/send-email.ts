@@ -1,24 +1,25 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import nodemailer from 'nodemailer';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
+    res.statusCode = 405;
+    return res.end(JSON.stringify({ error: 'Method Not Allowed' }));
   }
 
-  const { to, subject, html, text } = req.body || {};
+  let bodyData = req.body;
+  if (typeof bodyData === 'string') {
+    try { bodyData = JSON.parse(bodyData); } catch {}
+  }
+
+  const { to, subject, html, text } = bodyData || {};
 
   if (!to || !subject || !html) {
-    return res.status(400).json({ error: 'Missing required email fields (to, subject, html)' });
+    res.statusCode = 400;
+    return res.end(JSON.stringify({ error: 'Missing required email fields (to, subject, html)' }));
   }
 
   const smtpUser = process.env.SMTP_USER || process.env.GMAIL_USER || 'hesics1@gmail.com';
-  const smtpPass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD;
-
-  if (!smtpPass) {
-    console.warn('SMTP_PASS not set in environment variables. Email simulation logged.');
-    return res.status(200).json({ success: true, simulated: true });
-  }
+  const smtpPass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || 'fqvtdbtzbuqfikfn';
 
   try {
     const transporter = nodemailer.createTransport({
@@ -37,9 +38,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       text: text || undefined,
     });
 
-    return res.status(200).json({ success: true });
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'application/json');
+    return res.end(JSON.stringify({ success: true }));
   } catch (error: any) {
     console.error('Failed to send email:', error);
-    return res.status(500).json({ error: error?.message || 'Failed to dispatch email' });
+    res.statusCode = 500;
+    res.setHeader('Content-Type', 'application/json');
+    return res.end(JSON.stringify({ error: error?.message || 'Failed to dispatch email' }));
   }
 }
