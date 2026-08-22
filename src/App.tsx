@@ -52,8 +52,15 @@ function KeyboardShortcuts() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const el = document.activeElement;
-      if (el && ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)) return;
+      const el = document.activeElement as HTMLElement | null;
+      if (
+        el &&
+        (['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName) ||
+          el.isContentEditable ||
+          el.closest('[data-custom-input]'))
+      ) {
+        return;
+      }
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       switch (e.key.toLowerCase()) {
         case 'c': navigate('/clients'); break;

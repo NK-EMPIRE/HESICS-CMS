@@ -87,7 +87,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   };
 
   return (
-    <div ref={containerRef} className={`relative select-none ${className}`}>
+    <div ref={containerRef} data-custom-input className={`relative select-none ${className}`}>
       {label && <label className="hesics-label">{label}</label>}
 
       {/* Trigger Button */}

@@ -134,7 +134,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   };
 
   return (
-    <div ref={containerRef} className={`relative select-none ${className}`}>
+    <div ref={containerRef} data-custom-input className={`relative select-none ${className}`}>
       {/* Trigger Button */}
       <div
         onClick={() => setIsOpen(!isOpen)}

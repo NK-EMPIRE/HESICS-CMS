@@ -92,7 +92,7 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
   const firstDay = getFirstDayOfMonth(currentYear, currentMonth);
 
   return (
-    <div className="relative" ref={containerRef}>
+    <div className="relative" ref={containerRef} data-custom-input>
       {label && <label className="hesics-label">{label}</label>}
 
       {/* Button trigger */}
