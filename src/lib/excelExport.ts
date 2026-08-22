@@ -116,3 +116,39 @@ export function exportAuditLogsToExcel(logs: AuditLogEntry[], filename = 'HESICS
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Audit Logs');
   saveExcelBlob(workbook, filename);
 }
+
+export function exportMonthlyIncomeToExcel(incomes: IncomeEntry[], filename = 'HESICS_Income_Report.xlsx') {
+  const data = incomes.map((inc, idx) => ({
+    'S.No': idx + 1,
+    'Client / Source': inc.client_name || inc.source_type || 'General Revenue',
+    'Category': inc.category || 'Revenue',
+    'Amount (INR)': inc.amount,
+    'Payment Method': inc.payment_method || 'Bank Transfer',
+    'Received Date': inc.received_at || '-',
+    'Notes': inc.notes || '',
+  }));
+  const total = incomes.reduce((s, e) => s + Number(e.amount || 0), 0);
+  data.push({ 'S.No': '' as any, 'Client / Source': 'TOTAL', 'Category': '', 'Amount (INR)': total as any, 'Payment Method': '', 'Received Date': '', 'Notes': '' });
+  const worksheet = XLSX.utils.json_to_sheet(data);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Income');
+  saveExcelBlob(workbook, filename);
+}
+
+export function exportMonthlyExpenseToExcel(expenses: ExpenseEntry[], filename = 'HESICS_Expense_Report.xlsx') {
+  const data = expenses.map((exp, idx) => ({
+    'S.No': idx + 1,
+    'Vendor / Description': exp.vendor || 'Operational Expense',
+    'Category': exp.category || 'Operations',
+    'Amount (INR)': exp.amount,
+    'GST Paid (INR)': exp.gst_paid || 0,
+    'Date': exp.spent_at || exp.date || '-',
+    'Notes': exp.notes || '',
+  }));
+  const total = expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
+  data.push({ 'S.No': '' as any, 'Vendor / Description': 'TOTAL', 'Category': '', 'Amount (INR)': total as any, 'GST Paid (INR)': '' as any, 'Date': '', 'Notes': '' });
+  const worksheet = XLSX.utils.json_to_sheet(data);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Expenses');
+  saveExcelBlob(workbook, filename);
+}

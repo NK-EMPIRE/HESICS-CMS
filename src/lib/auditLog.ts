@@ -1,3 +1,5 @@
+import { dbInstance } from './firebase';
+import { doc, setDoc } from 'firebase/firestore';
 ﻿export type AuditAction =
   | 'client.created' | 'client.updated' | 'client.deleted'
   | 'deal.created' | 'deal.updated' | 'deal.deleted' | 'deal.stage_changed'
@@ -86,6 +88,15 @@ export function logAudit(
     details,
   };
   saveLog([entry, ...entries]);
+
+  // Sync audit log to Firestore
+  const firestore = dbInstance;
+  if (firestore) {
+    setDoc(doc(firestore, 'audit_logs', entry.id), entry).catch((err) => {
+      console.warn('Firestore audit log sync notice:', err.message);
+    });
+  }
+
   return entry;
 }
 

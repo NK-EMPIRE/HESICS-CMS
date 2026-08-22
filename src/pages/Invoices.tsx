@@ -1,4 +1,5 @@
-﻿import React, { useState } from 'react';
+import { DownloadManagerModal } from '../components/common/DownloadManagerModal';
+import React, { useState } from 'react';
 import {
   Plus, Receipt, Download, CheckCircle2,
   Trash2, Edit3, Clock, DollarSign, FileSpreadsheet, Eye
@@ -38,6 +39,7 @@ export const Invoices: React.FC<InvoicesProps> = ({ activeUser }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [previewingInvoice, setPreviewingInvoice] = useState<Invoice | null>(null);
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
 
   const canWrite = hasPermission(activeUser.role_id, 'invoices:write');
   const org = db.getOrg();
@@ -62,9 +64,12 @@ export const Invoices: React.FC<InvoicesProps> = ({ activeUser }) => {
     }
   };
 
-  const handleDownloadPDF = (inv: Invoice) => {
-    const doc = generateInvoicePDF(inv, org, (inv.template_id as TemplateType) || 'titanium');
-    doc.save(`HESICS_Invoice_${inv.invoice_number}.pdf`);
+  const handleDownloadPDF = async (inv: Invoice) => {
+    const doc = await generateInvoicePDF(inv, org, (inv.template_id as TemplateType) || 'titanium');
+    const blob = doc.output('blob'); const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url;
+    a.download = `HESICS_Invoice_${inv.invoice_number}.pdf`;
+    document.body.appendChild(a); a.click(); setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
   };
 
   const handleExportExcel = () => {
@@ -72,11 +77,49 @@ export const Invoices: React.FC<InvoicesProps> = ({ activeUser }) => {
     showToast('Excel Exported', 'Downloaded invoices ledger spreadsheet.');
   };
 
+  
+  const handleExecuteInvoiceDownload = async (config: {
+    format: 'pdf' | 'excel' | 'both';
+    dateMode: 'all' | 'month' | 'custom';
+    selectedMonth: number;
+    selectedYear: number;
+    startDate: string;
+    endDate: string;
+  }) => {
+    let filtered = [...invoices];
+    if (config.dateMode === 'month') {
+      filtered = filtered.filter((i) => {
+        const d = new Date(i.issue_date || i.created_at);
+        return d.getMonth() === config.selectedMonth && d.getFullYear() === config.selectedYear;
+      });
+    } else if (config.dateMode === 'custom') {
+      if (config.startDate) filtered = filtered.filter((i) => (i.issue_date || i.created_at).split('T')[0] >= config.startDate);
+      if (config.endDate) filtered = filtered.filter((i) => (i.issue_date || i.created_at).split('T')[0] <= config.endDate);
+    }
+
+    if (config.format === 'excel' || config.format === 'both') {
+      exportInvoicesToExcel(filtered);
+    }
+    if (config.format === 'pdf' || config.format === 'both') {
+      for (const inv of filtered.slice(0, 10)) {
+        const doc = await generateInvoicePDF(inv, org, (inv.template_id as TemplateType) || 'titanium');
+        const blob = doc.output('blob');
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `HESICS_Invoice_${inv.invoice_number}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 400);
+      }
+    }
+  };
+
   const totalBilled = invoices.reduce((sum, i) => sum + Number(i.total || 0), 0);
   const totalPaid = invoices.filter((i) => i.status === 'paid').reduce((sum, i) => sum + Number(i.total || 0), 0);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6 w-full">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1A1A20]">
         <div>
@@ -88,10 +131,10 @@ export const Invoices: React.FC<InvoicesProps> = ({ activeUser }) => {
 
         <div className="flex items-center gap-2.5">
           <button
-            onClick={handleExportExcel}
+            onClick={() => setIsDownloadModalOpen(true)}
             className="hesics-btn-secondary"
           >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-[#77727E]" /> Export Excel
+            <FileSpreadsheet className="w-3.5 h-3.5 text-[#77727E]" /> Export & Download
           </button>
           {canWrite && (
             <button
@@ -240,6 +283,16 @@ export const Invoices: React.FC<InvoicesProps> = ({ activeUser }) => {
           onSuccess={refreshInvoices}
           invoice={editingInvoice || undefined}
           activeUser={activeUser}
+        />
+      )}
+      {/* Unified Download Manager Modal */}
+      {isDownloadModalOpen && (
+        <DownloadManagerModal
+          isOpen={isDownloadModalOpen}
+          onClose={() => setIsDownloadModalOpen(false)}
+          title="Export Invoices & Billing Ledger"
+          totalRecordsCount={invoices.length}
+          onExecuteDownload={handleExecuteInvoiceDownload}
         />
       )}
     </div>

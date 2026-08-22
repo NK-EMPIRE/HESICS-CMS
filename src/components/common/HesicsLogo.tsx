@@ -1,17 +1,18 @@
-﻿import React from 'react';
+import React from 'react';
 
 interface HesicsLogoProps {
   className?: string;
   size?: number | string;
-  variant?: 'icon' | 'full' | 'glow';
+  variant?: 'icon' | 'full' | 'glow' | 'dark' | 'white';
 }
 
 export const HesicsLogo: React.FC<HesicsLogoProps> = ({
   className = '',
   size = 32,
-  variant = 'icon',
+  variant = 'white',
 }) => {
   const numericSize = typeof size === 'number' ? size : 32;
+  const logoSrc = variant === 'dark' ? '/assets/hesics-logo-dark.png' : '/assets/hesics-logo-white.png';
 
   return (
     <div
@@ -21,9 +22,9 @@ export const HesicsLogo: React.FC<HesicsLogoProps> = ({
       style={{ width: numericSize, height: numericSize }}
     >
       <img
-        src="/hesics-logo.png"
+        src={logoSrc}
         alt="HESICS Logo"
-        className="w-full h-full object-contain mix-blend-screen filter brightness-125 contrast-125 transition-transform duration-200"
+        className="w-full h-full object-contain filter brightness-110 contrast-110 transition-transform duration-200"
       />
     </div>
   );

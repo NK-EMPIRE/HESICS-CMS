@@ -1,5 +1,5 @@
-﻿import React, { useState, useEffect } from 'react';
-import { X, Download, Printer, Send, Eye, FileText, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+﻿import React, { useState, useEffect, useRef } from 'react';
+import { X, Download, Printer, Send, FileText } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { EmailDispatchModal } from './EmailDispatchModal';
 
@@ -7,7 +7,7 @@ interface PDFPreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
-  pdfDocument?: jsPDF;
+  pdfDocument?: jsPDF | Promise<jsPDF>;
   pdfDataUrl?: string;
   fileName?: string;
   onDispatchEmail?: () => void;
@@ -31,46 +31,100 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
   onDispatchEmail,
   emailDefaults,
 }) => {
-  const [dataUrl, setDataUrl] = useState<string>('');
+  const [blobUrl, setBlobUrl] = useState<string>('');
+  const [resolvedDoc, setResolvedDoc] = useState<jsPDF | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState<number>(100);
+  const prevBlobUrl = useRef<string>('');
 
   useEffect(() => {
-    if (pdfDocument) {
-      try {
-        const url = pdfDocument.output('datauristring');
-        setDataUrl(url);
-      } catch (err) {
-        console.error('PDF datauristring generation error:', err);
-      }
-    } else if (initialDataUrl) {
-      setDataUrl(initialDataUrl);
+    if (!isOpen) return;
+    setIsLoading(true);
+    setHasError(false);
+    setBlobUrl('');
+    setResolvedDoc(null);
+
+    // Revoke previous blob URL
+    if (prevBlobUrl.current) {
+      URL.revokeObjectURL(prevBlobUrl.current);
+      prevBlobUrl.current = '';
     }
-  }, [pdfDocument, initialDataUrl]);
+
+    const resolve = async () => {
+      try {
+        let doc: jsPDF | null = null;
+
+        if (pdfDocument) {
+          // May be a Promise<jsPDF> or jsPDF
+          doc = await Promise.resolve(pdfDocument);
+          setResolvedDoc(doc);
+          const blob = doc.output('blob');
+          const url = URL.createObjectURL(blob);
+          prevBlobUrl.current = url;
+          setBlobUrl(url);
+        } else if (initialDataUrl) {
+          // Convert data URI to blob URL for more reliable iframe rendering
+          const response = await fetch(initialDataUrl);
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          prevBlobUrl.current = url;
+          setBlobUrl(url);
+        }
+      } catch (err) {
+        console.error('PDF preview error:', err);
+        setHasError(true);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    resolve();
+
+    return () => {
+      if (prevBlobUrl.current) {
+        URL.revokeObjectURL(prevBlobUrl.current);
+      }
+    };
+  }, [isOpen, pdfDocument, initialDataUrl]);
 
   if (!isOpen) return null;
 
   const handleDownload = () => {
-    if (pdfDocument) {
-      pdfDocument.save(fileName);
-    } else if (dataUrl) {
-      const link = document.createElement('a');
-      link.href = dataUrl;
-      link.download = fileName;
-      link.click();
+    if (resolvedDoc) {
+      try {
+        const blob = resolvedDoc.output('blob');
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName.endsWith('.pdf') ? fileName : fileName + '.pdf';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
+      } catch { resolvedDoc.save(fileName); }
+    } else if (blobUrl) {
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = fileName.endsWith('.pdf') ? fileName : fileName + '.pdf';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => document.body.removeChild(a), 500);
     }
   };
 
   const handlePrint = () => {
     const iframe = document.getElementById('hesics-pdf-preview-frame') as HTMLIFrameElement;
-    if (iframe && iframe.contentWindow) {
+    if (iframe?.contentWindow) {
+      iframe.contentWindow.focus();
       iframe.contentWindow.print();
+    } else if (blobUrl) {
+      window.open(blobUrl, '_blank');
     }
   };
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[9999] flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-150">
+      <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[9999] flex items-center justify-center p-3 sm:p-6">
         <div className="bg-[#0D0D12] border border-[#262632] rounded-3xl w-full max-w-5xl h-[92vh] flex flex-col shadow-2xl overflow-hidden">
           {/* Top Control Bar */}
           <div className="px-6 py-4 border-b border-[#1C1C26] flex items-center justify-between bg-[#08080B] shrink-0">
@@ -82,11 +136,11 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
                 <h2 className="text-sm font-bold text-[#F4F4F6] font-display flex items-center gap-2">
                   <span>{title}</span>
                   <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-md bg-[#77727E]/15 border border-[#77727E]/30 text-[#D4D4D8]">
-                    Live Vector Preview
+                    Live Preview
                   </span>
                 </h2>
                 <p className="text-[11px] text-[#707080]">
-                  High-fidelity rendering formatted for client delivery and ISO standard print.
+                  High-fidelity rendering · Click Download to save as PDF
                 </p>
               </div>
             </div>
@@ -95,8 +149,8 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
               <button
                 type="button"
                 onClick={handleDownload}
-                className="hesics-btn-secondary text-xs py-2 px-3"
-                title="Download Vector PDF"
+                disabled={isLoading || hasError}
+                className="hesics-btn-secondary text-xs py-2 px-3 disabled:opacity-40"
               >
                 <Download className="w-3.5 h-3.5 text-[#77727E]" /> Download
               </button>
@@ -104,8 +158,8 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
               <button
                 type="button"
                 onClick={handlePrint}
-                className="hesics-btn-secondary text-xs py-2 px-3"
-                title="Print Document"
+                disabled={isLoading || hasError}
+                className="hesics-btn-secondary text-xs py-2 px-3 disabled:opacity-40"
               >
                 <Printer className="w-3.5 h-3.5 text-[#77727E]" /> Print
               </button>
@@ -115,7 +169,6 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
                   type="button"
                   onClick={() => setShowEmailModal(true)}
                   className="hesics-btn-primary text-xs py-2 px-3.5"
-                  title="Dispatch via Email"
                 >
                   <Send className="w-3.5 h-3.5" /> Dispatch Email
                 </button>
@@ -131,26 +184,41 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
             </div>
           </div>
 
-          {/* Embedded PDF Viewer Frame */}
-          <div className="flex-1 bg-[#050507] p-2 sm:p-4 overflow-hidden relative flex items-center justify-center">
-            {dataUrl ? (
+          {/* PDF Viewer Area */}
+          <div className="flex-1 bg-[#050507] p-3 sm:p-5 overflow-hidden relative flex items-center justify-center">
+            {isLoading && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[#050507] z-10">
+                <div className="relative w-16 h-16">
+                  <div className="absolute inset-0 border-4 border-[#1A1A24] rounded-full" />
+                  <div className="absolute inset-0 border-4 border-t-[#77727E] border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin" />
+                </div>
+                <div className="text-center">
+                  <div className="text-sm font-semibold text-[#D4D4D8]">Generating PDF…</div>
+                  <div className="text-xs text-[#606070] mt-1">Fetching logo assets & building document</div>
+                </div>
+              </div>
+            )}
+
+            {hasError && !isLoading && (
+              <div className="flex flex-col items-center justify-center gap-3 text-xs text-[#707080]">
+                <div className="text-4xl">⚠️</div>
+                <div className="font-semibold text-[#D4D4D8]">PDF generation failed</div>
+                <div className="text-[#606070]">Try downloading directly using the button above.</div>
+              </div>
+            )}
+
+            {!isLoading && !hasError && blobUrl && (
               <iframe
                 id="hesics-pdf-preview-frame"
-                src={`${dataUrl}#toolbar=0&navpanes=0`}
+                src={blobUrl}
                 className="w-full h-full rounded-2xl border border-[#1A1A24] bg-white shadow-2xl"
-                title="HESICS PDF Live Preview"
+                title="HESICS PDF Preview"
               />
-            ) : (
-              <div className="flex flex-col items-center justify-center gap-3 text-xs text-[#707080]">
-                <div className="w-6 h-6 border-2 border-[#77727E] border-t-transparent rounded-full animate-spin" />
-                <span>Rendering High-Resolution Vector Document...</span>
-              </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Nested Email Dispatch Modal */}
       {showEmailModal && emailDefaults && (
         <EmailDispatchModal
           isOpen={showEmailModal}
@@ -166,4 +234,3 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
     </>
   );
 };
-

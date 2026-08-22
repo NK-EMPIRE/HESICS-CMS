@@ -1,6 +1,6 @@
 ﻿import {
   Organization, User, Role, Client, Deal, Activity,
-  Quotation, Invoice, IncomeEntry, ExpenseEntry, HesicsService, PrivateVaultItem, ClientAgreement
+  Quotation, Invoice, IncomeEntry, ExpenseEntry, HesicsService, PrivateVaultItem, ClientAgreement, MeetingItem, NotionWorkspaceDoc
 } from './types';
 import { dbInstance, isFirebaseConfigured } from './firebase';
 import {
@@ -66,10 +66,25 @@ export class FirebaseDataStore {
   private invoices: Invoice[] = getStorageItem('invoices', INITIAL_INVOICES);
   private incomeEntries: IncomeEntry[] = getStorageItem('income_entries', []);
   private expenseEntries: ExpenseEntry[] = getStorageItem('expense_entries', []);
+  private meetings: MeetingItem[] = getStorageItem('meetings', []);
+  private notionDocs: Record<string, NotionWorkspaceDoc> = getStorageItem('notion_docs', {});
   private services: HesicsService[] = getStorageItem('services', INITIAL_SERVICES);
   private privateVaultItems: PrivateVaultItem[] = getStorageItem('private_vault', []);
   private agreements: ClientAgreement[] = getStorageItem('agreements', []);
+  private listeners: Set<() => void> = new Set();
 
+  
+  subscribe(fn: () => void): () => void {
+    this.listeners.add(fn);
+    return () => this.listeners.delete(fn);
+  }
+
+  private notify() {
+    this.listeners.forEach((fn) => {
+      try { fn(); } catch (e) { console.error('Store listener error:', e); }
+    });
+  }
+  
   constructor() {
     this.ensureRootMasterPresent();
     this.ensureSuperadminRolePresent();
@@ -110,6 +125,32 @@ export class FirebaseDataStore {
     if (!firestore) return;
 
     try {
+      // 0. Organization Settings real-time sync
+      onSnapshot(collection(firestore, 'organization'), (snapshot) => {
+        if (!snapshot.empty) {
+          const docData = snapshot.docs[0]?.data() as Organization;
+          if (docData && docData.name) {
+            this.org = { ...this.org, ...docData };
+            setStorageItem('org', this.org);
+          }
+        }
+      }, (err) => console.warn('Firestore organization sync notice:', err.message));
+
+      // 1. Users real-time sync
+      onSnapshot(collection(firestore, 'users'), (snapshot) => {
+        if (!snapshot.empty) {
+          const list: User[] = [];
+          snapshot.forEach((d) => list.push(d.data() as User));
+          if (list.length > 0) {
+            // Keep ROOT_MASTER_USER intact
+            const hasRoot = list.some(u => u.email.toLowerCase() === ROOT_MASTER_EMAIL);
+            this.users = hasRoot ? list : [ROOT_MASTER_USER, ...list];
+            setStorageItem('users', this.users);
+          }
+        }
+      }, (err) => console.warn('Firestore users sync notice:', err.message));
+
+      // 2. Clients real-time sync
       onSnapshot(collection(firestore, 'clients'), (snapshot) => {
         if (!snapshot.empty) {
           const list: Client[] = [];
@@ -119,8 +160,9 @@ export class FirebaseDataStore {
             setStorageItem('clients', list);
           }
         }
-      }, console.error);
+      }, (err) => console.warn('Firestore clients sync notice:', err.message));
 
+      // 3. Deals real-time sync
       onSnapshot(collection(firestore, 'deals'), (snapshot) => {
         if (!snapshot.empty) {
           const list: Deal[] = [];
@@ -130,8 +172,9 @@ export class FirebaseDataStore {
             setStorageItem('deals', list);
           }
         }
-      }, console.error);
+      }, (err) => console.warn('Firestore deals sync notice:', err.message));
 
+      // 4. Invoices real-time sync
       onSnapshot(collection(firestore, 'invoices'), (snapshot) => {
         if (!snapshot.empty) {
           const list: Invoice[] = [];
@@ -141,7 +184,81 @@ export class FirebaseDataStore {
             setStorageItem('invoices', list);
           }
         }
-      }, console.error);
+      }, (err) => console.warn('Firestore invoices sync notice:', err.message));
+
+      // 5. Quotations real-time sync
+      onSnapshot(collection(firestore, 'quotations'), (snapshot) => {
+        if (!snapshot.empty) {
+          const list: Quotation[] = [];
+          snapshot.forEach((d) => list.push(d.data() as Quotation));
+          if (list.length > 0) {
+            this.quotations = list;
+            setStorageItem('quotations', list);
+          }
+        }
+      }, (err) => console.warn('Firestore quotations sync notice:', err.message));
+
+      // 6. Agreements real-time sync
+      onSnapshot(collection(firestore, 'agreements'), (snapshot) => {
+        if (!snapshot.empty) {
+          const list: ClientAgreement[] = [];
+          snapshot.forEach((d) => list.push(d.data() as ClientAgreement));
+          if (list.length > 0) {
+            this.agreements = list;
+            setStorageItem('agreements', list);
+            this.notify();
+          }
+        }
+      }, (err) => console.warn('Firestore agreements sync notice:', err.message));
+
+      // 7. Income Entries real-time sync
+      onSnapshot(collection(firestore, 'income_entries'), (snapshot) => {
+        if (!snapshot.empty) {
+          const list: IncomeEntry[] = [];
+          snapshot.forEach((d) => list.push(d.data() as IncomeEntry));
+          if (list.length > 0) {
+            this.incomeEntries = list;
+            setStorageItem('income_entries', list);
+          }
+        }
+      }, (err) => console.warn('Firestore income sync notice:', err.message));
+
+      // 9. Meetings real-time sync
+      onSnapshot(collection(firestore, 'meetings'), (snapshot) => {
+        if (!snapshot.empty) {
+          const list: MeetingItem[] = [];
+          snapshot.forEach((d) => list.push(d.data() as MeetingItem));
+          if (list.length > 0) {
+            this.meetings = list;
+            setStorageItem('meetings', list);
+          }
+        }
+      }, (err) => console.warn('Firestore meetings sync notice:', err.message));
+
+      // 10. Notion Workspaces real-time sync
+      onSnapshot(collection(firestore, 'notion_workspaces'), (snapshot) => {
+        if (!snapshot.empty) {
+          const map: Record<string, NotionWorkspaceDoc> = {};
+          snapshot.forEach((d) => {
+            const data = d.data() as NotionWorkspaceDoc;
+            if (data && data.id) map[data.id] = data;
+          });
+          this.notionDocs = { ...this.notionDocs, ...map };
+          setStorageItem('notion_docs', this.notionDocs);
+        }
+      }, (err) => console.warn('Firestore notion_workspaces sync notice:', err.message));
+
+      // 8. Expense Entries real-time sync
+      onSnapshot(collection(firestore, 'expense_entries'), (snapshot) => {
+        if (!snapshot.empty) {
+          const list: ExpenseEntry[] = [];
+          snapshot.forEach((d) => list.push(d.data() as ExpenseEntry));
+          if (list.length > 0) {
+            this.expenseEntries = list;
+            setStorageItem('expense_entries', list);
+          }
+        }
+      }, (err) => console.warn('Firestore expense sync notice:', err.message));
     } catch (err) {
       console.warn('Firestore real-time listeners initialization error:', err);
     }
@@ -299,6 +416,11 @@ export class FirebaseDataStore {
     this.roles = [...this.roles, newRole];
     setStorageItem('roles', this.roles);
 
+    const firestore = dbInstance;
+    if (firestore) {
+      setDoc(doc(firestore, 'roles', newRole.id), newRole).catch(console.error);
+    }
+
     logAudit(
       'usr-system',
       'Executive Admin',
@@ -326,6 +448,11 @@ export class FirebaseDataStore {
     this.services = [newService, ...this.services];
     setStorageItem('services', this.services);
 
+    const firestore = dbInstance;
+    if (firestore) {
+      setDoc(doc(firestore, 'services', newService.id), newService).catch(console.error);
+    }
+
     logAudit(
       'usr-system',
       'Chief Admin',
@@ -343,6 +470,11 @@ export class FirebaseDataStore {
     this.services = this.services.map((s) => (s.id === id ? { ...s, ...updates } : s));
     setStorageItem('services', this.services);
     const updated = this.services.find((s) => s.id === id);
+
+    const firestore = dbInstance;
+    if (firestore && updated) {
+      updateDoc(doc(firestore, 'services', id), updates).catch(console.error);
+    }
 
     if (updated) {
       logAudit(
@@ -363,6 +495,11 @@ export class FirebaseDataStore {
     const target = this.services.find((s) => s.id === id);
     this.services = this.services.filter((s) => s.id !== id);
     setStorageItem('services', this.services);
+
+    const firestore = dbInstance;
+    if (firestore) {
+      deleteDoc(doc(firestore, 'services', id)).catch(console.error);
+    }
 
     if (target) {
       logAudit(
@@ -390,6 +527,11 @@ export class FirebaseDataStore {
     this.privateVaultItems = [newItem, ...this.privateVaultItems];
     setStorageItem('private_vault', this.privateVaultItems);
 
+    const firestore = dbInstance;
+    if (firestore) {
+      setDoc(doc(firestore, 'private_vault', newItem.id), newItem).catch(console.error);
+    }
+
     logAudit(
       'usr-superadmin',
       'Superadmin',
@@ -406,6 +548,11 @@ export class FirebaseDataStore {
   updatePrivateVaultItem(id: string, updates: Partial<PrivateVaultItem>): PrivateVaultItem | undefined {
     this.privateVaultItems = this.privateVaultItems.map((p) => (p.id === id ? { ...p, ...updates } : p));
     setStorageItem('private_vault', this.privateVaultItems);
+
+    const firestore = dbInstance;
+    if (firestore) {
+      updateDoc(doc(firestore, 'private_vault', id), updates).catch(console.error);
+    }
     return this.privateVaultItems.find((p) => p.id === id);
   }
 
@@ -413,6 +560,11 @@ export class FirebaseDataStore {
     const target = this.privateVaultItems.find((p) => p.id === id);
     this.privateVaultItems = this.privateVaultItems.filter((p) => p.id !== id);
     setStorageItem('private_vault', this.privateVaultItems);
+
+    const firestore = dbInstance;
+    if (firestore) {
+      deleteDoc(doc(firestore, 'private_vault', id)).catch(console.error);
+    }
 
     if (target) {
       logAudit(
@@ -429,6 +581,10 @@ export class FirebaseDataStore {
   // ── Clients ──────────────────────────────────────────────────────────────────
   getClients(): Client[] {
     return this.clients;
+  }
+
+  getClientById(id: string): Client | undefined {
+    return this.clients.find((c) => c.id === id);
   }
 
   addClient(client: Omit<Client, 'id' | 'org_id' | 'created_at' | 'updated_at'>): Client {
@@ -607,6 +763,11 @@ export class FirebaseDataStore {
     };
     this.activities = [newActivity, ...this.activities];
     setStorageItem('activities', this.activities);
+
+    const firestore = dbInstance;
+    if (firestore) {
+      setDoc(doc(firestore, 'activities', newActivity.id), newActivity).catch(console.error);
+    }
     return newActivity;
   }
 
@@ -625,6 +786,11 @@ export class FirebaseDataStore {
     this.quotations = [newQuote, ...this.quotations];
     setStorageItem('quotations', this.quotations);
 
+    const firestore = dbInstance;
+    if (firestore) {
+      setDoc(doc(firestore, 'quotations', newQuote.id), newQuote).catch(console.error);
+    }
+
     logAudit(
       'usr-admin',
       'Admin',
@@ -642,6 +808,11 @@ export class FirebaseDataStore {
     const prev = this.quotations.find((q) => q.id === id);
     this.quotations = this.quotations.map((q) => (q.id === id ? { ...q, ...updates } : q));
     setStorageItem('quotations', this.quotations);
+
+    const firestore = dbInstance;
+    if (firestore) {
+      updateDoc(doc(firestore, 'quotations', id), updates).catch(console.error);
+    }
     const updated = this.quotations.find((q) => q.id === id);
 
     if (updated) {
@@ -664,6 +835,11 @@ export class FirebaseDataStore {
     const target = this.quotations.find((q) => q.id === id);
     this.quotations = this.quotations.filter((q) => q.id !== id);
     setStorageItem('quotations', this.quotations);
+
+    const firestore = dbInstance;
+    if (firestore) {
+      deleteDoc(doc(firestore, 'quotations', id)).catch(console.error);
+    }
 
     if (target) {
       logAudit(
@@ -786,6 +962,11 @@ export class FirebaseDataStore {
     this.incomeEntries = [newEntry, ...this.incomeEntries];
     setStorageItem('income_entries', this.incomeEntries);
 
+    const firestore = dbInstance;
+    if (firestore) {
+      setDoc(doc(firestore, 'income_entries', newEntry.id), newEntry).catch(console.error);
+    }
+
     logAudit(
       entry.created_by || 'usr-admin',
       'Finance Operations',
@@ -803,6 +984,11 @@ export class FirebaseDataStore {
     const target = this.incomeEntries.find((i) => i.id === id);
     this.incomeEntries = this.incomeEntries.filter((i) => i.id !== id);
     setStorageItem('income_entries', this.incomeEntries);
+
+    const firestore = dbInstance;
+    if (firestore) {
+      deleteDoc(doc(firestore, 'income_entries', id)).catch(console.error);
+    }
 
     if (target) {
       logAudit(
@@ -830,6 +1016,11 @@ export class FirebaseDataStore {
     this.expenseEntries = [newEntry, ...this.expenseEntries];
     setStorageItem('expense_entries', this.expenseEntries);
 
+    const firestore = dbInstance;
+    if (firestore) {
+      setDoc(doc(firestore, 'expense_entries', newEntry.id), newEntry).catch(console.error);
+    }
+
     logAudit(
       entry.created_by || 'usr-admin',
       'Finance Operations',
@@ -847,6 +1038,11 @@ export class FirebaseDataStore {
     const target = this.expenseEntries.find((e) => e.id === id);
     this.expenseEntries = this.expenseEntries.filter((e) => e.id !== id);
     setStorageItem('expense_entries', this.expenseEntries);
+
+    const firestore = dbInstance;
+    if (firestore) {
+      deleteDoc(doc(firestore, 'expense_entries', id)).catch(console.error);
+    }
 
     if (target) {
       logAudit(
@@ -924,27 +1120,95 @@ export class FirebaseDataStore {
       id,
       org_id: this.org.id,
       created_at: new Date().toISOString(),
-      sign_link: `https://hub-hesics.vercel.app/#/sign-agreement/${id}`,
+      sign_link: `${typeof window !== "undefined" ? window.location.origin + window.location.pathname : "https://hub-hesics.vercel.app"}#/sign-agreement/${id}`,
     };
     this.agreements = [newAgreement, ...this.agreements];
     setStorageItem('agreements', this.agreements);
     logAudit('usr-admin', 'Admin', 'client.created', 'Agreement', newAgreement.id, `Agreement for ${newAgreement.client_name}`);
+
+    const firestore = dbInstance;
+    if (firestore) {
+      setDoc(doc(firestore, 'agreements', newAgreement.id), newAgreement).catch(console.error);
+    }
     return newAgreement;
   }
 
   updateAgreement(id: string, updates: Partial<ClientAgreement>): ClientAgreement | undefined {
     this.agreements = this.agreements.map((a) => (a.id === id ? { ...a, ...updates } : a));
     setStorageItem('agreements', this.agreements);
+    this.notify();
+
+    const firestore = dbInstance;
+    if (firestore) {
+      updateDoc(doc(firestore, 'agreements', id), updates).catch(console.error);
+    }
     return this.agreements.find((a) => a.id === id);
   }
 
   deleteAgreement(id: string): void {
     this.agreements = this.agreements.filter((a) => a.id !== id);
     setStorageItem('agreements', this.agreements);
+
+    const firestore = dbInstance;
+    if (firestore) {
+      deleteDoc(doc(firestore, 'agreements', id)).catch(console.error);
+    }
   }
+
+  // ── Meetings & Consultations ──────────────────────────────────────────────────
+  getMeetings(): MeetingItem[] {
+    return this.meetings;
+  }
+
+  addMeeting(meeting: Omit<MeetingItem, 'id' | 'created_at'>): MeetingItem {
+    const id = `meet-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    const newMeeting: MeetingItem = {
+      ...meeting,
+      id,
+      org_id: this.org.id,
+      created_at: new Date().toISOString(),
+    };
+    this.meetings = [newMeeting, ...this.meetings];
+    setStorageItem('meetings', this.meetings);
+    logAudit('usr-admin', 'Admin', 'client.updated', 'Meeting', id, `Meeting: ${newMeeting.title}`);
+
+    const firestore = dbInstance;
+    if (firestore) {
+      setDoc(doc(firestore, 'meetings', id), newMeeting).catch(console.error);
+    }
+    return newMeeting;
+  }
+
+  deleteMeeting(id: string): void {
+    this.meetings = this.meetings.filter((m) => m.id !== id);
+    setStorageItem('meetings', this.meetings);
+
+    const firestore = dbInstance;
+    if (firestore) {
+      deleteDoc(doc(firestore, 'meetings', id)).catch(console.error);
+    }
+  }
+
+  // ── Notion Workspaces ────────────────────────────────────────────────────────
+  getNotionWorkspace(scopeId: string): NotionWorkspaceDoc | undefined {
+    return this.notionDocs[scopeId];
+  }
+
+  saveNotionWorkspace(docData: NotionWorkspaceDoc): void {
+    this.notionDocs[docData.id] = { ...docData, updated_at: new Date().toISOString() };
+    setStorageItem('notion_docs', this.notionDocs);
+
+    const firestore = dbInstance;
+    if (firestore) {
+      setDoc(doc(firestore, 'notion_workspaces', docData.id), this.notionDocs[docData.id]).catch(console.error);
+    }
+  }
+
 }
 
 export const db = new FirebaseDataStore();
+
+
 
 
 

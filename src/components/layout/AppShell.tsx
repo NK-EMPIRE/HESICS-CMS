@@ -1,6 +1,6 @@
 ﻿import React, { useState } from 'react';
 import {
-  LayoutDashboard, Users, Kanban, DollarSign, FileText, Receipt, FileSignature,
+  LayoutDashboard, Users, Kanban, DollarSign, FileText, Receipt, FileSignature, Video,
   ShieldCheck, Settings, LogOut, ChevronLeft, ChevronRight,
   Shield, UserCheck, Briefcase, Lock, History
 } from 'lucide-react';
@@ -74,6 +74,7 @@ export const AppShell: React.FC<AppShellProps> = ({
       : []),
     { id: 'clients', label: 'Clients', icon: Users, perm: 'clients:read' as PermissionKey, badge: coldCount > 0 ? `${coldCount} cold` : undefined, badgeColor: 'bg-amber-950/40 text-amber-400 border-amber-900/40' },
     { id: 'deals', label: 'Deals Board', icon: Kanban, perm: 'deals:read' as PermissionKey },
+    { id: 'meetings', label: 'Meetings & Calendar', icon: Video, perm: 'clients:read' as PermissionKey },
     { id: 'finance', label: 'Finance & Tax', icon: DollarSign, perm: 'finance:read' as PermissionKey },
     { id: 'quotations', label: 'Quotations', icon: FileText, perm: 'invoices:read' as PermissionKey },
     { id: 'invoices', label: 'Invoices', icon: Receipt, perm: 'invoices:read' as PermissionKey },
@@ -216,7 +217,7 @@ export const AppShell: React.FC<AppShellProps> = ({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 bg-[#050505]">
         {/* Topbar */}
-        <header className="h-12 px-6 border-b border-[#191920] bg-[#070709] flex items-center justify-between sticky top-0 z-20">
+        <header className="h-12 px-6 border-b border-[#191920] bg-[#070709] flex items-center justify-between shrink-0 z-20">
           <div className="flex items-center gap-2 text-xs text-[#606070]">
             <span>{org.name}</span>
             <span>/</span>
@@ -225,17 +226,10 @@ export const AppShell: React.FC<AppShellProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <img
-                src={activeUser.avatar_url}
-                alt={activeUser.name}
-                className="w-6 h-6 rounded-full ring-1 ring-[#77727E]/30"
-              />
-              <div className="hidden sm:block">
-                <span className="text-xs font-medium text-[#F4F4F6]">{activeUser.name}</span>
-                <span className="ml-1 text-[10px] text-[#606070] capitalize font-mono">· {displayTierName(activeUser.hierarchy, activeUser.role_name)}</span>
-              </div>
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0E0E12] border border-[#1C1C24] text-[11px] font-mono text-[#808090]">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>HESICS LIVE OS</span>
             </div>
           </div>
         </header>
@@ -248,6 +242,7 @@ export const AppShell: React.FC<AppShellProps> = ({
     </div>
   );
 };
+
 
 
 

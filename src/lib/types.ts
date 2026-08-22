@@ -296,3 +296,31 @@ export interface ClientAgreement {
   signed_at?: string;
   expires_at?: string;
 }
+
+// ── Meetings & Consultations ──────────────────────────────────────────────────
+export interface MeetingItem {
+  id: string;
+  org_id?: string;
+  title: string;
+  provider: 'google_meet' | 'zoom' | 'hesics_internal';
+  join_url: string;
+  scheduled_at: string;
+  duration_minutes: number;
+  client_id?: string;
+  client_name?: string;
+  client_email?: string;
+  host_email: string;
+  agenda?: string;
+  status: 'upcoming' | 'completed' | 'cancelled';
+  created_at: string;
+}
+
+// ── Notion Databases & Workspace Notes ────────────────────────────────────────
+export interface NotionWorkspaceDoc {
+  id: string; // scopeId e.g. "client-cl-123" or "org-global"
+  org_id?: string;
+  columns: any[];
+  rows: any[];
+  notes: string;
+  updated_at: string;
+}

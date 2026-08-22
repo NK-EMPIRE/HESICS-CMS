@@ -39,7 +39,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ activeUser, onNavigate }) 
       : `₹${n.toLocaleString('en-IN')}`;
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6 w-full">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1A1A20]">
         <div>

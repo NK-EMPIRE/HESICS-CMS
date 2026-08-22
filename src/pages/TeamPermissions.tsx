@@ -13,6 +13,8 @@ import {
 } from '../lib/rbac';
 import { CustomSelect, Option } from '../components/common/CustomSelect';
 import { sendInvitationEmail } from '../lib/emailService';
+import { UserConfirmModal, UserConfirmActionType } from '../components/team/UserConfirmModal';
+import { showToast } from '../components/common/Toast';
 
 interface TeamPermissionsProps {
   activeUser: User;
@@ -75,6 +77,11 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
   const [showInviteForm, setShowInviteForm] = useState(false);
   const [showCreateRoleForm, setShowCreateRoleForm] = useState(false);
   const [selectedRoleForDetail, setSelectedRoleForDetail] = useState<Role | null>(null);
+  const [confirmModalState, setConfirmModalState] = useState<{
+    isOpen: boolean;
+    targetUser: User | null;
+    actionType: UserConfirmActionType;
+  }>({ isOpen: false, targetUser: null, actionType: 'delete' });
 
   const [newRoleName, setNewRoleName] = useState('');
   const [newRoleDesc, setNewRoleDesc] = useState('');
@@ -174,36 +181,56 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
     setShowCreateRoleForm(false);
   };
 
-  const handleDeactivate = (targetUser: User) => {
+  const handleRequestDeactivate = (targetUser: User) => {
     if (!canManageUser(activeUser.hierarchy, targetUser.hierarchy, activeUser.email)) {
-      alert('You do not have permission to modify this user account.');
+      showToast('Permission Denied', 'You do not have permission to modify this user account.', 'error');
       return;
     }
-    db.deactivateUser(targetUser.id);
-    refreshUsers();
+    setConfirmModalState({
+      isOpen: true,
+      targetUser,
+      actionType: 'deactivate',
+    });
   };
 
   const handleReactivate = (targetUser: User) => {
     if (!canManageUser(activeUser.hierarchy, targetUser.hierarchy, activeUser.email)) {
-      alert('You do not have permission to modify this user account.');
+      showToast('Permission Denied', 'You do not have permission to modify this user account.', 'error');
       return;
     }
     db.updateUser(targetUser.id, { is_active: true });
     refreshUsers();
+    showToast('Member Reactivated', `${targetUser.name} has been reactivated successfully.`, 'success');
   };
 
-  const handleDelete = (targetUser: User) => {
+  const handleRequestDelete = (targetUser: User) => {
     if (!canManageUser(activeUser.hierarchy, targetUser.hierarchy, activeUser.email)) {
-      alert('You do not have permission to remove this user.');
+      showToast('Permission Denied', 'You do not have permission to remove this user account.', 'error');
       return;
     }
-    if (window.confirm(`Permanently remove ${targetUser.name} from the organization roster?`)) {
+    setConfirmModalState({
+      isOpen: true,
+      targetUser,
+      actionType: 'delete',
+    });
+  };
+
+  const handleExecuteConfirmedAction = () => {
+    const { targetUser, actionType } = confirmModalState;
+    if (!targetUser) return;
+
+    if (actionType === 'delete') {
       db.removeUser(targetUser.id);
       refreshUsers();
+      showToast('Member Purged', `Permanently removed ${targetUser.name} from organization.`, 'success');
+    } else if (actionType === 'deactivate') {
+      db.deactivateUser(targetUser.id);
+      refreshUsers();
+      showToast('Member Deactivated', `Deactivated access credentials for ${targetUser.name}.`, 'success');
     }
   };
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6 w-full">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1A1A20]">
         <div>
@@ -638,7 +665,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                           <div className="inline-flex items-center gap-2">
                             {u.is_active ? (
                               <button
-                                onClick={() => handleDeactivate(u)}
+                                onClick={() => handleRequestDeactivate(u)}
                                 className="p-1.5 text-[#707080] hover:text-amber-400 hover:bg-amber-950/20 rounded transition-colors"
                                 title="Deactivate Account"
                               >
@@ -654,7 +681,7 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
                               </button>
                             )}
                             <button
-                              onClick={() => handleDelete(u)}
+                              onClick={() => handleRequestDelete(u)}
                               className="p-1.5 text-[#707080] hover:text-rose-400 hover:bg-rose-950/20 rounded transition-colors"
                               title="Permanently Delete User"
                             >
@@ -718,7 +745,16 @@ export const TeamPermissions: React.FC<TeamPermissionsProps> = ({ activeUser }) 
           })}
         </div>
       </div>
+      {/* GitHub-style Security Verification Modal */}
+      {confirmModalState.isOpen && (
+        <UserConfirmModal
+          isOpen={confirmModalState.isOpen}
+          onClose={() => setConfirmModalState((prev) => ({ ...prev, isOpen: false }))}
+          onConfirm={handleExecuteConfirmedAction}
+          targetUser={confirmModalState.targetUser}
+          actionType={confirmModalState.actionType}
+        />
+      )}
     </div>
   );
 };
-

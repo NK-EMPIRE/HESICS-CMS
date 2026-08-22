@@ -1,3 +1,4 @@
+import { DownloadManagerModal } from '../components/common/DownloadManagerModal';
 ﻿import React, { useState } from 'react';
 import { FileSignature, Plus, Copy, Download, Send, Trash2, CheckCircle, Clock, AlertCircle, Link2, Search, X } from 'lucide-react';
 import { db } from '../lib/firebaseDb';
@@ -31,6 +32,7 @@ export const Agreements: React.FC<AgreementsProps> = ({ activeUser }) => {
   const [agreements, setAgreements] = useState<ClientAgreement[]>(() => db.getAgreements());
   const [search, setSearch] = useState('');
   const [showCreate, setShowCreate] = useState(false);
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [form, setForm] = useState({ clientId: '', clientName: '', clientEmail: '', clientPhone: '', clientCompany: '', panCard: '', scope: [] as string[], customScope: '', validDays: '30' });
   const clients = db.getClients();
   const org = db.getOrg();
@@ -54,9 +56,58 @@ export const Agreements: React.FC<AgreementsProps> = ({ activeUser }) => {
     showToast('Agreement Created', `Sign link ready for ${a.client_name}`, 'success');
   };
 
-  const downloadPDF = (agr: ClientAgreement) => {
-    const doc = generateAgreementPDF({ clientName: agr.client_name, clientEmail: agr.client_email, clientPhone: agr.client_phone || '', clientCompany: agr.client_company, panCard: agr.pan_card, scope: agr.scope, signatureDataUrl: agr.signature_url, photoDataUrl: agr.photo_url, agreementId: agr.id, signedAt: agr.signed_at || agr.created_at, org });
-    downloadPDFDocument(doc, `${agr.client_name.replace(/\s+/g, '_')}_Agreement_HESICS.pdf`);
+  const downloadPDF = async (agr: ClientAgreement) => {
+    try {
+      const doc = await generateAgreementPDF({ clientName: agr.client_name, clientEmail: agr.client_email, clientPhone: agr.client_phone || '', clientCompany: agr.client_company, panCard: agr.pan_card, scope: agr.scope, signatureDataUrl: agr.signature_url, photoDataUrl: agr.photo_url, agreementId: agr.id, signedAt: agr.signed_at || agr.created_at, org });
+      downloadPDFDocument(doc, `${agr.client_name.replace(/\s+/g, "_")}_Agreement_HESICS.pdf`);
+    } catch (err) {
+      console.error(err);
+      showToast('Export Failed', 'Unable to generate agreement PDF.', 'error');
+    }
+  };
+  
+  const handleExecuteAgreementDownload = async (config: {
+    format: 'pdf' | 'excel' | 'both';
+    dateMode: 'all' | 'month' | 'custom';
+    selectedMonth: number;
+    selectedYear: number;
+    startDate: string;
+    endDate: string;
+  }) => {
+    let filtered = [...agreements];
+    if (config.dateMode === 'month') {
+      filtered = filtered.filter((a) => {
+        const d = new Date(a.created_at);
+        return d.getMonth() === config.selectedMonth && d.getFullYear() === config.selectedYear;
+      });
+    } else if (config.dateMode === 'custom') {
+      if (config.startDate) filtered = filtered.filter((a) => a.created_at.split('T')[0] >= config.startDate);
+      if (config.endDate) filtered = filtered.filter((a) => a.created_at.split('T')[0] <= config.endDate);
+    }
+
+    for (const agr of filtered.slice(0, 10)) {
+      const doc = await generateAgreementPDF({
+        clientName: agr.client_name,
+        clientEmail: agr.client_email,
+        clientPhone: agr.client_phone || '',
+        clientCompany: agr.client_company,
+        panCard: agr.pan_card,
+        scope: agr.scope,
+        signatureDataUrl: agr.signature_url,
+        photoDataUrl: agr.photo_url,
+        agreementId: agr.id,
+        signedAt: agr.signed_at || agr.created_at,
+        org,
+      });
+      const blob = doc.output('blob');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${agr.client_name.replace(/\s+/g, '_')}_Agreement_HESICS.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 400);
+    }
   };
 
   return (
@@ -71,7 +122,10 @@ export const Agreements: React.FC<AgreementsProps> = ({ activeUser }) => {
           </div>
           <p className="text-xs text-[#828290] mt-1">Generate legally binding digital agreements · KYC · Digital signatures · Auto PDF archival</p>
         </div>
-        {canManage && <button onClick={() => setShowCreate(true)} className="hesics-btn-primary text-xs"><Plus className="w-3.5 h-3.5" /> New Agreement</button>}
+        <div className="flex items-center gap-2">
+          <button onClick={() => setIsDownloadModalOpen(true)} className="hesics-btn-secondary text-xs"><Download className="w-3.5 h-3.5 text-[#77727E]" /> Export Agreements</button>
+          {canManage && <button onClick={() => setShowCreate(true)} className="hesics-btn-primary text-xs"><Plus className="w-3.5 h-3.5" /> New Agreement</button>}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -152,6 +206,18 @@ export const Agreements: React.FC<AgreementsProps> = ({ activeUser }) => {
             </div>
           </div>
         </div>
+      )}
+    
+      {/* Unified Download Manager Modal */}
+      {isDownloadModalOpen && (
+        <DownloadManagerModal
+          isOpen={isDownloadModalOpen}
+          onClose={() => setIsDownloadModalOpen(false)}
+          title="Export Service Agreements"
+          totalRecordsCount={agreements.length}
+          allowFormats={{ pdf: true, excel: false, both: false }}
+          onExecuteDownload={handleExecuteAgreementDownload}
+        />
       )}
     </div>
   );

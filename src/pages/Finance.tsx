@@ -1,3 +1,5 @@
+import { generateFinanceReportPDF, downloadPDFDocument } from '../lib/pdfEngine';
+import { DownloadManagerModal } from '../components/common/DownloadManagerModal';
 ﻿import React, { useState } from 'react';
 import {
   DollarSign, TrendingUp, TrendingDown, Plus,
@@ -8,6 +10,7 @@ import { User, IncomeEntry, ExpenseEntry } from '../lib/types';
 import { IncomeModal } from '../components/finance/IncomeModal';
 import { ExpenseModal } from '../components/finance/ExpenseModal';
 import { exportFinanceToExcel } from '../lib/excelExport';
+import { FinanceReportModal } from '../components/finance/FinanceReportModal';
 import { hasPermission } from '../lib/rbac';
 
 interface FinanceProps {
@@ -22,6 +25,8 @@ export const Finance: React.FC<FinanceProps> = ({ activeUser }) => {
   const [expenses, setExpenses] = useState<ExpenseEntry[]>(() => db.getExpenseEntries());
   const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
 
   const canWrite = hasPermission(activeUser.role_id, 'finance:write');
 
@@ -58,8 +63,56 @@ export const Finance: React.FC<FinanceProps> = ({ activeUser }) => {
     exportFinanceToExcel(incomes, expenses);
   };
 
+  
+  const handleExecuteFinanceDownload = async (config: {
+    format: 'pdf' | 'excel' | 'both';
+    dateMode: 'all' | 'month' | 'custom';
+    selectedMonth: number;
+    selectedYear: number;
+    startDate: string;
+    endDate: string;
+  }) => {
+    let filteredIncomes = [...incomes];
+    let filteredExpenses = [...expenses];
+
+    if (config.dateMode === 'month') {
+      filteredIncomes = filteredIncomes.filter((i) => {
+        const d = new Date(i.received_at || i.created_at);
+        return d.getMonth() === config.selectedMonth && d.getFullYear() === config.selectedYear;
+      });
+      filteredExpenses = filteredExpenses.filter((e) => {
+        const d = new Date(e.spent_at || e.date || e.created_at);
+        return d.getMonth() === config.selectedMonth && d.getFullYear() === config.selectedYear;
+      });
+    } else if (config.dateMode === 'custom') {
+      if (config.startDate) {
+        filteredIncomes = filteredIncomes.filter((i) => (i.received_at || i.created_at).split('T')[0] >= config.startDate);
+        filteredExpenses = filteredExpenses.filter((e) => (e.spent_at || e.date || e.created_at).split('T')[0] >= config.startDate);
+      }
+      if (config.endDate) {
+        filteredIncomes = filteredIncomes.filter((i) => (i.received_at || i.created_at).split('T')[0] <= config.endDate);
+        filteredExpenses = filteredExpenses.filter((e) => (e.spent_at || e.date || e.created_at).split('T')[0] <= config.endDate);
+      }
+    }
+
+    if (config.format === 'excel' || config.format === 'both') {
+      exportFinanceToExcel(filteredIncomes, filteredExpenses);
+    }
+    if (config.format === 'pdf' || config.format === 'both') {
+      const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      const periodLabel = config.dateMode === 'month'
+        ? `${monthNames[config.selectedMonth]} ${config.selectedYear}`
+        : config.dateMode === 'custom'
+        ? `${config.startDate || 'Start'} to ${config.endDate || 'Present'}`
+        : 'All-Time Financial Statement';
+
+      const doc = await generateFinanceReportPDF(filteredIncomes, filteredExpenses, periodLabel, org);
+      downloadPDFDocument(doc, `HESICS_Finance_Report_${Date.now()}.pdf`);
+    }
+  };
+
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6 w-full">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1A1A20]">
         <div>
@@ -71,10 +124,10 @@ export const Finance: React.FC<FinanceProps> = ({ activeUser }) => {
 
         <div className="flex items-center gap-2.5">
           <button
-            onClick={handleExportExcel}
+            onClick={() => setIsDownloadModalOpen(true)}
             className="hesics-btn-secondary"
           >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-[#77727E]" /> Export Ledger (.xlsx)
+            <FileSpreadsheet className="w-3.5 h-3.5 text-[#77727E]" /> Export & Download
           </button>
           {canWrite && (
             <div className="flex items-center gap-2">
@@ -257,12 +310,34 @@ export const Finance: React.FC<FinanceProps> = ({ activeUser }) => {
         />
       )}
 
+      {isReportModalOpen && (
+        <FinanceReportModal
+          isOpen={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+          incomes={incomes}
+          expenses={expenses}
+          org={org}
+        />
+      )}
+
       {isExpenseModalOpen && (
         <ExpenseModal
           isOpen={isExpenseModalOpen}
           onClose={() => setIsExpenseModalOpen(false)}
           onSuccess={refreshData}
           activeUser={activeUser}
+        />
+      )}
+    
+      {/* Unified Finance Download Manager Modal */}
+      {isDownloadModalOpen && (
+        <DownloadManagerModal
+          isOpen={isDownloadModalOpen}
+          onClose={() => setIsDownloadModalOpen(false)}
+          title="Export Financial Statements & Ledgers"
+          subtitle="Download customized Income & Expense statements with date filtering in PDF or Excel."
+          totalRecordsCount={incomes.length + expenses.length}
+          onExecuteDownload={handleExecuteFinanceDownload}
         />
       )}
     </div>

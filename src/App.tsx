@@ -1,3 +1,4 @@
+import { Meetings } from './pages/Meetings';
 ﻿import React, { useState, useEffect } from 'react';
 import { AppShell } from './components/layout/AppShell';
 import { Dashboard } from './pages/Dashboard';
@@ -73,6 +74,7 @@ export function App() {
       case 'private_space':return <PrivateSpace activeUser={activeUser} />;
       case 'clients':      return <Clients activeUser={activeUser} />;
       case 'deals':        return <DealsKanban activeUser={activeUser} />;
+      case 'meetings':     return <Meetings activeUser={activeUser} />;
       case 'finance':      return <Finance activeUser={activeUser} />;
       case 'quotations':   return <Quotations activeUser={activeUser} />;
       case 'invoices':     return <Invoices activeUser={activeUser} />;

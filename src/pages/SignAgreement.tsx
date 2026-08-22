@@ -2,6 +2,7 @@
 import { CheckCircle, Camera, Upload, PenTool, FileText, Eye, ArrowRight, ArrowLeft, ShieldCheck, User, Phone, CreditCard } from 'lucide-react';
 import { db } from '../lib/firebaseDb';
 import { generateAgreementPDF, downloadPDFDocument } from '../lib/pdfEngine';
+import { sendCustomEmail } from '../lib/emailService';
 import { ClientAgreement } from '../lib/types';
 
 interface SignAgreementProps { agreementId: string; }
@@ -68,7 +69,7 @@ export const SignAgreement: React.FC<SignAgreementProps> = ({ agreementId }) => 
           </div>
           <p className="text-[10px] text-[#505060]">A copy will be shared with you at {agreement.client_email}. Thank you for trusting HESICS.</p>
           <div className="flex items-center justify-center mt-4 gap-2">
-            <img src="/assets/hesics-logo-dark.png" alt="HESICS" className="w-8 h-8 object-contain" />
+            <img src="/assets/hesics-logo-white.png" alt="HESICS" className="w-8 h-8 object-contain" />
             <div className="text-xs font-bold text-[#77727E] tracking-widest">HESICS · MAKE IT SIMPLE</div>
           </div>
         </div>
@@ -134,7 +135,7 @@ export const SignAgreement: React.FC<SignAgreementProps> = ({ agreementId }) => 
     const signedAt = new Date().toISOString();
     try {
       // Generate agreement PDF
-      const doc = generateAgreementPDF({
+      const doc = await generateAgreementPDF({
         clientName: agreement.client_name,
         clientEmail: agreement.client_email,
         clientPhone: phone || agreement.client_phone || '',
@@ -148,7 +149,7 @@ export const SignAgreement: React.FC<SignAgreementProps> = ({ agreementId }) => 
         signedAt,
         org,
       });
-      const pdfBlob = doc.output('datauristring');
+      const pdfBlob = doc.output('datauristring'); // stored as base64 dataURI for persistence
 
       db.updateAgreement(agreement.id, {
         status: 'signed',
@@ -160,6 +161,17 @@ export const SignAgreement: React.FC<SignAgreementProps> = ({ agreementId }) => 
         pan_card: panVerified || agreement.pan_card,
         pdf_data_url: pdfBlob,
       });
+
+      // Automatically dispatch signed execution confirmation email
+      sendCustomEmail({
+        to: agreement.client_email,
+        recipientName: agreement.client_name,
+        subject: `Executed Service Agreement - ${agreement.client_name} & HESICS [AGR-${agreement.id.slice(-6).toUpperCase()}]`,
+        message: `Dear ${agreement.client_name},\n\nYour official service agreement (ID: AGR-${agreement.id.slice(-6).toUpperCase()}) has been digitally executed and recorded with HESICS Enterprise Systems.\n\nAll terms, scope deliverables, and digital identity verifications have been permanently archived.\n\nThank you for choosing HESICS.\nMake It Simple.`,
+        actionUrl: `${window.location.origin}${window.location.pathname}#/sign-agreement/${agreement.id}`,
+        actionLabel: 'View Executed Agreement',
+        category: 'agreement_sign',
+      }).catch(console.error);
 
       setIsComplete(true);
     } catch (err) {
@@ -403,3 +415,4 @@ export const SignAgreement: React.FC<SignAgreementProps> = ({ agreementId }) => 
     </div>
   );
 };
+

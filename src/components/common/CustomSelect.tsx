@@ -142,7 +142,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         <div
           className={`absolute ${
             openUpward ? 'bottom-full mb-2' : 'top-full mt-2'
-          } left-0 z-[99999] w-full min-w-[260px] bg-[#0E0E14] border border-[#282836] rounded-2xl shadow-2xl overflow-hidden backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-100`}
+          } left-0 z-[999999] w-full min-w-[260px] bg-[#0E0E14] border border-[#282836] rounded-2xl shadow-2xl overflow-hidden backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-100`}
         >
           {searchable && (
             <div className="p-2.5 border-b border-[#1C1C26] bg-[#0A0A0E]">

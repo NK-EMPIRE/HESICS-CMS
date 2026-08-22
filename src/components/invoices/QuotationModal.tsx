@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { X, Plus, Trash2, Send, Download, FileText, Sparkles, Eye } from 'lucide-react';
 import { db } from '../../lib/firebaseDb';
 import { Quotation, QuotationStatus, LineItem, User as UserType, HesicsService } from '../../lib/types';
@@ -148,11 +148,12 @@ export const QuotationModal: React.FC<QuotationModalProps> = ({
     created_at: new Date().toISOString(),
   });
 
-  const handleExportPDF = () => {
-    const doc = generateQuotationPDF(buildQuotationPayload(), org, templateId);
-    doc.save(`HESICS_Quotation_${quoteNumber}.pdf`);
+  const handleExportPDF = async () => {
+    const doc = await generateQuotationPDF(buildQuotationPayload(), org, templateId);
+    const blob = doc.output('blob'); const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = `HESICS_Quotation_${quoteNumber}.pdf`;
+    document.body.appendChild(a); a.click(); setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
   };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!clientId || items.length === 0) return;
@@ -191,7 +192,7 @@ export const QuotationModal: React.FC<QuotationModalProps> = ({
   return (
     <>
       <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
-        <div className="bg-[#0D0D11] border border-[#22222B] rounded-3xl w-full max-w-4xl max-h-[92vh] overflow-y-auto p-8 pb-16 space-y-6 shadow-2xl shadow-black/80">
+        <div className="bg-[#0D0D11] border border-[#22222B] rounded-3xl w-full max-w-4xl max-h-[92vh] overflow-y-auto p-8 pb-16 space-y-6 pb-28 shadow-2xl shadow-black/80">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-[#1C1C26] pb-4">
             <div className="flex items-center gap-3">
@@ -463,3 +464,4 @@ export const QuotationModal: React.FC<QuotationModalProps> = ({
     </>
   );
 };
+
