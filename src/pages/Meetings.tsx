@@ -1,51 +1,89 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
-  Video, Calendar as CalendarIcon, Clock, Plus, Users, Mail,
-  CheckCircle2, ExternalLink, Link2, Trash2, Play, X, Shield,
-  Mic, MicOff, VideoOff, PhoneOff, Settings, Sparkles
-} from 'lucide-react';
-import { db } from '../lib/firebaseDb';
-import { User, MeetingItem } from '../lib/types';
-import { showToast } from '../components/common/Toast';
-import { sendCustomEmail } from '../lib/emailService';
-import { CustomSelect, Option } from '../components/common/CustomSelect';
-import { DatePicker } from '../components/common/DatePicker';
-import { TimePicker } from '../components/common/TimePicker';
+  Video,
+  Calendar as CalendarIcon,
+  Clock,
+  Plus,
+  Users,
+  Mail,
+  CheckCircle2,
+  ExternalLink,
+  Link2,
+  Trash2,
+  Play,
+  X,
+  Shield,
+  Mic,
+  MicOff,
+  VideoOff,
+  PhoneOff,
+  Settings,
+  Sparkles,
+} from "lucide-react";
+import { db } from "../lib/firebaseDb";
+import { User, MeetingItem } from "../lib/types";
+import { showToast } from "../components/common/Toast";
+import { sendCustomEmail } from "../lib/emailService";
+import { CustomSelect, Option } from "../components/common/CustomSelect";
+import { DatePicker } from "../components/common/DatePicker";
+import { TimePicker } from "../components/common/TimePicker";
 
 interface MeetingsProps {
   activeUser: User;
 }
 
 const PROVIDER_OPTIONS: Option[] = [
-  { value: 'zoom', label: 'Zoom Video SDK', badge: 'Zoom', badgeColor: 'text-indigo-400 bg-indigo-950/30 border-indigo-800/40' },
-  { value: 'google_meet', label: 'Google Meet SDK', badge: 'Meet', badgeColor: 'text-emerald-400 bg-emerald-950/30 border-emerald-800/40' },
-  { value: 'hesics_internal', label: 'HESICS Custom Meeting Room', badge: 'Native', badgeColor: 'text-[#D4D4D8] bg-[#77727E]/20 border-[#77727E]/40' },
+  {
+    value: "zoom",
+    label: "Zoom Video SDK",
+    badge: "Zoom",
+    badgeColor: "text-indigo-400 bg-indigo-950/30 border-indigo-800/40",
+  },
+  {
+    value: "google_meet",
+    label: "Google Meet SDK",
+    badge: "Meet",
+    badgeColor: "text-emerald-400 bg-emerald-950/30 border-emerald-800/40",
+  },
+  {
+    value: "hesics_internal",
+    label: "HESICS Custom Meeting Room",
+    badge: "Native",
+    badgeColor: "text-[#D4D4D8] bg-[#77727E]/20 border-[#77727E]/40",
+  },
 ];
 
 export const Meetings: React.FC<MeetingsProps> = ({ activeUser }) => {
-  const [meetings, setMeetings] = useState<MeetingItem[]>(() => db.getMeetings());
+  const [meetings, setMeetings] = useState<MeetingItem[]>(() =>
+    db.getMeetings(),
+  );
   const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [activeMeetingRoom, setActiveMeetingRoom] = useState<MeetingItem | null>(null);
+  const [activeMeetingRoom, setActiveMeetingRoom] =
+    useState<MeetingItem | null>(null);
 
   // Live in-app video room state
   const [isMicOn, setIsMicOn] = useState(true);
   const [isVideoOn, setIsVideoOn] = useState(true);
 
   // Form State
-  const [title, setTitle] = useState('');
-  const [provider, setProvider] = useState<'google_meet' | 'zoom' | 'hesics_internal'>('zoom');
-  const [selectedClientId, setSelectedClientId] = useState('');
-  const [scheduledDate, setScheduledDate] = useState(() => new Date().toISOString().split('T')[0]);
-  const [scheduledTime, setScheduledTime] = useState('11:00');
-  const [duration, setDuration] = useState('30');
-  const [agenda, setAgenda] = useState('');
+  const [title, setTitle] = useState("");
+  const [provider, setProvider] = useState<
+    "google_meet" | "zoom" | "hesics_internal"
+  >("zoom");
+  const [selectedClientId, setSelectedClientId] = useState("");
+  const [scheduledDate, setScheduledDate] = useState(
+    () => new Date().toISOString().split("T")[0],
+  );
+  const [scheduledTime, setScheduledTime] = useState("11:00");
+  const [duration, setDuration] = useState("30");
+  const [agenda, setAgenda] = useState("");
   const [isSending, setIsSending] = useState(false);
 
   const clients = db.getClients();
   const refreshMeetings = () => setMeetings(db.getMeetings());
 
   const clientOptions: Option[] = [
-    { value: '', label: 'No Client Selected' },
+    { value: "", label: "No Client Selected" },
     ...clients.map((c) => ({
       value: c.id,
       label: c.name,
@@ -53,9 +91,12 @@ export const Meetings: React.FC<MeetingsProps> = ({ activeUser }) => {
     })),
   ];
 
-  const generateMeetingLink = (type: 'google_meet' | 'zoom' | 'hesics_internal', meetId: string) => {
-    if (type === 'google_meet') return 'https://meet.google.com/new';
-    if (type === 'zoom') {
+  const generateMeetingLink = (
+    type: "google_meet" | "zoom" | "hesics_internal",
+    meetId: string,
+  ) => {
+    if (type === "google_meet") return "https://meet.google.com/new";
+    if (type === "zoom") {
       const zoomRoomId = Math.floor(1000000000 + Math.random() * 9000000000);
       const pwd = Math.random().toString(36).slice(2, 8);
       return `https://zoom.us/j/${zoomRoomId}?pwd=${pwd}`;
@@ -66,7 +107,11 @@ export const Meetings: React.FC<MeetingsProps> = ({ activeUser }) => {
   const handleCreateMeeting = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !scheduledDate) {
-      showToast('Missing Info', 'Please enter a title and select a date.', 'error');
+      showToast(
+        "Missing Info",
+        "Please enter a title and select a date.",
+        "error",
+      );
       return;
     }
 
@@ -74,7 +119,9 @@ export const Meetings: React.FC<MeetingsProps> = ({ activeUser }) => {
     const selectedClient = clients.find((c) => c.id === selectedClientId);
     const meetId = `meet-${Date.now()}`;
     const meetUrl = generateMeetingLink(provider, meetId);
-    const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime || '10:00'}:00`).toISOString();
+    const scheduledDateTime = new Date(
+      `${scheduledDate}T${scheduledTime || "10:00"}:00`,
+    ).toISOString();
 
     const newMeeting = db.addMeeting({
       title: title.trim(),
@@ -83,11 +130,11 @@ export const Meetings: React.FC<MeetingsProps> = ({ activeUser }) => {
       scheduled_at: scheduledDateTime,
       duration_minutes: Number(duration) || 30,
       client_id: selectedClient?.id,
-      client_name: selectedClient?.name || 'Attendee',
-      client_email: selectedClient?.email || '',
-      host_email: 'hesics1@gmail.com',
+      client_name: selectedClient?.name || "Attendee",
+      client_email: selectedClient?.email || "",
+      host_email: "hesics1@gmail.com",
       agenda: agenda.trim() || undefined,
-      status: 'upcoming',
+      status: "upcoming",
     });
 
     refreshMeetings();
@@ -95,35 +142,39 @@ export const Meetings: React.FC<MeetingsProps> = ({ activeUser }) => {
     // Dispatch invite email if client email is present
     if (selectedClient?.email) {
       try {
-        const [hStr, mStr] = (scheduledTime || '10:00').split(':');
+        const [hStr, mStr] = (scheduledTime || "10:00").split(":");
         const hNum = Number(hStr);
-        const ampm = hNum >= 12 ? 'PM' : 'AM';
+        const ampm = hNum >= 12 ? "PM" : "AM";
         const formatted12h = `${hNum % 12 === 0 ? 12 : hNum % 12}:${mStr} ${ampm}`;
 
         await sendCustomEmail({
           to: selectedClient.email,
           recipientName: selectedClient.name,
           subject: `Meeting: ${newMeeting.title} — HESICS`,
-          message: `Dear ${selectedClient.name},\n\nYou are invited to a meeting hosted by HESICS (hesics1@gmail.com).\n\nAgenda: ${agenda || 'Discussion'}\nDate: ${new Date(scheduledDateTime).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })} at ${formatted12h}\nDuration: ${duration} minutes\nPlatform: ${provider.toUpperCase()}\n\nJoin Link: ${meetUrl}`,
+          message: `Dear ${selectedClient.name},\n\nYou are invited to a meeting hosted by HESICS (hesics1@gmail.com).\n\nAgenda: ${agenda || "Discussion"}\nDate: ${new Date(scheduledDateTime).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })} at ${formatted12h}\nDuration: ${duration} minutes\nPlatform: ${provider.toUpperCase()}\n\nJoin Link: ${meetUrl}`,
           actionUrl: meetUrl,
-          actionLabel: 'Join Meeting',
+          actionLabel: "Join Meeting",
         });
       } catch (err) {
-        console.error('Email error:', err);
+        console.error("Email error:", err);
       }
     }
 
     setIsSending(false);
     setShowScheduleModal(false);
-    setTitle('');
-    setAgenda('');
-    showToast('Meeting Scheduled', 'Meeting added & invitations sent.', 'success');
+    setTitle("");
+    setAgenda("");
+    showToast(
+      "Meeting Scheduled",
+      "Meeting added & invitations sent.",
+      "success",
+    );
   };
 
   const handleDeleteMeeting = (id: string) => {
     db.deleteMeeting(id);
     refreshMeetings();
-    showToast('Meeting Removed', 'Meeting schedule deleted.');
+    showToast("Meeting Removed", "Meeting schedule deleted.");
   };
 
   return (
@@ -135,10 +186,13 @@ export const Meetings: React.FC<MeetingsProps> = ({ activeUser }) => {
             <div className="w-8 h-8 rounded-xl bg-[#77727E]/15 border border-[#77727E]/30 flex items-center justify-center">
               <Video className="w-4 h-4 text-[#77727E]" />
             </div>
-            <h1 className="text-xl font-bold text-[#F4F4F6] font-display">Meetings & Calendar</h1>
+            <h1 className="text-xl font-bold text-[#F4F4F6] font-display">
+              Meetings & Calendar
+            </h1>
           </div>
           <p className="text-xs text-[#808090] mt-0.5">
-            Host video sessions via Zoom Video SDK, Google Meet SDK, or native HESICS rooms.
+            Host video sessions via Zoom Video SDK, Google Meet SDK, or native
+            HESICS rooms.
           </p>
         </div>
 
@@ -147,13 +201,13 @@ export const Meetings: React.FC<MeetingsProps> = ({ activeUser }) => {
             onClick={() => {
               const testRoom: MeetingItem = {
                 id: `instant-${Date.now()}`,
-                title: 'HESICS Instant Video Room (Zoom SDK)',
-                provider: 'zoom',
-                join_url: 'https://zoom.us/new',
+                title: "HESICS Instant Video Room (Zoom SDK)",
+                provider: "zoom",
+                join_url: "https://zoom.us/new",
                 scheduled_at: new Date().toISOString(),
                 duration_minutes: 45,
-                host_email: 'hesics1@gmail.com',
-                status: 'upcoming',
+                host_email: "hesics1@gmail.com",
+                status: "upcoming",
                 created_at: new Date().toISOString(),
               };
               setActiveMeetingRoom(testRoom);
@@ -180,7 +234,9 @@ export const Meetings: React.FC<MeetingsProps> = ({ activeUser }) => {
             <div className="px-6 py-3.5 border-b border-[#1E1E2A] flex items-center justify-between bg-[#0A0A0F]">
               <div className="flex items-center gap-2.5">
                 <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-xs font-bold text-[#F4F4F6]">{activeMeetingRoom.title}</span>
+                <span className="text-xs font-bold text-[#F4F4F6]">
+                  {activeMeetingRoom.title}
+                </span>
                 <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-[#181822] text-[#9A9AA8] border border-[#242432]">
                   {activeMeetingRoom.provider.toUpperCase()}
                 </span>
@@ -203,7 +259,9 @@ export const Meetings: React.FC<MeetingsProps> = ({ activeUser }) => {
               </div>
 
               <div className="space-y-1 max-w-sm">
-                <h3 className="text-sm font-bold text-white">{activeMeetingRoom.title}</h3>
+                <h3 className="text-sm font-bold text-white">
+                  {activeMeetingRoom.title}
+                </h3>
                 <p className="text-xs text-[#808090]">
                   Connected to HESICS Custom Video Gateway. Audio & Video ready.
                 </p>
@@ -215,7 +273,8 @@ export const Meetings: React.FC<MeetingsProps> = ({ activeUser }) => {
                 rel="noreferrer"
                 className="hesics-btn-primary px-6 py-2 text-xs shadow-lg shadow-[#77727E]/20"
               >
-                <ExternalLink className="w-3.5 h-3.5" /> Launch in Zoom / Meet App
+                <ExternalLink className="w-3.5 h-3.5" /> Launch in Zoom / Meet
+                App
               </a>
             </div>
 
@@ -225,24 +284,32 @@ export const Meetings: React.FC<MeetingsProps> = ({ activeUser }) => {
                 onClick={() => setIsMicOn(!isMicOn)}
                 className={`p-2.5 rounded-xl border transition-all ${
                   isMicOn
-                    ? 'bg-[#161620] border-[#252532] text-white hover:bg-[#1E1E2A]'
-                    : 'bg-rose-950/40 border-rose-800 text-rose-400'
+                    ? "bg-[#161620] border-[#252532] text-white hover:bg-[#1E1E2A]"
+                    : "bg-rose-950/40 border-rose-800 text-rose-400"
                 }`}
-                title={isMicOn ? 'Mute Mic' : 'Unmute Mic'}
+                title={isMicOn ? "Mute Mic" : "Unmute Mic"}
               >
-                {isMicOn ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
+                {isMicOn ? (
+                  <Mic className="w-4 h-4" />
+                ) : (
+                  <MicOff className="w-4 h-4" />
+                )}
               </button>
 
               <button
                 onClick={() => setIsVideoOn(!isVideoOn)}
                 className={`p-2.5 rounded-xl border transition-all ${
                   isVideoOn
-                    ? 'bg-[#161620] border-[#252532] text-white hover:bg-[#1E1E2A]'
-                    : 'bg-rose-950/40 border-rose-800 text-rose-400'
+                    ? "bg-[#161620] border-[#252532] text-white hover:bg-[#1E1E2A]"
+                    : "bg-rose-950/40 border-rose-800 text-rose-400"
                 }`}
-                title={isVideoOn ? 'Turn Off Camera' : 'Turn On Camera'}
+                title={isVideoOn ? "Turn Off Camera" : "Turn On Camera"}
               >
-                {isVideoOn ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
+                {isVideoOn ? (
+                  <Video className="w-4 h-4" />
+                ) : (
+                  <VideoOff className="w-4 h-4" />
+                )}
               </button>
 
               <button
@@ -261,7 +328,9 @@ export const Meetings: React.FC<MeetingsProps> = ({ activeUser }) => {
         <div className="p-4 border-b border-[#181820] flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CalendarIcon className="w-4 h-4 text-[#77727E]" />
-            <h2 className="text-xs font-bold text-[#F4F4F6]">Scheduled Consultations & Calls ({meetings.length})</h2>
+            <h2 className="text-xs font-bold text-[#F4F4F6]">
+              Scheduled Consultations & Calls ({meetings.length})
+            </h2>
           </div>
         </div>
 
@@ -273,18 +342,27 @@ export const Meetings: React.FC<MeetingsProps> = ({ activeUser }) => {
           ) : (
             meetings.map((meet) => {
               const d = new Date(meet.scheduled_at);
-              const dateStr = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+              const dateStr = d.toLocaleDateString("en-IN", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              });
               const h = d.getHours();
               const m = d.getMinutes();
-              const time12Str = `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
+              const time12Str = `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
 
               return (
-                <div key={meet.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[#0E0E14] transition-colors">
+                <div
+                  key={meet.id}
+                  className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[#0E0E14] transition-colors"
+                >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2.5">
-                      <span className="font-semibold text-xs text-[#F4F4F6]">{meet.title}</span>
+                      <span className="font-semibold text-xs text-[#F4F4F6]">
+                        {meet.title}
+                      </span>
                       <span className="text-[9px] uppercase font-mono px-2 py-0.5 rounded bg-[#14141C] text-[#A0A0B0] border border-[#20202A]">
-                        {meet.provider.replace('_', ' ')}
+                        {meet.provider.replace("_", " ")}
                       </span>
                     </div>
 
@@ -294,7 +372,12 @@ export const Meetings: React.FC<MeetingsProps> = ({ activeUser }) => {
                         {dateStr} at {time12Str} ({meet.duration_minutes}m)
                       </span>
                       {meet.client_name && (
-                        <span>Attendee: <strong className="text-[#D4D4D8]">{meet.client_name}</strong></span>
+                        <span>
+                          Attendee:{" "}
+                          <strong className="text-[#D4D4D8]">
+                            {meet.client_name}
+                          </strong>
+                        </span>
                       )}
                     </div>
 
@@ -309,7 +392,11 @@ export const Meetings: React.FC<MeetingsProps> = ({ activeUser }) => {
                     <button
                       onClick={() => {
                         navigator.clipboard.writeText(meet.join_url);
-                        showToast('Link Copied', 'Meeting join link copied.', 'success');
+                        showToast(
+                          "Link Copied",
+                          "Meeting join link copied.",
+                          "success",
+                        );
                       }}
                       className="hesics-btn-secondary text-xs"
                       title="Copy Link"
@@ -348,9 +435,14 @@ export const Meetings: React.FC<MeetingsProps> = ({ activeUser }) => {
                 <div className="w-7 h-7 rounded-lg bg-[#77727E]/15 border border-[#77727E]/30 flex items-center justify-center">
                   <CalendarIcon className="w-3.5 h-3.5 text-[#77727E]" />
                 </div>
-                <h2 className="text-sm font-bold text-[#F4F4F6]">Schedule Meeting</h2>
+                <h2 className="text-sm font-bold text-[#F4F4F6]">
+                  Schedule Meeting
+                </h2>
               </div>
-              <button onClick={() => setShowScheduleModal(false)} className="text-[#606070] hover:text-white">
+              <button
+                onClick={() => setShowScheduleModal(false)}
+                className="text-[#606070] hover:text-white"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -400,7 +492,9 @@ export const Meetings: React.FC<MeetingsProps> = ({ activeUser }) => {
                 </div>
 
                 <div>
-                  <label className="hesics-label">Meeting Time (12-Hour) *</label>
+                  <label className="hesics-label">
+                    Meeting Time (12-Hour) *
+                  </label>
                   <TimePicker
                     value={scheduledTime}
                     onChange={setScheduledTime}
@@ -432,7 +526,7 @@ export const Meetings: React.FC<MeetingsProps> = ({ activeUser }) => {
                   disabled={isSending}
                   className="hesics-btn-primary text-xs px-4"
                 >
-                  {isSending ? 'Scheduling...' : 'Schedule & Invite'}
+                  {isSending ? "Scheduling..." : "Schedule & Invite"}
                 </button>
               </div>
             </form>

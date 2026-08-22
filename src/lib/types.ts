@@ -1,9 +1,10 @@
-﻿export type EntityType = 'proprietorship' | 'partnership' | 'llp' | 'pvt_ltd' | 'other';
+export type EntityType =
+  "proprietorship" | "partnership" | "llp" | "pvt_ltd" | "other";
 
 export interface CustomTemplate {
   id: string;
   name: string;
-  type: 'invoice' | 'quotation';
+  type: "invoice" | "quotation";
   file_name: string;
   data_url?: string;
   created_at: string;
@@ -38,7 +39,8 @@ export interface Organization {
 }
 
 // Hierarchy: founder (stealth master root) > superadmin > admin > officer > employee > intern
-export type UserHierarchy = 'founder' | 'superadmin' | 'admin' | 'officer' | 'employee' | 'intern';
+export type UserHierarchy =
+  "founder" | "superadmin" | "admin" | "officer" | "employee" | "intern";
 
 export interface User {
   id: string;
@@ -46,9 +48,9 @@ export interface User {
   name: string;
   email: string;
   avatar_url?: string;
-  hierarchy: UserHierarchy;   // org-level access tier
-  role_id: string;            // maps to a Role
-  role_name?: string;         // display name, derived from roles
+  hierarchy: UserHierarchy; // org-level access tier
+  role_id: string; // maps to a Role
+  role_name?: string; // display name, derived from roles
   department?: string;
   is_active: boolean;
   created_at: string;
@@ -63,19 +65,19 @@ export interface Role {
 }
 
 export type PermissionKey =
-  | 'clients:read'
-  | 'clients:write'
-  | 'clients:delete'
-  | 'deals:read'
-  | 'deals:write'
-  | 'invoices:read'
-  | 'invoices:write'
-  | 'finance:read'
-  | 'finance:write'
-  | 'team:manage'
-  | 'team:invite'
-  | 'org:admin'
-  | 'superadmin:vault';
+  | "clients:read"
+  | "clients:write"
+  | "clients:delete"
+  | "deals:read"
+  | "deals:write"
+  | "invoices:read"
+  | "invoices:write"
+  | "finance:read"
+  | "finance:write"
+  | "team:manage"
+  | "team:invite"
+  | "org:admin"
+  | "superadmin:vault";
 
 export interface Permission {
   id: string;
@@ -83,8 +85,9 @@ export interface Permission {
   description?: string;
 }
 
-export type ClientSource = 'referral' | 'instagram' | 'cold_dm' | 'website' | 'other';
-export type ClientStatus = 'lead' | 'active' | 'churned';
+export type ClientSource =
+  "referral" | "instagram" | "cold_dm" | "website" | "other";
+export type ClientStatus = "lead" | "active" | "churned";
 
 export interface Client {
   id: string;
@@ -107,7 +110,15 @@ export interface Client {
   updated_at: string;
 }
 
-export type DealStage = 'new' | 'contacted' | 'quoted' | 'discovery' | 'proposal' | 'negotiation' | 'won' | 'lost';
+export type DealStage =
+  | "new"
+  | "contacted"
+  | "quoted"
+  | "discovery"
+  | "proposal"
+  | "negotiation"
+  | "won"
+  | "lost";
 
 export interface Deal {
   id: string;
@@ -127,7 +138,8 @@ export interface Deal {
   updated_at: string;
 }
 
-export type ActivityType = 'call' | 'meeting' | 'email' | 'note' | 'task' | 'dm';
+export type ActivityType =
+  "call" | "meeting" | "email" | "note" | "task" | "dm";
 
 export interface Activity {
   id: string;
@@ -148,7 +160,8 @@ export interface Activity {
   created_at: string;
 }
 
-export type QuotationStatus = 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired';
+export type QuotationStatus =
+  "draft" | "sent" | "accepted" | "rejected" | "expired";
 
 export interface LineItem {
   id: string;
@@ -187,7 +200,7 @@ export interface Quotation {
   created_at: string;
 }
 
-export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
+export type InvoiceStatus = "draft" | "sent" | "paid" | "overdue" | "cancelled";
 
 export interface Invoice {
   id: string;
@@ -215,7 +228,7 @@ export interface Invoice {
   created_at: string;
 }
 
-export type IncomeSourceType = 'invoice' | 'direct' | 'other';
+export type IncomeSourceType = "invoice" | "direct" | "other";
 
 export interface IncomeEntry {
   id: string;
@@ -234,14 +247,14 @@ export interface IncomeEntry {
 }
 
 export type ExpenseCategory =
-  | 'rent'
-  | 'salary'
-  | 'software'
-  | 'marketing'
-  | 'travel'
-  | 'office'
-  | 'legal'
-  | 'other';
+  | "rent"
+  | "salary"
+  | "software"
+  | "marketing"
+  | "travel"
+  | "office"
+  | "legal"
+  | "other";
 
 export interface ExpenseEntry {
   id: string;
@@ -261,7 +274,7 @@ export interface ExpenseEntry {
 
 export interface PrivateVaultItem {
   id: string;
-  type: 'income' | 'expense' | 'client' | 'note' | 'task';
+  type: "income" | "expense" | "client" | "note" | "task";
   title: string;
   amount?: number;
   category?: string;
@@ -273,7 +286,7 @@ export interface PrivateVaultItem {
 }
 
 // ── Client Agreements ──────────────────────────────────────────────────────────
-export type AgreementStatus = 'pending' | 'signed' | 'expired' | 'cancelled';
+export type AgreementStatus = "pending" | "signed" | "expired" | "cancelled";
 
 export interface ClientAgreement {
   id: string;
@@ -283,15 +296,15 @@ export interface ClientAgreement {
   client_email: string;
   client_phone?: string;
   client_company?: string;
-  scope: string[];          // list of deliverables / scope items
+  scope: string[]; // list of deliverables / scope items
   pan_card?: string;
   aadhaar_number?: string;
-  kyc_doc_url?: string;     // ID proof image data URL
-  photo_url?: string;       // client selfie/photo data URL
-  signature_url?: string;   // signature canvas data URL
+  kyc_doc_url?: string; // ID proof image data URL
+  photo_url?: string; // client selfie/photo data URL
+  signature_url?: string; // signature canvas data URL
   status: AgreementStatus;
-  sign_link: string;        // public URL for client signing
-  pdf_data_url?: string;    // generated PDF stored as base64
+  sign_link: string; // public URL for client signing
+  pdf_data_url?: string; // generated PDF stored as base64
   created_at: string;
   signed_at?: string;
   expires_at?: string;
@@ -302,7 +315,7 @@ export interface MeetingItem {
   id: string;
   org_id?: string;
   title: string;
-  provider: 'google_meet' | 'zoom' | 'hesics_internal';
+  provider: "google_meet" | "zoom" | "hesics_internal";
   join_url: string;
   scheduled_at: string;
   duration_minutes: number;
@@ -311,7 +324,7 @@ export interface MeetingItem {
   client_email?: string;
   host_email: string;
   agenda?: string;
-  status: 'upcoming' | 'completed' | 'cancelled';
+  status: "upcoming" | "completed" | "cancelled";
   created_at: string;
 }
 

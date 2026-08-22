@@ -1,12 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
-  X, Download, FileText, FileSpreadsheet, Loader2, CheckCircle2,
-  Calendar, Check, ShieldCheck, Sparkles
-} from 'lucide-react';
-import { showToast } from './Toast';
+  X,
+  Download,
+  FileText,
+  FileSpreadsheet,
+  Loader2,
+  CheckCircle2,
+  Calendar,
+  Check,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
+import { showToast } from "./Toast";
 
-export type DownloadFormat = 'pdf' | 'excel' | 'both';
-export type DateRangeMode = 'all' | 'month' | 'custom';
+export type DownloadFormat = "pdf" | "excel" | "both";
+export type DateRangeMode = "all" | "month" | "custom";
 
 export interface DownloadManagerModalProps {
   isOpen: boolean;
@@ -26,8 +34,18 @@ export interface DownloadManagerModalProps {
 }
 
 const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 const CURRENT_YEAR = new Date().getFullYear();
 const YEARS = Array.from({ length: 6 }, (_, i) => CURRENT_YEAR - i);
@@ -36,30 +54,32 @@ export const DownloadManagerModal: React.FC<DownloadManagerModalProps> = ({
   isOpen,
   onClose,
   title,
-  subtitle = 'Configure filtration parameters, choose export format, and download.',
+  subtitle = "Configure filtration parameters, choose export format, and download.",
   totalRecordsCount,
   allowFormats = { pdf: true, excel: true, both: true },
   onExecuteDownload,
 }) => {
-  const [format, setFormat] = useState<DownloadFormat>('pdf');
-  const [dateMode, setDateMode] = useState<DateRangeMode>('all');
+  const [format, setFormat] = useState<DownloadFormat>("pdf");
+  const [dateMode, setDateMode] = useState<DateRangeMode>("all");
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   const [isProcessing, setIsProcessing] = useState(false);
-  const [progressStep, setProgressStep] = useState<'idle' | 'filtering' | 'generating' | 'done'>('idle');
+  const [progressStep, setProgressStep] = useState<
+    "idle" | "filtering" | "generating" | "done"
+  >("idle");
 
   if (!isOpen) return null;
 
   const handleStartDownload = async () => {
     setIsProcessing(true);
-    setProgressStep('filtering');
+    setProgressStep("filtering");
 
     try {
       await new Promise((r) => setTimeout(r, 400));
-      setProgressStep('generating');
+      setProgressStep("generating");
 
       await onExecuteDownload({
         format,
@@ -70,18 +90,26 @@ export const DownloadManagerModal: React.FC<DownloadManagerModalProps> = ({
         endDate,
       });
 
-      setProgressStep('done');
-      showToast('Export Completed', `${title} downloaded successfully.`, 'success');
+      setProgressStep("done");
+      showToast(
+        "Export Completed",
+        `${title} downloaded successfully.`,
+        "success",
+      );
       setTimeout(() => {
         setIsProcessing(false);
-        setProgressStep('idle');
+        setProgressStep("idle");
         onClose();
       }, 1200);
     } catch (err) {
-      console.error('Download error:', err);
+      console.error("Download error:", err);
       setIsProcessing(false);
-      setProgressStep('idle');
-      showToast('Export Failed', 'There was an issue generating your file.', 'error');
+      setProgressStep("idle");
+      showToast(
+        "Export Failed",
+        "There was an issue generating your file.",
+        "error",
+      );
     }
   };
 
@@ -95,7 +123,9 @@ export const DownloadManagerModal: React.FC<DownloadManagerModalProps> = ({
               <Download className="w-4 h-4 text-[#77727E]" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-[#F4F4F6] font-display">{title}</h2>
+              <h2 className="text-sm font-bold text-[#F4F4F6] font-display">
+                {title}
+              </h2>
               <p className="text-[11px] text-[#808090] mt-0.5">{subtitle}</p>
             </div>
           </div>
@@ -112,56 +142,64 @@ export const DownloadManagerModal: React.FC<DownloadManagerModalProps> = ({
         <div className="p-7 space-y-6">
           {/* Format Picker */}
           <div>
-            <label className="hesics-label mb-2.5 block">1. Select Export Format</label>
+            <label className="hesics-label mb-2.5 block">
+              1. Select Export Format
+            </label>
             <div className="grid grid-cols-3 gap-2.5">
               {allowFormats.pdf && (
                 <button
                   type="button"
-                  onClick={() => setFormat('pdf')}
+                  onClick={() => setFormat("pdf")}
                   disabled={isProcessing}
                   className={`flex flex-col items-center justify-center gap-1.5 p-3.5 rounded-2xl border text-xs font-medium transition-all ${
-                    format === 'pdf'
-                      ? 'border-[#77727E] bg-[#77727E]/15 text-[#F4F4F6] shadow-lg shadow-[#77727E]/10'
-                      : 'border-[#1C1C26] bg-[#09090D] text-[#707080] hover:border-[#2A2A38]'
+                    format === "pdf"
+                      ? "border-[#77727E] bg-[#77727E]/15 text-[#F4F4F6] shadow-lg shadow-[#77727E]/10"
+                      : "border-[#1C1C26] bg-[#09090D] text-[#707080] hover:border-[#2A2A38]"
                   }`}
                 >
                   <FileText className="w-4 h-4 text-rose-400" />
                   <span>Vector PDF</span>
-                  <span className="text-[9px] text-[#606070]">High-res document</span>
+                  <span className="text-[9px] text-[#606070]">
+                    High-res document
+                  </span>
                 </button>
               )}
 
               {allowFormats.excel && (
                 <button
                   type="button"
-                  onClick={() => setFormat('excel')}
+                  onClick={() => setFormat("excel")}
                   disabled={isProcessing}
                   className={`flex flex-col items-center justify-center gap-1.5 p-3.5 rounded-2xl border text-xs font-medium transition-all ${
-                    format === 'excel'
-                      ? 'border-[#77727E] bg-[#77727E]/15 text-[#F4F4F6] shadow-lg shadow-[#77727E]/10'
-                      : 'border-[#1C1C26] bg-[#09090D] text-[#707080] hover:border-[#2A2A38]'
+                    format === "excel"
+                      ? "border-[#77727E] bg-[#77727E]/15 text-[#F4F4F6] shadow-lg shadow-[#77727E]/10"
+                      : "border-[#1C1C26] bg-[#09090D] text-[#707080] hover:border-[#2A2A38]"
                   }`}
                 >
                   <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
                   <span>Excel (.xlsx)</span>
-                  <span className="text-[9px] text-[#606070]">Structured ledger</span>
+                  <span className="text-[9px] text-[#606070]">
+                    Structured ledger
+                  </span>
                 </button>
               )}
 
               {allowFormats.both && (
                 <button
                   type="button"
-                  onClick={() => setFormat('both')}
+                  onClick={() => setFormat("both")}
                   disabled={isProcessing}
                   className={`flex flex-col items-center justify-center gap-1.5 p-3.5 rounded-2xl border text-xs font-medium transition-all ${
-                    format === 'both'
-                      ? 'border-[#77727E] bg-[#77727E]/15 text-[#F4F4F6] shadow-lg shadow-[#77727E]/10'
-                      : 'border-[#1C1C26] bg-[#09090D] text-[#707080] hover:border-[#2A2A38]'
+                    format === "both"
+                      ? "border-[#77727E] bg-[#77727E]/15 text-[#F4F4F6] shadow-lg shadow-[#77727E]/10"
+                      : "border-[#1C1C26] bg-[#09090D] text-[#707080] hover:border-[#2A2A38]"
                   }`}
                 >
                   <Sparkles className="w-4 h-4 text-amber-400" />
                   <span>Both Formats</span>
-                  <span className="text-[9px] text-[#606070]">PDF + Spreadsheet</span>
+                  <span className="text-[9px] text-[#606070]">
+                    PDF + Spreadsheet
+                  </span>
                 </button>
               )}
             </div>
@@ -169,9 +207,11 @@ export const DownloadManagerModal: React.FC<DownloadManagerModalProps> = ({
 
           {/* Date Range Selection */}
           <div>
-            <label className="hesics-label mb-2.5 block">2. Date Filter & Scope</label>
+            <label className="hesics-label mb-2.5 block">
+              2. Date Filter & Scope
+            </label>
             <div className="grid grid-cols-3 gap-2 mb-3.5">
-              {(['all', 'month', 'custom'] as const).map((m) => (
+              {(["all", "month", "custom"] as const).map((m) => (
                 <button
                   key={m}
                   type="button"
@@ -179,16 +219,20 @@ export const DownloadManagerModal: React.FC<DownloadManagerModalProps> = ({
                   disabled={isProcessing}
                   className={`p-2.5 rounded-xl border text-xs font-medium capitalize transition-all ${
                     dateMode === m
-                      ? 'border-[#77727E]/60 bg-[#77727E]/10 text-white'
-                      : 'border-[#1A1A22] bg-[#09090D] text-[#707080] hover:border-[#252532]'
+                      ? "border-[#77727E]/60 bg-[#77727E]/10 text-white"
+                      : "border-[#1A1A22] bg-[#09090D] text-[#707080] hover:border-[#252532]"
                   }`}
                 >
-                  {m === 'all' ? 'All Records' : m === 'month' ? 'By Month' : 'Custom Range'}
+                  {m === "all"
+                    ? "All Records"
+                    : m === "month"
+                      ? "By Month"
+                      : "Custom Range"}
                 </button>
               ))}
             </div>
 
-            {dateMode === 'month' && (
+            {dateMode === "month" && (
               <div className="grid grid-cols-2 gap-3 p-3 bg-[#09090D] border border-[#1A1A24] rounded-2xl">
                 <div>
                   <label className="hesics-label">Month</label>
@@ -199,7 +243,9 @@ export const DownloadManagerModal: React.FC<DownloadManagerModalProps> = ({
                     disabled={isProcessing}
                   >
                     {MONTHS.map((m, i) => (
-                      <option key={m} value={i}>{m}</option>
+                      <option key={m} value={i}>
+                        {m}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -212,14 +258,16 @@ export const DownloadManagerModal: React.FC<DownloadManagerModalProps> = ({
                     disabled={isProcessing}
                   >
                     {YEARS.map((y) => (
-                      <option key={y} value={y}>{y}</option>
+                      <option key={y} value={y}>
+                        {y}
+                      </option>
                     ))}
                   </select>
                 </div>
               </div>
             )}
 
-            {dateMode === 'custom' && (
+            {dateMode === "custom" && (
               <div className="grid grid-cols-2 gap-3 p-3 bg-[#09090D] border border-[#1A1A24] rounded-2xl">
                 <div>
                   <label className="hesics-label">From Date</label>
@@ -251,19 +299,29 @@ export const DownloadManagerModal: React.FC<DownloadManagerModalProps> = ({
               <div className="flex items-center justify-between text-xs">
                 <span className="text-[#D4D4D8] font-semibold flex items-center gap-2">
                   <Loader2 className="w-4 h-4 text-[#77727E] animate-spin" />
-                  {progressStep === 'filtering' && 'Filtering data records...'}
-                  {progressStep === 'generating' && 'Rendering vector layout & spreadsheet...'}
-                  {progressStep === 'done' && 'Download ready! Saving file...'}
+                  {progressStep === "filtering" && "Filtering data records..."}
+                  {progressStep === "generating" &&
+                    "Rendering vector layout & spreadsheet..."}
+                  {progressStep === "done" && "Download ready! Saving file..."}
                 </span>
                 <span className="text-[10px] font-mono text-emerald-400">
-                  {progressStep === 'filtering' ? '30%' : progressStep === 'generating' ? '75%' : '100%'}
+                  {progressStep === "filtering"
+                    ? "30%"
+                    : progressStep === "generating"
+                      ? "75%"
+                      : "100%"}
                 </span>
               </div>
               <div className="w-full bg-[#161620] h-1.5 rounded-full overflow-hidden">
                 <div
                   className="bg-gradient-to-r from-[#77727E] to-emerald-400 h-full transition-all duration-300 rounded-full"
                   style={{
-                    width: progressStep === 'filtering' ? '30%' : progressStep === 'generating' ? '75%' : '100%',
+                    width:
+                      progressStep === "filtering"
+                        ? "30%"
+                        : progressStep === "generating"
+                          ? "75%"
+                          : "100%",
                   }}
                 />
               </div>
@@ -274,7 +332,11 @@ export const DownloadManagerModal: React.FC<DownloadManagerModalProps> = ({
         {/* Footer */}
         <div className="px-7 py-4 border-t border-[#181822] bg-[#0A0A0E] flex items-center justify-between">
           <div className="text-[11px] text-[#606070]">
-            Target scope: <span className="font-mono text-[#D4D4D8]">{totalRecordsCount}</span> available records
+            Target scope:{" "}
+            <span className="font-mono text-[#D4D4D8]">
+              {totalRecordsCount}
+            </span>{" "}
+            available records
           </div>
 
           <div className="flex items-center gap-2.5">

@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Trash2, UserX, ShieldAlert, X } from 'lucide-react';
-import { User } from '../../lib/types';
+import React, { useState, useEffect } from "react";
+import { Trash2, UserX, ShieldAlert, X } from "lucide-react";
+import { User } from "../../lib/types";
 
-export type UserConfirmActionType = 'delete' | 'deactivate';
+export type UserConfirmActionType = "delete" | "deactivate";
 
 interface UserConfirmModalProps {
   isOpen: boolean;
@@ -19,24 +19,25 @@ export const UserConfirmModal: React.FC<UserConfirmModalProps> = ({
   targetUser,
   actionType,
 }) => {
-  const [typedInput, setTypedInput] = useState('');
+  const [typedInput, setTypedInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      setTypedInput('');
+      setTypedInput("");
       setIsSubmitting(false);
     }
   }, [isOpen]);
 
   if (!isOpen || !targetUser) return null;
 
-  const isDelete = actionType === 'delete';
+  const isDelete = actionType === "delete";
   const requiredPhrase = isDelete
     ? `delete ${targetUser.email.toLowerCase()}`
     : `deactivate ${targetUser.email.toLowerCase()}`;
 
-  const isMatch = typedInput.trim().toLowerCase() === requiredPhrase.toLowerCase();
+  const isMatch =
+    typedInput.trim().toLowerCase() === requiredPhrase.toLowerCase();
 
   const handleExecute = (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,10 +63,16 @@ export const UserConfirmModal: React.FC<UserConfirmModalProps> = ({
             </div>
             <div>
               <h2 className="text-sm font-bold text-[#F4F4F6] font-display">
-                {isDelete ? 'Permanently Remove Team Member' : 'Deactivate Member Credentials'}
+                {isDelete
+                  ? "Permanently Remove Team Member"
+                  : "Deactivate Member Credentials"}
               </h2>
               <p className="text-xs text-[#808090] mt-0.5">
-                Target account: <span className="font-semibold text-[#D4D4D8]">{targetUser.name}</span> ({targetUser.email})
+                Target account:{" "}
+                <span className="font-semibold text-[#D4D4D8]">
+                  {targetUser.name}
+                </span>{" "}
+                ({targetUser.email})
               </p>
             </div>
           </div>
@@ -86,11 +93,15 @@ export const UserConfirmModal: React.FC<UserConfirmModalProps> = ({
             <div className="text-xs text-rose-200/90 leading-relaxed">
               {isDelete ? (
                 <>
-                  This action is <strong>irreversible</strong>. The user's credentials, active sessions, and access permissions will be permanently purged across HESICS OS and Cloud Firestore.
+                  This action is <strong>irreversible</strong>. The user's
+                  credentials, active sessions, and access permissions will be
+                  permanently purged across HESICS OS and Cloud Firestore.
                 </>
               ) : (
                 <>
-                  Deactivating will immediately <strong>revoke all session tokens</strong> and block portal login until explicitly reactivated by an Executive Admin.
+                  Deactivating will immediately{" "}
+                  <strong>revoke all session tokens</strong> and block portal
+                  login until explicitly reactivated by an Executive Admin.
                 </>
               )}
             </div>
@@ -99,7 +110,11 @@ export const UserConfirmModal: React.FC<UserConfirmModalProps> = ({
           {/* GitHub-style Confirmation Prompt */}
           <div className="space-y-2">
             <label className="text-xs text-[#A0A0B0] block">
-              To verify this operation, please type <span className="font-mono font-bold text-rose-400 bg-rose-950/40 px-1.5 py-0.5 rounded border border-rose-900/60 select-all">{requiredPhrase}</span> below:
+              To verify this operation, please type{" "}
+              <span className="font-mono font-bold text-rose-400 bg-rose-950/40 px-1.5 py-0.5 rounded border border-rose-900/60 select-all">
+                {requiredPhrase}
+              </span>{" "}
+              below:
             </label>
             <input
               type="text"
@@ -126,15 +141,15 @@ export const UserConfirmModal: React.FC<UserConfirmModalProps> = ({
               className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
                 isMatch && !isSubmitting
                   ? isDelete
-                    ? 'bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/30 cursor-pointer'
-                    : 'bg-amber-600 hover:bg-amber-500 text-white shadow-lg shadow-amber-600/30 cursor-pointer'
-                  : 'bg-[#1E1E28] text-[#555565] border border-[#262632] cursor-not-allowed opacity-60'
+                    ? "bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/30 cursor-pointer"
+                    : "bg-amber-600 hover:bg-amber-500 text-white shadow-lg shadow-amber-600/30 cursor-pointer"
+                  : "bg-[#1E1E28] text-[#555565] border border-[#262632] cursor-not-allowed opacity-60"
               }`}
             >
               {isDelete ? (
                 <>
-                  <Trash2 className="w-3.5 h-3.5" />
-                  I understand the consequences, delete this member
+                  <Trash2 className="w-3.5 h-3.5" />I understand the
+                  consequences, delete this member
                 </>
               ) : (
                 <>

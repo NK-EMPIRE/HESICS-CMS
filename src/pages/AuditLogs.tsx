@@ -1,42 +1,63 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
-  History, Search, Filter, Download, Trash2,
-  Calendar, UserCheck, Shield, ChevronRight, X, FileSpreadsheet, Eye, RefreshCw
-} from 'lucide-react';
-import { db } from '../lib/firebaseDb';
-import { User } from '../lib/types';
-import { AuditLogEntry, formatAuditAction, getAuditLog, clearAuditLog } from '../lib/auditLog';
-import { isMasterRoot } from '../lib/rbac';
-import { exportAuditLogsToExcel } from '../lib/excelExport';
-import { AuditFilterModal, AuditFilterState } from '../components/audit/AuditFilterModal';
-import { showToast } from '../components/common/Toast';
+  History,
+  Search,
+  Filter,
+  Download,
+  Trash2,
+  Calendar,
+  UserCheck,
+  Shield,
+  ChevronRight,
+  X,
+  FileSpreadsheet,
+  Eye,
+  RefreshCw,
+} from "lucide-react";
+import { db } from "../lib/firebaseDb";
+import { User } from "../lib/types";
+import {
+  AuditLogEntry,
+  formatAuditAction,
+  getAuditLog,
+  clearAuditLog,
+} from "../lib/auditLog";
+import { isMasterRoot } from "../lib/rbac";
+import { exportAuditLogsToExcel } from "../lib/excelExport";
+import {
+  AuditFilterModal,
+  AuditFilterState,
+} from "../components/audit/AuditFilterModal";
+import { showToast } from "../components/common/Toast";
 
 interface AuditLogsProps {
   activeUser: User;
 }
 
-const CATEGORY_BADGES: Record<AuditLogEntry['category'], string> = {
-  CRM: 'text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30',
-  Billing: 'text-indigo-300 bg-indigo-950/40 border-indigo-800/50',
-  Finance: 'text-emerald-300 bg-emerald-950/40 border-emerald-800/50',
-  Team: 'text-amber-300 bg-amber-950/40 border-amber-800/50',
-  Security: 'text-rose-300 bg-rose-950/40 border-rose-800/50',
-  Settings: 'text-[#808090] bg-[#14141A] border-[#202028]',
+const CATEGORY_BADGES: Record<AuditLogEntry["category"], string> = {
+  CRM: "text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30",
+  Billing: "text-indigo-300 bg-indigo-950/40 border-indigo-800/50",
+  Finance: "text-emerald-300 bg-emerald-950/40 border-emerald-800/50",
+  Team: "text-amber-300 bg-amber-950/40 border-amber-800/50",
+  Security: "text-rose-300 bg-rose-950/40 border-rose-800/50",
+  Settings: "text-[#808090] bg-[#14141A] border-[#202028]",
 };
 
 const DEFAULT_FILTERS: AuditFilterState = {
-  searchQuery: '',
-  category: 'ALL',
-  actorUserId: 'ALL',
-  startDate: '',
-  endDate: '',
+  searchQuery: "",
+  category: "ALL",
+  actorUserId: "ALL",
+  startDate: "",
+  endDate: "",
 };
 
 export const AuditLogs: React.FC<AuditLogsProps> = ({ activeUser }) => {
   const [logs, setLogs] = useState<AuditLogEntry[]>(() => getAuditLog(1000));
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [filters, setFilters] = useState<AuditFilterState>(DEFAULT_FILTERS);
-  const [selectedEntry, setSelectedEntry] = useState<AuditLogEntry | null>(null);
+  const [selectedEntry, setSelectedEntry] = useState<AuditLogEntry | null>(
+    null,
+  );
 
   const isChief = isMasterRoot(activeUser.email);
   const users = db.getUsers(activeUser.email);
@@ -50,7 +71,7 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ activeUser }) => {
     label: u.name,
     sublabel: u.email,
     badge: u.role_name || u.hierarchy,
-    badgeColor: 'text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30',
+    badgeColor: "text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30",
   }));
 
   // Multi-parameter filtration
@@ -58,30 +79,34 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ activeUser }) => {
     // 1. Search Query
     if (filters.searchQuery) {
       const q = filters.searchQuery.toLowerCase();
-      const matchLabel = (log.entity_label || '').toLowerCase().includes(q);
-      const matchAction = formatAuditAction(log.action).toLowerCase().includes(q);
-      const matchUser = (log.user_name || '').toLowerCase().includes(q) || (log.actor_email || '').toLowerCase().includes(q);
-      const matchId = (log.entity_id || '').toLowerCase().includes(q);
+      const matchLabel = (log.entity_label || "").toLowerCase().includes(q);
+      const matchAction = formatAuditAction(log.action)
+        .toLowerCase()
+        .includes(q);
+      const matchUser =
+        (log.user_name || "").toLowerCase().includes(q) ||
+        (log.actor_email || "").toLowerCase().includes(q);
+      const matchId = (log.entity_id || "").toLowerCase().includes(q);
       if (!matchLabel && !matchAction && !matchUser && !matchId) return false;
     }
 
     // 2. Category
-    if (filters.category !== 'ALL' && log.category !== filters.category) {
+    if (filters.category !== "ALL" && log.category !== filters.category) {
       return false;
     }
 
     // 3. Actor / User
-    if (filters.actorUserId !== 'ALL' && log.user_id !== filters.actorUserId) {
+    if (filters.actorUserId !== "ALL" && log.user_id !== filters.actorUserId) {
       return false;
     }
 
     // 4. Date Range
     if (filters.startDate) {
-      const logDate = new Date(log.timestamp).toISOString().split('T')[0];
+      const logDate = new Date(log.timestamp).toISOString().split("T")[0];
       if (logDate < filters.startDate) return false;
     }
     if (filters.endDate) {
-      const logDate = new Date(log.timestamp).toISOString().split('T')[0];
+      const logDate = new Date(log.timestamp).toISOString().split("T")[0];
       if (logDate > filters.endDate) return false;
     }
 
@@ -90,23 +115,33 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ activeUser }) => {
 
   const handleExportExcel = () => {
     exportAuditLogsToExcel(filteredLogs);
-    showToast('Audit Trail Exported', `Exported ${filteredLogs.length} audit records to Excel.`);
+    showToast(
+      "Audit Trail Exported",
+      `Exported ${filteredLogs.length} audit records to Excel.`,
+    );
   };
 
   const handleClearLogs = () => {
-    if (window.confirm('Are you sure you want to permanently clear the audit trail history?')) {
+    if (
+      window.confirm(
+        "Are you sure you want to permanently clear the audit trail history?",
+      )
+    ) {
       clearAuditLog();
       setLogs([]);
-      showToast('Audit Trail Cleared', 'All historical audit entries have been removed.');
+      showToast(
+        "Audit Trail Cleared",
+        "All historical audit entries have been removed.",
+      );
     }
   };
 
   const hasActiveFilters =
-    filters.searchQuery !== '' ||
-    filters.category !== 'ALL' ||
-    filters.actorUserId !== 'ALL' ||
-    filters.startDate !== '' ||
-    filters.endDate !== '';
+    filters.searchQuery !== "" ||
+    filters.category !== "ALL" ||
+    filters.actorUserId !== "ALL" ||
+    filters.startDate !== "" ||
+    filters.endDate !== "";
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
@@ -122,17 +157,18 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ activeUser }) => {
             </h1>
           </div>
           <p className="text-xs text-[#828290] mt-1">
-            Immutable, real-time chronicle of all operational and administrative actions across HESICS OS.
+            Immutable, real-time chronicle of all operational and administrative
+            actions across HESICS OS.
           </p>
         </div>
 
         <div className="flex items-center gap-2.5 flex-wrap">
           <button
             onClick={() => setIsFilterModalOpen(true)}
-            className={`hesics-btn-secondary text-xs ${hasActiveFilters ? 'border-[#77727E] text-white' : ''}`}
+            className={`hesics-btn-secondary text-xs ${hasActiveFilters ? "border-[#77727E] text-white" : ""}`}
           >
             <Filter className="w-3.5 h-3.5 text-[#77727E]" />
-            <span>Unified Filters {hasActiveFilters && '(Active)'}</span>
+            <span>Unified Filters {hasActiveFilters && "(Active)"}</span>
           </button>
 
           <button
@@ -162,7 +198,9 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ activeUser }) => {
           <input
             type="text"
             value={filters.searchQuery}
-            onChange={(e) => setFilters({ ...filters, searchQuery: e.target.value })}
+            onChange={(e) =>
+              setFilters({ ...filters, searchQuery: e.target.value })
+            }
             placeholder="Quick search action, user, or entity..."
             className="w-full pl-8 pr-3 py-1.5 bg-[#0D0D12] border border-[#20202A] rounded-xl text-xs text-[#F4F4F6] placeholder-[#505060] focus:outline-none focus:border-[#77727E]"
           />
@@ -170,17 +208,27 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ activeUser }) => {
 
         {/* Category Filter Chips */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-          {(['ALL', 'CRM', 'Billing', 'Finance', 'Team', 'Security', 'Settings'] as const).map((cat) => (
+          {(
+            [
+              "ALL",
+              "CRM",
+              "Billing",
+              "Finance",
+              "Team",
+              "Security",
+              "Settings",
+            ] as const
+          ).map((cat) => (
             <button
               key={cat}
               onClick={() => setFilters({ ...filters, category: cat })}
               className={`px-3 py-1.5 text-xs rounded-xl font-medium transition-all shrink-0 ${
                 filters.category === cat
-                  ? 'bg-[#77727E] text-white font-semibold shadow-md'
-                  : 'text-[#707080] hover:text-[#D4D4D8] hover:bg-[#14141C]'
+                  ? "bg-[#77727E] text-white font-semibold shadow-md"
+                  : "text-[#707080] hover:text-[#D4D4D8] hover:bg-[#14141C]"
               }`}
             >
-              {cat === 'ALL' ? 'All Domains' : cat}
+              {cat === "ALL" ? "All Domains" : cat}
             </button>
           ))}
         </div>
@@ -193,31 +241,47 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ activeUser }) => {
           {filters.searchQuery && (
             <span className="px-2.5 py-1 rounded-lg bg-[#14141C] border border-[#22222E] text-[#D4D4D8] flex items-center gap-1.5">
               Query: "{filters.searchQuery}"
-              <button onClick={() => setFilters({ ...filters, searchQuery: '' })} className="hover:text-white">
+              <button
+                onClick={() => setFilters({ ...filters, searchQuery: "" })}
+                className="hover:text-white"
+              >
                 <X className="w-3 h-3" />
               </button>
             </span>
           )}
-          {filters.category !== 'ALL' && (
+          {filters.category !== "ALL" && (
             <span className="px-2.5 py-1 rounded-lg bg-[#14141C] border border-[#22222E] text-[#D4D4D8] flex items-center gap-1.5">
               Category: {filters.category}
-              <button onClick={() => setFilters({ ...filters, category: 'ALL' })} className="hover:text-white">
+              <button
+                onClick={() => setFilters({ ...filters, category: "ALL" })}
+                className="hover:text-white"
+              >
                 <X className="w-3 h-3" />
               </button>
             </span>
           )}
-          {filters.actorUserId !== 'ALL' && (
+          {filters.actorUserId !== "ALL" && (
             <span className="px-2.5 py-1 rounded-lg bg-[#14141C] border border-[#22222E] text-[#D4D4D8] flex items-center gap-1.5">
-              Actor: {users.find((u) => u.id === filters.actorUserId)?.name || filters.actorUserId}
-              <button onClick={() => setFilters({ ...filters, actorUserId: 'ALL' })} className="hover:text-white">
+              Actor:{" "}
+              {users.find((u) => u.id === filters.actorUserId)?.name ||
+                filters.actorUserId}
+              <button
+                onClick={() => setFilters({ ...filters, actorUserId: "ALL" })}
+                className="hover:text-white"
+              >
                 <X className="w-3 h-3" />
               </button>
             </span>
           )}
           {(filters.startDate || filters.endDate) && (
             <span className="px-2.5 py-1 rounded-lg bg-[#14141C] border border-[#22222E] text-[#D4D4D8] flex items-center gap-1.5">
-              Date: {filters.startDate || '—'} to {filters.endDate || '—'}
-              <button onClick={() => setFilters({ ...filters, startDate: '', endDate: '' })} className="hover:text-white">
+              Date: {filters.startDate || "—"} to {filters.endDate || "—"}
+              <button
+                onClick={() =>
+                  setFilters({ ...filters, startDate: "", endDate: "" })
+                }
+                className="hover:text-white"
+              >
                 <X className="w-3 h-3" />
               </button>
             </span>
@@ -253,32 +317,47 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ activeUser }) => {
               </tr>
             ) : (
               filteredLogs.map((log) => (
-                <tr key={log.id} className="hover:bg-[#111116] transition-colors">
+                <tr
+                  key={log.id}
+                  className="hover:bg-[#111116] transition-colors"
+                >
                   <td className="p-4 font-mono text-[11px] text-[#808090]">
                     {new Date(log.timestamp).toLocaleString()}
                   </td>
 
                   <td className="p-4">
-                    <span className={`inline-block text-[9px] font-bold uppercase px-2 py-0.5 rounded-md border ${CATEGORY_BADGES[log.category]}`}>
+                    <span
+                      className={`inline-block text-[9px] font-bold uppercase px-2 py-0.5 rounded-md border ${CATEGORY_BADGES[log.category]}`}
+                    >
                       {log.category}
                     </span>
                   </td>
 
                   <td className="p-4">
-                    <div className="font-semibold text-[#F4F4F6]">{formatAuditAction(log.action)}</div>
-                    <div className="text-[10px] font-mono text-[#606070]">{log.action}</div>
+                    <div className="font-semibold text-[#F4F4F6]">
+                      {formatAuditAction(log.action)}
+                    </div>
+                    <div className="text-[10px] font-mono text-[#606070]">
+                      {log.action}
+                    </div>
                   </td>
 
                   <td className="p-4">
                     <div className="font-medium text-[#D4D4D8] truncate max-w-[220px]">
                       {log.entity_label || log.entity_id}
                     </div>
-                    <div className="text-[10px] text-[#606070] font-mono">{log.entity_type}</div>
+                    <div className="text-[10px] text-[#606070] font-mono">
+                      {log.entity_type}
+                    </div>
                   </td>
 
                   <td className="p-4">
-                    <div className="font-semibold text-[#F4F4F6]">{log.user_name || 'System'}</div>
-                    <div className="text-[10px] text-[#707080] font-mono">{log.actor_role}</div>
+                    <div className="font-semibold text-[#F4F4F6]">
+                      {log.user_name || "System"}
+                    </div>
+                    <div className="text-[10px] text-[#707080] font-mono">
+                      {log.actor_role}
+                    </div>
                   </td>
 
                   <td className="p-4 text-right">
@@ -318,9 +397,14 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ activeUser }) => {
                 <div className="w-8 h-8 rounded-xl bg-[#77727E]/20 border border-[#77727E]/40 flex items-center justify-center">
                   <History className="w-4 h-4 text-[#77727E]" />
                 </div>
-                <h3 className="text-sm font-bold text-[#F4F4F6]">Audit Event Inspector</h3>
+                <h3 className="text-sm font-bold text-[#F4F4F6]">
+                  Audit Event Inspector
+                </h3>
               </div>
-              <button onClick={() => setSelectedEntry(null)} className="text-[#606070] hover:text-white p-1">
+              <button
+                onClick={() => setSelectedEntry(null)}
+                className="text-[#606070] hover:text-white p-1"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -328,20 +412,36 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ activeUser }) => {
             <div className="space-y-3 text-xs">
               <div className="grid grid-cols-2 gap-3 p-3 bg-[#08080A] rounded-xl border border-[#1A1A24]">
                 <div>
-                  <span className="text-[10px] text-[#606070] uppercase font-mono block">Action</span>
-                  <span className="font-semibold text-[#F4F4F6]">{formatAuditAction(selectedEntry.action)}</span>
+                  <span className="text-[10px] text-[#606070] uppercase font-mono block">
+                    Action
+                  </span>
+                  <span className="font-semibold text-[#F4F4F6]">
+                    {formatAuditAction(selectedEntry.action)}
+                  </span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-[#606070] uppercase font-mono block">Domain</span>
-                  <span className="font-semibold text-[#D4D4D8]">{selectedEntry.category}</span>
+                  <span className="text-[10px] text-[#606070] uppercase font-mono block">
+                    Domain
+                  </span>
+                  <span className="font-semibold text-[#D4D4D8]">
+                    {selectedEntry.category}
+                  </span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-[#606070] uppercase font-mono block">Actor</span>
-                  <span className="font-semibold text-[#F4F4F6]">{selectedEntry.user_name} ({selectedEntry.actor_role})</span>
+                  <span className="text-[10px] text-[#606070] uppercase font-mono block">
+                    Actor
+                  </span>
+                  <span className="font-semibold text-[#F4F4F6]">
+                    {selectedEntry.user_name} ({selectedEntry.actor_role})
+                  </span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-[#606070] uppercase font-mono block">Timestamp</span>
-                  <span className="font-mono text-[#808090]">{new Date(selectedEntry.timestamp).toLocaleString()}</span>
+                  <span className="text-[10px] text-[#606070] uppercase font-mono block">
+                    Timestamp
+                  </span>
+                  <span className="font-mono text-[#808090]">
+                    {new Date(selectedEntry.timestamp).toLocaleString()}
+                  </span>
                 </div>
               </div>
 
@@ -354,7 +454,9 @@ export const AuditLogs: React.FC<AuditLogsProps> = ({ activeUser }) => {
 
               {selectedEntry.details && (
                 <div>
-                  <span className="hesics-label">Payload & Change Attributes</span>
+                  <span className="hesics-label">
+                    Payload & Change Attributes
+                  </span>
                   <pre className="p-3 bg-[#08080A] rounded-xl border border-[#1A1A24] font-mono text-[11px] text-[#A0A0B0] overflow-x-auto max-h-48 leading-relaxed">
                     {JSON.stringify(selectedEntry.details, null, 2)}
                   </pre>

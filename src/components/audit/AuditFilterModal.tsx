@@ -1,7 +1,16 @@
-﻿import React, { useState } from 'react';
-import { X, Filter, RotateCcw, Calendar, Check, Users, Tag, ShieldCheck } from 'lucide-react';
-import { CustomSelect, Option } from '../common/CustomSelect';
-import { DatePicker } from '../common/DatePicker';
+import React, { useState } from "react";
+import {
+  X,
+  Filter,
+  RotateCcw,
+  Calendar,
+  Check,
+  Users,
+  Tag,
+  ShieldCheck,
+} from "lucide-react";
+import { CustomSelect, Option } from "../common/CustomSelect";
+import { DatePicker } from "../common/DatePicker";
 
 export interface AuditFilterState {
   searchQuery: string;
@@ -21,13 +30,43 @@ interface AuditFilterModalProps {
 }
 
 const CATEGORY_OPTIONS: Option[] = [
-  { value: 'ALL', label: 'All Event Categories' },
-  { value: 'CRM', label: 'CRM & Pipeline Operations', badge: 'CRM', badgeColor: 'text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30' },
-  { value: 'Billing', label: 'Invoices & Quotations', badge: 'Billing', badgeColor: 'text-indigo-300 bg-indigo-950/40 border-indigo-800/50' },
-  { value: 'Finance', label: 'Inflows & Expenditures', badge: 'Finance', badgeColor: 'text-emerald-400 bg-emerald-950/40 border-emerald-800/50' },
-  { value: 'Team', label: 'Team Governance & RBAC', badge: 'Team', badgeColor: 'text-amber-300 bg-amber-950/40 border-amber-800/50' },
-  { value: 'Security', label: 'Auth & Private Vault', badge: 'Security', badgeColor: 'text-rose-300 bg-rose-950/40 border-rose-800/50' },
-  { value: 'Settings', label: 'Organization Settings', badge: 'Settings', badgeColor: 'text-[#808090] bg-[#14141A] border-[#202028]' },
+  { value: "ALL", label: "All Event Categories" },
+  {
+    value: "CRM",
+    label: "CRM & Pipeline Operations",
+    badge: "CRM",
+    badgeColor: "text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30",
+  },
+  {
+    value: "Billing",
+    label: "Invoices & Quotations",
+    badge: "Billing",
+    badgeColor: "text-indigo-300 bg-indigo-950/40 border-indigo-800/50",
+  },
+  {
+    value: "Finance",
+    label: "Inflows & Expenditures",
+    badge: "Finance",
+    badgeColor: "text-emerald-400 bg-emerald-950/40 border-emerald-800/50",
+  },
+  {
+    value: "Team",
+    label: "Team Governance & RBAC",
+    badge: "Team",
+    badgeColor: "text-amber-300 bg-amber-950/40 border-amber-800/50",
+  },
+  {
+    value: "Security",
+    label: "Auth & Private Vault",
+    badge: "Security",
+    badgeColor: "text-rose-300 bg-rose-950/40 border-rose-800/50",
+  },
+  {
+    value: "Settings",
+    label: "Organization Settings",
+    badge: "Settings",
+    badgeColor: "text-[#808090] bg-[#14141A] border-[#202028]",
+  },
 ];
 
 export const AuditFilterModal: React.FC<AuditFilterModalProps> = ({
@@ -38,7 +77,8 @@ export const AuditFilterModal: React.FC<AuditFilterModalProps> = ({
   onResetFilters,
   userOptions,
 }) => {
-  const [localFilters, setLocalFilters] = useState<AuditFilterState>(initialFilters);
+  const [localFilters, setLocalFilters] =
+    useState<AuditFilterState>(initialFilters);
 
   if (!isOpen) return null;
 
@@ -66,7 +106,8 @@ export const AuditFilterModal: React.FC<AuditFilterModalProps> = ({
                 Unified Audit Trail Filter
               </h2>
               <p className="text-xs text-[#808090]">
-                Filter system-wide operational events by actor, category, date range, and keyword.
+                Filter system-wide operational events by actor, category, date
+                range, and keyword.
               </p>
             </div>
           </div>
@@ -81,11 +122,18 @@ export const AuditFilterModal: React.FC<AuditFilterModalProps> = ({
         <form onSubmit={handleApply} className="space-y-5">
           {/* Keyword Search */}
           <div>
-            <label className="hesics-label">Search Keyword / Entity Label</label>
+            <label className="hesics-label">
+              Search Keyword / Entity Label
+            </label>
             <input
               type="text"
               value={localFilters.searchQuery}
-              onChange={(e) => setLocalFilters({ ...localFilters, searchQuery: e.target.value })}
+              onChange={(e) =>
+                setLocalFilters({
+                  ...localFilters,
+                  searchQuery: e.target.value,
+                })
+              }
               placeholder="e.g. Apex Global, INV-2026, Sheik Mydeen..."
               className="hesics-input text-xs"
               autoFocus
@@ -97,7 +145,9 @@ export const AuditFilterModal: React.FC<AuditFilterModalProps> = ({
             <label className="hesics-label">Event Domain Category</label>
             <CustomSelect
               value={localFilters.category}
-              onChange={(cat) => setLocalFilters({ ...localFilters, category: cat })}
+              onChange={(cat) =>
+                setLocalFilters({ ...localFilters, category: cat })
+              }
               options={CATEGORY_OPTIONS}
             />
           </div>
@@ -107,8 +157,13 @@ export const AuditFilterModal: React.FC<AuditFilterModalProps> = ({
             <label className="hesics-label">Originating Actor / User</label>
             <CustomSelect
               value={localFilters.actorUserId}
-              onChange={(uid) => setLocalFilters({ ...localFilters, actorUserId: uid })}
-              options={[{ value: 'ALL', label: 'All Team Members & Automated System' }, ...userOptions]}
+              onChange={(uid) =>
+                setLocalFilters({ ...localFilters, actorUserId: uid })
+              }
+              options={[
+                { value: "ALL", label: "All Team Members & Automated System" },
+                ...userOptions,
+              ]}
               searchable
             />
           </div>
@@ -119,7 +174,9 @@ export const AuditFilterModal: React.FC<AuditFilterModalProps> = ({
               <label className="hesics-label">From Date</label>
               <DatePicker
                 value={localFilters.startDate}
-                onChange={(date) => setLocalFilters({ ...localFilters, startDate: date })}
+                onChange={(date) =>
+                  setLocalFilters({ ...localFilters, startDate: date })
+                }
                 placeholder="Earliest date..."
               />
             </div>
@@ -127,7 +184,9 @@ export const AuditFilterModal: React.FC<AuditFilterModalProps> = ({
               <label className="hesics-label">To Date</label>
               <DatePicker
                 value={localFilters.endDate}
-                onChange={(date) => setLocalFilters({ ...localFilters, endDate: date })}
+                onChange={(date) =>
+                  setLocalFilters({ ...localFilters, endDate: date })
+                }
                 placeholder="Latest date..."
               />
             </div>
@@ -151,10 +210,7 @@ export const AuditFilterModal: React.FC<AuditFilterModalProps> = ({
               >
                 Cancel
               </button>
-              <button
-                type="submit"
-                className="hesics-btn-primary text-xs px-6"
-              >
+              <button type="submit" className="hesics-btn-primary text-xs px-6">
                 <Check className="w-3.5 h-3.5" /> Apply Filters
               </button>
             </div>

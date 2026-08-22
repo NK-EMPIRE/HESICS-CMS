@@ -1,9 +1,9 @@
-﻿import React, { useState } from 'react';
-import { X, Receipt } from 'lucide-react';
-import { db } from '../../lib/db/finance';
-import { ExpenseCategory, User as UserType } from '../../lib/types';
-import { DatePicker } from '../common/DatePicker';
-import { CustomSelect, Option } from '../common/CustomSelect';
+import React, { useState } from "react";
+import { X, Receipt } from "lucide-react";
+import { db } from "../../lib/db/finance";
+import { ExpenseCategory, User as UserType } from "../../lib/types";
+import { DatePicker } from "../common/DatePicker";
+import { CustomSelect, Option } from "../common/CustomSelect";
 
 interface ExpenseModalProps {
   isOpen: boolean;
@@ -13,13 +13,48 @@ interface ExpenseModalProps {
 }
 
 const CATEGORY_OPTIONS: Option[] = [
-  { value: 'software', label: 'Software, Servers & Cloud Infrastructure', badge: 'Tech', badgeColor: 'text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30' },
-  { value: 'salary', label: 'Executive & Team Payroll', badge: 'Payroll', badgeColor: 'text-emerald-300 bg-emerald-950/40 border-emerald-800/50' },
-  { value: 'marketing', label: 'Marketing, PR & Strategic Campaigns', badge: 'Growth', badgeColor: 'text-indigo-300 bg-indigo-950/40 border-indigo-800/50' },
-  { value: 'rent', label: 'Corporate Office & Real Estate', badge: 'Facility', badgeColor: 'text-amber-300 bg-amber-950/40 border-amber-800/50' },
-  { value: 'travel', label: 'Client Meetings & Executive Travel', badge: 'Travel', badgeColor: 'text-purple-300 bg-purple-950/40 border-purple-800/50' },
-  { value: 'legal', label: 'Legal, Audit & Professional Compliance', badge: 'Legal', badgeColor: 'text-rose-300 bg-rose-950/40 border-rose-800/50' },
-  { value: 'other', label: 'Other Operational Expenditures', badge: 'General', badgeColor: 'text-[#707080] bg-[#14141A] border-[#202028]' },
+  {
+    value: "software",
+    label: "Software, Servers & Cloud Infrastructure",
+    badge: "Tech",
+    badgeColor: "text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30",
+  },
+  {
+    value: "salary",
+    label: "Executive & Team Payroll",
+    badge: "Payroll",
+    badgeColor: "text-emerald-300 bg-emerald-950/40 border-emerald-800/50",
+  },
+  {
+    value: "marketing",
+    label: "Marketing, PR & Strategic Campaigns",
+    badge: "Growth",
+    badgeColor: "text-indigo-300 bg-indigo-950/40 border-indigo-800/50",
+  },
+  {
+    value: "rent",
+    label: "Corporate Office & Real Estate",
+    badge: "Facility",
+    badgeColor: "text-amber-300 bg-amber-950/40 border-amber-800/50",
+  },
+  {
+    value: "travel",
+    label: "Client Meetings & Executive Travel",
+    badge: "Travel",
+    badgeColor: "text-purple-300 bg-purple-950/40 border-purple-800/50",
+  },
+  {
+    value: "legal",
+    label: "Legal, Audit & Professional Compliance",
+    badge: "Legal",
+    badgeColor: "text-rose-300 bg-rose-950/40 border-rose-800/50",
+  },
+  {
+    value: "other",
+    label: "Other Operational Expenditures",
+    badge: "General",
+    badgeColor: "text-[#707080] bg-[#14141A] border-[#202028]",
+  },
 ];
 
 export const ExpenseModal: React.FC<ExpenseModalProps> = ({
@@ -28,12 +63,14 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
   onSuccess,
   activeUser,
 }) => {
-  const [vendor, setVendor] = useState('');
-  const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState<ExpenseCategory>('software');
-  const [gstPaid, setGstPaid] = useState('0');
-  const [spentAt, setSpentAt] = useState(new Date().toISOString().split('T')[0]);
-  const [notes, setNotes] = useState('');
+  const [vendor, setVendor] = useState("");
+  const [amount, setAmount] = useState("");
+  const [category, setCategory] = useState<ExpenseCategory>("software");
+  const [gstPaid, setGstPaid] = useState("0");
+  const [spentAt, setSpentAt] = useState(
+    new Date().toISOString().split("T")[0],
+  );
+  const [notes, setNotes] = useState("");
 
   if (!isOpen) return null;
 
@@ -44,7 +81,7 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
     db.addExpenseEntry({
       vendor: vendor.trim() || undefined,
       amount: Number(amount),
-      currency: 'INR',
+      currency: "INR",
       category,
       gst_paid: Number(gstPaid) || 0,
       spent_at: spentAt,
@@ -73,7 +110,10 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="text-[#606070] hover:text-white p-1.5 rounded-lg hover:bg-[#16161D]">
+          <button
+            onClick={onClose}
+            className="text-[#606070] hover:text-white p-1.5 rounded-lg hover:bg-[#16161D]"
+          >
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -92,7 +132,9 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
-              <label className="hesics-label">Total Outlay Amount (₹ INR) *</label>
+              <label className="hesics-label">
+                Total Outlay Amount (₹ INR) *
+              </label>
               <input
                 type="number"
                 required
@@ -104,7 +146,9 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
               />
             </div>
             <div>
-              <label className="hesics-label">GST Input Tax Credit Paid (₹)</label>
+              <label className="hesics-label">
+                GST Input Tax Credit Paid (₹)
+              </label>
               <input
                 type="number"
                 min="0"
@@ -136,7 +180,9 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           </div>
 
           <div>
-            <label className="hesics-label">Invoicing Memo & Business Purpose</label>
+            <label className="hesics-label">
+              Invoicing Memo & Business Purpose
+            </label>
             <textarea
               rows={3}
               value={notes}
@@ -147,7 +193,11 @@ export const ExpenseModal: React.FC<ExpenseModalProps> = ({
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#1A1A22]">
-            <button type="button" onClick={onClose} className="hesics-btn-ghost">
+            <button
+              type="button"
+              onClick={onClose}
+              className="hesics-btn-ghost"
+            >
               Cancel
             </button>
             <button type="submit" className="hesics-btn-primary px-6">

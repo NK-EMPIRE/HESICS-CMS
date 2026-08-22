@@ -4,24 +4,24 @@
 
 @layer base {
   :root {
-    --bg-root:      #08080B;
-    --bg-main:      #08080B;
-    --bg-surface:   #0F0F14;
-    --bg-card:      #121218;
-    --bg-hover:     #171720;
-    --border:       #1D1D26;
-    --border-light: #2A2A38;
+    --bg-root: #08080b;
+    --bg-main: #08080b;
+    --bg-surface: #0f0f14;
+    --bg-card: #121218;
+    --bg-hover: #171720;
+    --border: #1d1d26;
+    --border-light: #2a2a38;
 
     /* Titanium Accent */
-    --accent:       #77727E;
-    --accent-hover: #8E8896;
-    --accent-active:#605C66;
-    --accent-glow:  rgba(119, 114, 126, 0.18);
+    --accent: #77727e;
+    --accent-hover: #8e8896;
+    --accent-active: #605c66;
+    --accent-glow: rgba(119, 114, 126, 0.18);
 
-    --text-primary:   #F4F4F6;
-    --text-secondary: #9E9EA8;
-    --text-muted:     #666675;
-    --text-dim:       #404050;
+    --text-primary: #f4f4f6;
+    --text-secondary: #9e9ea8;
+    --text-muted: #666675;
+    --text-dim: #404050;
   }
 
   * {
@@ -35,7 +35,9 @@
     outline: none;
   }
 
-  html, body, #root {
+  html,
+  body,
+  #root {
     height: 100%;
     width: 100%;
     margin: 0;
@@ -44,7 +46,9 @@
     color: var(--text-secondary);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-family:
+      -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+      sans-serif;
     font-size: 15.5px;
     line-height: 1.55;
     letter-spacing: -0.005em;
@@ -64,10 +68,12 @@
     border-radius: 6px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #30303C;
+    background: #30303c;
   }
 
-  input, select, textarea {
+  input,
+  select,
+  textarea {
     color-scheme: dark;
   }
 }

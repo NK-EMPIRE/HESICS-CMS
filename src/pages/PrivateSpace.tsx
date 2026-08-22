@@ -1,29 +1,43 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
-  Lock, Shield, Plus, Trash2, CheckCircle2,
-  DollarSign, TrendingUp, TrendingDown, Users, FileText, CheckSquare, Calendar
-} from 'lucide-react';
-import { db } from '../lib/firebaseDb';
-import { PrivateVaultItem, User } from '../lib/types';
-import { showToast } from '../components/common/Toast';
+  Lock,
+  Shield,
+  Plus,
+  Trash2,
+  CheckCircle2,
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+  Users,
+  FileText,
+  CheckSquare,
+  Calendar,
+} from "lucide-react";
+import { db } from "../lib/firebaseDb";
+import { PrivateVaultItem, User } from "../lib/types";
+import { showToast } from "../components/common/Toast";
 
 interface PrivateSpaceProps {
   activeUser: User;
 }
 
 export const PrivateSpace: React.FC<PrivateSpaceProps> = ({ activeUser }) => {
-  const [items, setItems] = useState<PrivateVaultItem[]>(() => db.getPrivateVaultItems());
-  const [activeTab, setActiveTab] = useState<'all' | 'finance' | 'clients' | 'notes' | 'tasks'>('all');
+  const [items, setItems] = useState<PrivateVaultItem[]>(() =>
+    db.getPrivateVaultItems(),
+  );
+  const [activeTab, setActiveTab] = useState<
+    "all" | "finance" | "clients" | "notes" | "tasks"
+  >("all");
 
   // Form states
   const [isAdding, setIsAdding] = useState(false);
-  const [type, setType] = useState<PrivateVaultItem['type']>('note');
-  const [title, setTitle] = useState('');
-  const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState('');
-  const [clientContact, setClientContact] = useState('');
-  const [dueDate, setDueDate] = useState('');
-  const [content, setContent] = useState('');
+  const [type, setType] = useState<PrivateVaultItem["type"]>("note");
+  const [title, setTitle] = useState("");
+  const [amount, setAmount] = useState("");
+  const [category, setCategory] = useState("");
+  const [clientContact, setClientContact] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [content, setContent] = useState("");
 
   const refreshItems = () => setItems(db.getPrivateVaultItems());
 
@@ -42,13 +56,13 @@ export const PrivateSpace: React.FC<PrivateSpaceProps> = ({ activeUser }) => {
       is_completed: false,
     });
 
-    showToast('Vault Record Stored', `Saved "${title}" in your private space.`);
-    setTitle('');
-    setAmount('');
-    setCategory('');
-    setClientContact('');
-    setDueDate('');
-    setContent('');
+    showToast("Vault Record Stored", `Saved "${title}" in your private space.`);
+    setTitle("");
+    setAmount("");
+    setCategory("");
+    setClientContact("");
+    setDueDate("");
+    setContent("");
     setIsAdding(false);
     refreshItems();
   };
@@ -56,7 +70,7 @@ export const PrivateSpace: React.FC<PrivateSpaceProps> = ({ activeUser }) => {
   const handleDeleteItem = (id: string, itemTitle: string) => {
     if (window.confirm(`Delete private vault entry "${itemTitle}"?`)) {
       db.deletePrivateVaultItem(id);
-      showToast('Record Deleted', `Removed "${itemTitle}" from private vault.`);
+      showToast("Record Deleted", `Removed "${itemTitle}" from private vault.`);
       refreshItems();
     }
   };
@@ -67,19 +81,24 @@ export const PrivateSpace: React.FC<PrivateSpaceProps> = ({ activeUser }) => {
   };
 
   const filteredItems = items.filter((item) => {
-    if (activeTab === 'all') return true;
-    if (activeTab === 'finance') return item.type === 'income' || item.type === 'expense';
-    if (activeTab === 'clients') return item.type === 'client';
-    if (activeTab === 'notes') return item.type === 'note';
-    if (activeTab === 'tasks') return item.type === 'task';
+    if (activeTab === "all") return true;
+    if (activeTab === "finance")
+      return item.type === "income" || item.type === "expense";
+    if (activeTab === "clients") return item.type === "client";
+    if (activeTab === "notes") return item.type === "note";
+    if (activeTab === "tasks") return item.type === "task";
     return true;
   });
 
-  const privateIncomes = items.filter((i) => i.type === 'income').reduce((sum, i) => sum + (i.amount || 0), 0);
-  const privateExpenses = items.filter((i) => i.type === 'expense').reduce((sum, i) => sum + (i.amount || 0), 0);
+  const privateIncomes = items
+    .filter((i) => i.type === "income")
+    .reduce((sum, i) => sum + (i.amount || 0), 0);
+  const privateExpenses = items
+    .filter((i) => i.type === "expense")
+    .reduce((sum, i) => sum + (i.amount || 0), 0);
   const privateNet = privateIncomes - privateExpenses;
 
-  const fmt = (n: number) => `₹${n.toLocaleString('en-IN')}`;
+  const fmt = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -95,7 +114,8 @@ export const PrivateSpace: React.FC<PrivateSpaceProps> = ({ activeUser }) => {
             </h1>
           </div>
           <p className="text-xs text-[#828290] mt-1">
-            Zero-knowledge isolated workspace for confidential cash tracking, private clients, strategic notes, and executive tasks.
+            Zero-knowledge isolated workspace for confidential cash tracking,
+            private clients, strategic notes, and executive tasks.
           </p>
         </div>
 
@@ -105,7 +125,7 @@ export const PrivateSpace: React.FC<PrivateSpaceProps> = ({ activeUser }) => {
           className="hesics-btn-primary self-start sm:self-auto text-xs"
         >
           <Plus className="w-3.5 h-3.5" />
-          <span>{isAdding ? 'Close Form' : 'New Vault Entry'}</span>
+          <span>{isAdding ? "Close Form" : "New Vault Entry"}</span>
         </button>
       </div>
 
@@ -116,7 +136,9 @@ export const PrivateSpace: React.FC<PrivateSpaceProps> = ({ activeUser }) => {
             <span>Private Inflow Treasury</span>
             <TrendingUp className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="text-xl font-bold text-[#F4F4F6] font-mono">{fmt(privateIncomes)}</div>
+          <div className="text-xl font-bold text-[#F4F4F6] font-mono">
+            {fmt(privateIncomes)}
+          </div>
         </div>
 
         <div className="hesics-card p-5 space-y-1.5">
@@ -124,7 +146,9 @@ export const PrivateSpace: React.FC<PrivateSpaceProps> = ({ activeUser }) => {
             <span>Private Outlays</span>
             <TrendingDown className="w-4 h-4 text-rose-400" />
           </div>
-          <div className="text-xl font-bold text-[#F4F4F6] font-mono">{fmt(privateExpenses)}</div>
+          <div className="text-xl font-bold text-[#F4F4F6] font-mono">
+            {fmt(privateExpenses)}
+          </div>
         </div>
 
         <div className="hesics-card p-5 space-y-1.5">
@@ -132,7 +156,9 @@ export const PrivateSpace: React.FC<PrivateSpaceProps> = ({ activeUser }) => {
             <span>Net Private Balance</span>
             <Shield className="w-4 h-4 text-[#77727E]" />
           </div>
-          <div className={`text-xl font-bold font-mono ${privateNet >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+          <div
+            className={`text-xl font-bold font-mono ${privateNet >= 0 ? "text-emerald-400" : "text-rose-400"}`}
+          >
             {fmt(privateNet)}
           </div>
         </div>
@@ -140,24 +166,31 @@ export const PrivateSpace: React.FC<PrivateSpaceProps> = ({ activeUser }) => {
 
       {/* Add New Entry Form */}
       {isAdding && (
-        <form onSubmit={handleAddItem} className="p-6 bg-[#0D0D12] border border-[#262634] rounded-3xl space-y-4 shadow-2xl animate-in fade-in duration-150">
+        <form
+          onSubmit={handleAddItem}
+          className="p-6 bg-[#0D0D12] border border-[#262634] rounded-3xl space-y-4 shadow-2xl animate-in fade-in duration-150"
+        >
           <div className="flex items-center justify-between border-b border-[#1C1C26] pb-3">
-            <h3 className="text-xs font-bold text-[#F4F4F6] uppercase tracking-wider">New Private Vault Record</h3>
+            <h3 className="text-xs font-bold text-[#F4F4F6] uppercase tracking-wider">
+              New Private Vault Record
+            </h3>
             <div className="flex items-center gap-1.5 bg-[#08080A] p-1 rounded-xl border border-[#1A1A24]">
-              {(['note', 'income', 'expense', 'client', 'task'] as const).map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setType(t)}
-                  className={`px-3 py-1 text-xs rounded-lg capitalize font-medium transition-all ${
-                    type === t
-                      ? 'bg-[#77727E] text-white font-semibold'
-                      : 'text-[#707080] hover:text-[#D4D4D8]'
-                  }`}
-                >
-                  {t}
-                </button>
-              ))}
+              {(["note", "income", "expense", "client", "task"] as const).map(
+                (t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setType(t)}
+                    className={`px-3 py-1 text-xs rounded-lg capitalize font-medium transition-all ${
+                      type === t
+                        ? "bg-[#77727E] text-white font-semibold"
+                        : "text-[#707080] hover:text-[#D4D4D8]"
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ),
+              )}
             </div>
           </div>
 
@@ -175,7 +208,7 @@ export const PrivateSpace: React.FC<PrivateSpaceProps> = ({ activeUser }) => {
               />
             </div>
 
-            {(type === 'income' || type === 'expense') && (
+            {(type === "income" || type === "expense") && (
               <div>
                 <label className="hesics-label">Amount (₹ INR) *</label>
                 <input
@@ -190,7 +223,7 @@ export const PrivateSpace: React.FC<PrivateSpaceProps> = ({ activeUser }) => {
               </div>
             )}
 
-            {type === 'client' && (
+            {type === "client" && (
               <div>
                 <label className="hesics-label">Private Contact & Phone</label>
                 <input
@@ -203,7 +236,7 @@ export const PrivateSpace: React.FC<PrivateSpaceProps> = ({ activeUser }) => {
               </div>
             )}
 
-            {type === 'task' && (
+            {type === "task" && (
               <div>
                 <label className="hesics-label">Due Target Date</label>
                 <input
@@ -244,26 +277,29 @@ export const PrivateSpace: React.FC<PrivateSpaceProps> = ({ activeUser }) => {
 
       {/* Filter Tabs */}
       <div className="flex items-center gap-1.5 bg-[#09090C] border border-[#1C1C22] p-1 rounded-xl w-fit">
-        {(['all', 'finance', 'clients', 'notes', 'tasks'] as const).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`px-3.5 py-1.5 text-xs rounded-lg capitalize font-medium transition-all ${
-              activeTab === tab
-                ? 'bg-[#77727E] text-white font-semibold shadow-md'
-                : 'text-[#707080] hover:text-[#D4D4D8]'
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
+        {(["all", "finance", "clients", "notes", "tasks"] as const).map(
+          (tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-3.5 py-1.5 text-xs rounded-lg capitalize font-medium transition-all ${
+                activeTab === tab
+                  ? "bg-[#77727E] text-white font-semibold shadow-md"
+                  : "text-[#707080] hover:text-[#D4D4D8]"
+              }`}
+            >
+              {tab}
+            </button>
+          ),
+        )}
       </div>
 
       {/* Vault Items List */}
       <div className="space-y-3">
         {filteredItems.length === 0 ? (
           <div className="hesics-card p-12 text-center text-xs text-[#505060]">
-            Your private vault is currently empty. Click "New Vault Entry" above to add confidential records.
+            Your private vault is currently empty. Click "New Vault Entry" above
+            to add confidential records.
           </div>
         ) : (
           filteredItems.map((item) => (
@@ -276,7 +312,9 @@ export const PrivateSpace: React.FC<PrivateSpaceProps> = ({ activeUser }) => {
                   <span className="text-[9px] uppercase font-mono px-2 py-0.5 rounded-md bg-[#77727E]/15 border border-[#77727E]/30 text-[#D4D4D8] font-bold">
                     {item.type}
                   </span>
-                  <h4 className={`text-xs font-bold text-[#F4F4F6] truncate ${item.is_completed ? 'line-through opacity-50' : ''}`}>
+                  <h4
+                    className={`text-xs font-bold text-[#F4F4F6] truncate ${item.is_completed ? "line-through opacity-50" : ""}`}
+                  >
                     {item.title}
                   </h4>
                 </div>
@@ -289,25 +327,32 @@ export const PrivateSpace: React.FC<PrivateSpaceProps> = ({ activeUser }) => {
 
                 <div className="flex items-center gap-4 text-[11px] text-[#606070] font-mono pt-1">
                   {item.amount !== undefined && (
-                    <span className={`font-bold ${item.type === 'income' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                      {item.type === 'income' ? '+' : '-'}{fmt(item.amount)}
+                    <span
+                      className={`font-bold ${item.type === "income" ? "text-emerald-400" : "text-rose-400"}`}
+                    >
+                      {item.type === "income" ? "+" : "-"}
+                      {fmt(item.amount)}
                     </span>
                   )}
-                  {item.client_contact && <span>Contact: {item.client_contact}</span>}
+                  {item.client_contact && (
+                    <span>Contact: {item.client_contact}</span>
+                  )}
                   {item.due_date && <span>Due: {item.due_date}</span>}
-                  <span>Saved: {new Date(item.created_at).toLocaleDateString()}</span>
+                  <span>
+                    Saved: {new Date(item.created_at).toLocaleDateString()}
+                  </span>
                 </div>
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
-                {item.type === 'task' && (
+                {item.type === "task" && (
                   <button
                     type="button"
                     onClick={() => handleToggleTask(item)}
                     className={`p-1.5 rounded-lg border transition-colors ${
                       item.is_completed
-                        ? 'bg-emerald-950/40 border-emerald-800 text-emerald-400'
-                        : 'bg-[#14141C] border-[#22222E] text-[#707080] hover:text-white'
+                        ? "bg-emerald-950/40 border-emerald-800 text-emerald-400"
+                        : "bg-[#14141C] border-[#22222E] text-[#707080] hover:text-white"
                     }`}
                     title="Toggle Task Completed"
                   >

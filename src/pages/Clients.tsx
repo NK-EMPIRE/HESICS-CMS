@@ -1,44 +1,62 @@
-import { ClientDetail } from './ClientDetail';
-import React, { useState } from 'react';
+import { ClientDetail } from "./ClientDetail";
+import React, { useState } from "react";
 import {
-  Plus, Search, Building2, Mail, Phone,
-  Clock, Calendar, CheckCircle2,
-  Trash2, Edit3, UserCheck, MessageSquare,
-  Download, Link2
-} from 'lucide-react';
-import { db } from '../lib/db/clients';
-import { Client, ClientStatus, User, Activity } from '../lib/types';
-import { ClientModal } from '../components/crm/ClientModal';
-import { ActivityModal } from '../components/crm/ActivityModal';
-import { hasPermission } from '../lib/rbac';
-import { generateAgreementPDF, generateInvoicePDF, generateQuotationPDF } from '../lib/pdfEngine';
-import { showToast } from '../components/common/Toast';
+  Plus,
+  Search,
+  Building2,
+  Mail,
+  Phone,
+  Clock,
+  Calendar,
+  CheckCircle2,
+  Trash2,
+  Edit3,
+  UserCheck,
+  MessageSquare,
+  Download,
+  Link2,
+} from "lucide-react";
+import { db } from "../lib/db/clients";
+import { Client, ClientStatus, User, Activity } from "../lib/types";
+import { ClientModal } from "../components/crm/ClientModal";
+import { ActivityModal } from "../components/crm/ActivityModal";
+import { hasPermission } from "../lib/rbac";
+import {
+  generateAgreementPDF,
+  generateInvoicePDF,
+  generateQuotationPDF,
+} from "../lib/pdfEngine";
+import { showToast } from "../components/common/Toast";
 
 interface ClientsProps {
   activeUser: User;
 }
 
 const statusBadge: Record<ClientStatus, string> = {
-  lead: 'text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30',
-  active: 'text-emerald-400 bg-emerald-950/40 border-emerald-800/50',
-  churned: 'text-[#707080] bg-[#18181E] border-[#22222A]',
+  lead: "text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30",
+  active: "text-emerald-400 bg-emerald-950/40 border-emerald-800/50",
+  churned: "text-[#707080] bg-[#18181E] border-[#22222A]",
 };
 
 export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
   const [clients, setClients] = useState(() => db.getClients());
-  const [search, setSearch] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState<ClientStatus | 'all'>('all');
+  const [search, setSearch] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState<ClientStatus | "all">(
+    "all",
+  );
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [viewingClientId, setViewingClientId] = useState<string | null>(null);
-  const [resourceTab, setResourceTab] = useState<'agreements'|'invoices'|'quotations'|'activities'>('agreements');
+  const [resourceTab, setResourceTab] = useState<
+    "agreements" | "invoices" | "quotations" | "activities"
+  >("agreements");
 
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
-  const [quickDmText, setQuickDmText] = useState('');
+  const [quickDmText, setQuickDmText] = useState("");
 
-  const canWrite = hasPermission(activeUser.role_id, 'clients:write');
-  const canDelete = hasPermission(activeUser.role_id, 'clients:delete');
+  const canWrite = hasPermission(activeUser.role_id, "clients:write");
+  const canDelete = hasPermission(activeUser.role_id, "clients:delete");
 
   const refreshClients = () => {
     const updated = db.getClients();
@@ -55,7 +73,8 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
       c.name.toLowerCase().includes(q) ||
       (c.company_name && c.company_name.toLowerCase().includes(q)) ||
       (c.email && c.email.toLowerCase().includes(q));
-    const matchesStatus = selectedStatus === 'all' || c.status === selectedStatus;
+    const matchesStatus =
+      selectedStatus === "all" || c.status === selectedStatus;
     return matchesSearch && matchesStatus;
   });
 
@@ -74,13 +93,13 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
     db.addActivity({
       client_id: selectedClient.id,
       client_name: selectedClient.name,
-      type: 'dm',
+      type: "dm",
       outcome: quickDmText.trim(),
       author_id: activeUser.id,
       author_name: activeUser.name,
     });
 
-    setQuickDmText('');
+    setQuickDmText("");
     refreshClients();
   };
 
@@ -102,7 +121,9 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1A1A20]">
         <div>
-          <h1 className="text-xl font-bold text-[#F4F4F6] tracking-tight font-display">Client Directory</h1>
+          <h1 className="text-xl font-bold text-[#F4F4F6] tracking-tight font-display">
+            Client Directory
+          </h1>
           <p className="text-xs text-[#828290] mt-1">
             Accounts, communication history, and revenue metrics.
           </p>
@@ -135,14 +156,14 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
         </div>
 
         <div className="flex items-center gap-1.5 bg-[#09090C] border border-[#1C1C22] p-1 rounded-xl">
-          {(['all', 'lead', 'active', 'churned'] as const).map((st) => (
+          {(["all", "lead", "active", "churned"] as const).map((st) => (
             <button
               key={st}
               onClick={() => setSelectedStatus(st)}
               className={`px-3.5 py-1.5 text-xs rounded-lg capitalize font-medium transition-all ${
                 selectedStatus === st
-                  ? 'bg-[#77727E] text-white font-semibold shadow-md'
-                  : 'text-[#707080] hover:text-[#D4D4D8]'
+                  ? "bg-[#77727E] text-white font-semibold shadow-md"
+                  : "text-[#707080] hover:text-[#D4D4D8]"
               }`}
             >
               {st}
@@ -166,15 +187,22 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
                 return (
                   <div
                     key={c.id}
-                    onClick={() => { setSelectedClient(c); setViewingClientId(c.id); }}
+                    onClick={() => {
+                      setSelectedClient(c);
+                      setViewingClientId(c.id);
+                    }}
                     className={`p-4 flex items-center justify-between gap-3 cursor-pointer transition-colors ${
-                      isSelected ? 'bg-[#15151C]' : 'hover:bg-[#111116]'
+                      isSelected ? "bg-[#15151C]" : "hover:bg-[#111116]"
                     }`}
                   >
                     <div className="space-y-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-xs text-[#F4F4F6] truncate">{c.name}</span>
-                        <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-md border ${statusBadge[c.status]}`}>
+                        <span className="font-semibold text-xs text-[#F4F4F6] truncate">
+                          {c.name}
+                        </span>
+                        <span
+                          className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-md border ${statusBadge[c.status]}`}
+                        >
                           {c.status}
                         </span>
                       </div>
@@ -217,84 +245,340 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
         </div>
 
         {/* Client Resource Hub */}
-        <div className="hesics-card p-5 space-y-4 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+        <div
+          className="hesics-card p-5 space-y-4 overflow-y-auto"
+          style={{ maxHeight: "calc(100vh - 200px)" }}
+        >
           {selectedClient ? (
             <div className="space-y-4">
               <div className="border-b border-[#1A1A22] pb-3 space-y-1">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-bold text-[#F4F4F6]">{selectedClient.name}</h2>
-                  <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-md border ${statusBadge[selectedClient.status]}`}>{selectedClient.status}</span>
+                  <h2 className="text-sm font-bold text-[#F4F4F6]">
+                    {selectedClient.name}
+                  </h2>
+                  <span
+                    className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-md border ${statusBadge[selectedClient.status]}`}
+                  >
+                    {selectedClient.status}
+                  </span>
                 </div>
-                {selectedClient.company_name && <div className="text-xs text-[#808090]">{selectedClient.company_name}</div>}
+                {selectedClient.company_name && (
+                  <div className="text-xs text-[#808090]">
+                    {selectedClient.company_name}
+                  </div>
+                )}
               </div>
               <div className="space-y-1.5 text-xs">
-                {selectedClient.email && <div className="flex items-center gap-2 text-[#9090A0]"><Mail className="w-3.5 h-3.5 text-[#77727E]" /><span>{selectedClient.email}</span></div>}
-                {selectedClient.phone && <div className="flex items-center gap-2 text-[#9090A0]"><Phone className="w-3.5 h-3.5 text-[#77727E]" /><span>{selectedClient.phone}</span></div>}
+                {selectedClient.email && (
+                  <div className="flex items-center gap-2 text-[#9090A0]">
+                    <Mail className="w-3.5 h-3.5 text-[#77727E]" />
+                    <span>{selectedClient.email}</span>
+                  </div>
+                )}
+                {selectedClient.phone && (
+                  <div className="flex items-center gap-2 text-[#9090A0]">
+                    <Phone className="w-3.5 h-3.5 text-[#77727E]" />
+                    <span>{selectedClient.phone}</span>
+                  </div>
+                )}
               </div>
               <div className="pt-2 border-t border-[#1A1A22]">
-                <div className="text-[9px] text-[#606070] uppercase tracking-wider font-bold mb-2">Resources</div>
+                <div className="text-[9px] text-[#606070] uppercase tracking-wider font-bold mb-2">
+                  Resources
+                </div>
                 <div className="flex gap-1 mb-3 overflow-x-auto pb-1">
-                  {(['agreements','invoices','quotations','activities'] as const).map(t => (
-                    <button key={t} onClick={() => setResourceTab(t)} className={`px-2.5 py-1.5 rounded-xl text-[10px] font-medium whitespace-nowrap transition-all capitalize border ${resourceTab===t?'border-[#77727E]/50 bg-[#77727E]/15 text-[#F4F4F6]':'border-transparent text-[#707080] hover:text-[#D4D4D8] hover:bg-[#14141C]'}`}>{t}</button>
+                  {(
+                    [
+                      "agreements",
+                      "invoices",
+                      "quotations",
+                      "activities",
+                    ] as const
+                  ).map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setResourceTab(t)}
+                      className={`px-2.5 py-1.5 rounded-xl text-[10px] font-medium whitespace-nowrap transition-all capitalize border ${resourceTab === t ? "border-[#77727E]/50 bg-[#77727E]/15 text-[#F4F4F6]" : "border-transparent text-[#707080] hover:text-[#D4D4D8] hover:bg-[#14141C]"}`}
+                    >
+                      {t}
+                    </button>
                   ))}
                 </div>
-                {resourceTab==='agreements' && (() => {
-                  const agrs = db.getAgreements().filter(a => a.client_id===selectedClient.id||a.client_name===selectedClient.name);
-                  if (!agrs.length) return <div className="text-center py-6 text-[10px] text-[#555565]">No agreements yet.</div>;
-                  return <>{agrs.map(agr => (
-                    <div key={agr.id} className="flex items-center justify-between p-2.5 bg-[#0A0A0E] border border-[#1A1A22] rounded-xl mb-1.5">
-                      <div><div className="text-[10px] font-semibold text-[#D4D4D8]">AGR-{agr.id.slice(-6).toUpperCase()}</div><div className={`text-[9px] ${agr.status==='signed'?'text-emerald-400':'text-amber-400'}`}>{agr.status}</div></div>
-                      <div className="flex gap-1.5">
-                        {agr.status==='pending'&&<button onClick={()=>{navigator.clipboard.writeText(agr.sign_link);showToast('Copied','Sign link copied','success');}} className="p-1 text-[#707080] hover:text-white rounded" title="Copy sign link"><Link2 className="w-3 h-3"/></button>}
-                        <button onClick={async()=>{try{const doc=await generateAgreementPDF({clientName:agr.client_name,clientEmail:agr.client_email,clientPhone:agr.client_phone||'',clientCompany:agr.client_company,panCard:agr.pan_card,scope:agr.scope,signatureDataUrl:agr.signature_url,photoDataUrl:agr.photo_url,agreementId:agr.id,signedAt:agr.signed_at||agr.created_at,org:db.getOrg()});const blob=doc.output('blob');const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`${agr.client_name}_Agreement.pdf`;document.body.appendChild(a);a.click();setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},500);}catch(e){showToast('Error','PDF failed','error');}}} className="p-1 text-[#707080] hover:text-white rounded"><Download className="w-3 h-3"/></button>
-                      </div>
-                    </div>
-                  ))}</>;
-                })()}
-                {resourceTab==='invoices' && (() => {
-                  const invs = db.getInvoices().filter(i=>i.client_name===selectedClient.name||(i as any).client_id===selectedClient.id);
-                  if (!invs.length) return <div className="text-center py-6 text-[10px] text-[#555565]">No invoices.</div>;
-                  return <>{invs.map(inv => (
-                    <div key={inv.id} className="flex items-center justify-between p-2.5 bg-[#0A0A0E] border border-[#1A1A22] rounded-xl mb-1.5">
-                      <div><div className="text-[10px] font-semibold text-[#D4D4D8]">{inv.invoice_number}</div><div className={`text-[9px] ${inv.status==='paid'?'text-emerald-400':'text-amber-400'}`}>₹{Number(inv.total||0).toLocaleString('en-IN')} · {inv.status?.toUpperCase()}</div></div>
-                      <button onClick={async()=>{try{const doc=await generateInvoicePDF(inv,db.getOrg());const blob=doc.output('blob');const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`${inv.invoice_number}.pdf`;document.body.appendChild(a);a.click();setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},500);}catch(e){showToast('Error','PDF failed','error');}}} className="p-1 text-[#707080] hover:text-white rounded"><Download className="w-3 h-3"/></button>
-                    </div>
-                  ))}</>;
-                })()}
-                {resourceTab==='quotations' && (() => {
-                  const qts = db.getQuotations().filter(q=>q.client_name===selectedClient.name||(q as any).client_id===selectedClient.id);
-                  if (!qts.length) return <div className="text-center py-6 text-[10px] text-[#555565]">No quotations.</div>;
-                  return <>{qts.map(qt => (
-                    <div key={qt.id} className="flex items-center justify-between p-2.5 bg-[#0A0A0E] border border-[#1A1A22] rounded-xl mb-1.5">
-                      <div><div className="text-[10px] font-semibold text-[#D4D4D8]">{qt.quotation_number||(qt as any).quote_number}</div><div className="text-[9px] text-[#77727E]">₹{Number(qt.total||0).toLocaleString('en-IN')}</div></div>
-                      <button onClick={async()=>{try{const doc=await generateQuotationPDF(qt,db.getOrg());const blob=doc.output('blob');const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`${qt.quotation_number||(qt as any).quote_number}.pdf`;document.body.appendChild(a);a.click();setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},500);}catch(e){showToast('Error','PDF failed','error');}}} className="p-1 text-[#707080] hover:text-white rounded"><Download className="w-3 h-3"/></button>
-                    </div>
-                  ))}</>;
-                })()}
-                {resourceTab==='activities' && (() => {
-                  const acts = db.getActivities(selectedClient.id).slice(0,10);
-                  if (!acts.length) return <div className="text-center py-6 text-[10px] text-[#555565]">No activities.</div>;
-                  return <>{acts.map(act => (
-                    <div key={act.id} className="p-2.5 bg-[#0A0A0E] border border-[#1A1A22] rounded-xl mb-1.5">
-                      <div className="text-[10px] font-semibold text-[#D4D4D8] capitalize">{act.type}: {(act as any).title||act.notes?.slice(0,50)}</div>
-                      <div className="text-[9px] text-[#606070] mt-0.5">{new Date(act.created_at).toLocaleDateString()}</div>
-                    </div>
-                  ))}</>;
-                })()}
+                {resourceTab === "agreements" &&
+                  (() => {
+                    const agrs = db
+                      .getAgreements()
+                      .filter(
+                        (a) =>
+                          a.client_id === selectedClient.id ||
+                          a.client_name === selectedClient.name,
+                      );
+                    if (!agrs.length)
+                      return (
+                        <div className="text-center py-6 text-[10px] text-[#555565]">
+                          No agreements yet.
+                        </div>
+                      );
+                    return (
+                      <>
+                        {agrs.map((agr) => (
+                          <div
+                            key={agr.id}
+                            className="flex items-center justify-between p-2.5 bg-[#0A0A0E] border border-[#1A1A22] rounded-xl mb-1.5"
+                          >
+                            <div>
+                              <div className="text-[10px] font-semibold text-[#D4D4D8]">
+                                AGR-{agr.id.slice(-6).toUpperCase()}
+                              </div>
+                              <div
+                                className={`text-[9px] ${agr.status === "signed" ? "text-emerald-400" : "text-amber-400"}`}
+                              >
+                                {agr.status}
+                              </div>
+                            </div>
+                            <div className="flex gap-1.5">
+                              {agr.status === "pending" && (
+                                <button
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(
+                                      agr.sign_link,
+                                    );
+                                    showToast(
+                                      "Copied",
+                                      "Sign link copied",
+                                      "success",
+                                    );
+                                  }}
+                                  className="p-1 text-[#707080] hover:text-white rounded"
+                                  title="Copy sign link"
+                                >
+                                  <Link2 className="w-3 h-3" />
+                                </button>
+                              )}
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    const doc = await generateAgreementPDF({
+                                      clientName: agr.client_name,
+                                      clientEmail: agr.client_email,
+                                      clientPhone: agr.client_phone || "",
+                                      clientCompany: agr.client_company,
+                                      panCard: agr.pan_card,
+                                      scope: agr.scope,
+                                      signatureDataUrl: agr.signature_url,
+                                      photoDataUrl: agr.photo_url,
+                                      agreementId: agr.id,
+                                      signedAt: agr.signed_at || agr.created_at,
+                                      org: db.getOrg(),
+                                    });
+                                    const blob = doc.output("blob");
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement("a");
+                                    a.href = url;
+                                    a.download = `${agr.client_name}_Agreement.pdf`;
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    setTimeout(() => {
+                                      document.body.removeChild(a);
+                                      URL.revokeObjectURL(url);
+                                    }, 500);
+                                  } catch (e) {
+                                    showToast("Error", "PDF failed", "error");
+                                  }
+                                }}
+                                className="p-1 text-[#707080] hover:text-white rounded"
+                              >
+                                <Download className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </>
+                    );
+                  })()}
+                {resourceTab === "invoices" &&
+                  (() => {
+                    const invs = db
+                      .getInvoices()
+                      .filter(
+                        (i) =>
+                          i.client_name === selectedClient.name ||
+                          (i as any).client_id === selectedClient.id,
+                      );
+                    if (!invs.length)
+                      return (
+                        <div className="text-center py-6 text-[10px] text-[#555565]">
+                          No invoices.
+                        </div>
+                      );
+                    return (
+                      <>
+                        {invs.map((inv) => (
+                          <div
+                            key={inv.id}
+                            className="flex items-center justify-between p-2.5 bg-[#0A0A0E] border border-[#1A1A22] rounded-xl mb-1.5"
+                          >
+                            <div>
+                              <div className="text-[10px] font-semibold text-[#D4D4D8]">
+                                {inv.invoice_number}
+                              </div>
+                              <div
+                                className={`text-[9px] ${inv.status === "paid" ? "text-emerald-400" : "text-amber-400"}`}
+                              >
+                                ₹
+                                {Number(inv.total || 0).toLocaleString("en-IN")}{" "}
+                                · {inv.status?.toUpperCase()}
+                              </div>
+                            </div>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  const doc = await generateInvoicePDF(
+                                    inv,
+                                    db.getOrg(),
+                                  );
+                                  const blob = doc.output("blob");
+                                  const url = URL.createObjectURL(blob);
+                                  const a = document.createElement("a");
+                                  a.href = url;
+                                  a.download = `${inv.invoice_number}.pdf`;
+                                  document.body.appendChild(a);
+                                  a.click();
+                                  setTimeout(() => {
+                                    document.body.removeChild(a);
+                                    URL.revokeObjectURL(url);
+                                  }, 500);
+                                } catch (e) {
+                                  showToast("Error", "PDF failed", "error");
+                                }
+                              }}
+                              className="p-1 text-[#707080] hover:text-white rounded"
+                            >
+                              <Download className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </>
+                    );
+                  })()}
+                {resourceTab === "quotations" &&
+                  (() => {
+                    const qts = db
+                      .getQuotations()
+                      .filter(
+                        (q) =>
+                          q.client_name === selectedClient.name ||
+                          (q as any).client_id === selectedClient.id,
+                      );
+                    if (!qts.length)
+                      return (
+                        <div className="text-center py-6 text-[10px] text-[#555565]">
+                          No quotations.
+                        </div>
+                      );
+                    return (
+                      <>
+                        {qts.map((qt) => (
+                          <div
+                            key={qt.id}
+                            className="flex items-center justify-between p-2.5 bg-[#0A0A0E] border border-[#1A1A22] rounded-xl mb-1.5"
+                          >
+                            <div>
+                              <div className="text-[10px] font-semibold text-[#D4D4D8]">
+                                {qt.quotation_number ||
+                                  (qt as any).quote_number}
+                              </div>
+                              <div className="text-[9px] text-[#77727E]">
+                                ₹{Number(qt.total || 0).toLocaleString("en-IN")}
+                              </div>
+                            </div>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  const doc = await generateQuotationPDF(
+                                    qt,
+                                    db.getOrg(),
+                                  );
+                                  const blob = doc.output("blob");
+                                  const url = URL.createObjectURL(blob);
+                                  const a = document.createElement("a");
+                                  a.href = url;
+                                  a.download = `${qt.quotation_number || (qt as any).quote_number}.pdf`;
+                                  document.body.appendChild(a);
+                                  a.click();
+                                  setTimeout(() => {
+                                    document.body.removeChild(a);
+                                    URL.revokeObjectURL(url);
+                                  }, 500);
+                                } catch (e) {
+                                  showToast("Error", "PDF failed", "error");
+                                }
+                              }}
+                              className="p-1 text-[#707080] hover:text-white rounded"
+                            >
+                              <Download className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </>
+                    );
+                  })()}
+                {resourceTab === "activities" &&
+                  (() => {
+                    const acts = db
+                      .getActivities(selectedClient.id)
+                      .slice(0, 10);
+                    if (!acts.length)
+                      return (
+                        <div className="text-center py-6 text-[10px] text-[#555565]">
+                          No activities.
+                        </div>
+                      );
+                    return (
+                      <>
+                        {acts.map((act) => (
+                          <div
+                            key={act.id}
+                            className="p-2.5 bg-[#0A0A0E] border border-[#1A1A22] rounded-xl mb-1.5"
+                          >
+                            <div className="text-[10px] font-semibold text-[#D4D4D8] capitalize">
+                              {act.type}:{" "}
+                              {(act as any).title || act.notes?.slice(0, 50)}
+                            </div>
+                            <div className="text-[9px] text-[#606070] mt-0.5">
+                              {new Date(act.created_at).toLocaleDateString()}
+                            </div>
+                          </div>
+                        ))}
+                      </>
+                    );
+                  })()}
               </div>
-              <form onSubmit={handleQuickDm} className="space-y-2 pt-2 border-t border-[#1A1A22]">
+              <form
+                onSubmit={handleQuickDm}
+                className="space-y-2 pt-2 border-t border-[#1A1A22]"
+              >
                 <label className="hesics-label">Log Quick Note</label>
                 <div className="flex gap-2">
-                  <input type="text" value={quickDmText} onChange={(e)=>setQuickDmText(e.target.value)} placeholder="e.g. Call completed, quote requested..." className="hesics-input text-xs" />
-                  <button type="submit" className="hesics-btn-primary px-3"><MessageSquare className="w-3.5 h-3.5"/></button>
+                  <input
+                    type="text"
+                    value={quickDmText}
+                    onChange={(e) => setQuickDmText(e.target.value)}
+                    placeholder="e.g. Call completed, quote requested..."
+                    className="hesics-input text-xs"
+                  />
+                  <button type="submit" className="hesics-btn-primary px-3">
+                    <MessageSquare className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </form>
             </div>
           ) : (
-            <div className="p-8 text-center text-xs text-[#555565]">Select a client to view resources.</div>
+            <div className="p-8 text-center text-xs text-[#555565]">
+              Select a client to view resources.
+            </div>
           )}
         </div>
-
       </div>
       {/* Client Modal */}
       {isClientModalOpen && (
@@ -323,5 +607,3 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
     </div>
   );
 };
-
-

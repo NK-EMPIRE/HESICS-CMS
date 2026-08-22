@@ -1,5 +1,5 @@
-﻿import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Check, Search } from 'lucide-react';
+import React, { useState, useRef, useEffect } from "react";
+import { ChevronDown, Check, Search } from "lucide-react";
 
 export interface Option {
   value: string;
@@ -26,28 +26,31 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   value,
   onChange,
   options,
-  placeholder = 'Select option...',
+  placeholder = "Select option...",
   label,
-  className = '',
+  className = "",
   disabled = false,
   searchable = false,
   required = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [openUpward, setOpenUpward] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
         setIsOpen(false);
-        setSearchQuery('');
+        setSearchQuery("");
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Smart upward/downward positioning
@@ -73,21 +76,28 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   const selectedOption = options.find((o) => o.value === value);
 
   const filteredOptions = searchable
-    ? options.filter((o) =>
-        o.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (o.sublabel && o.sublabel.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        (o.badge && o.badge.toLowerCase().includes(searchQuery.toLowerCase()))
+    ? options.filter(
+        (o) =>
+          o.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (o.sublabel &&
+            o.sublabel.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          (o.badge &&
+            o.badge.toLowerCase().includes(searchQuery.toLowerCase())),
       )
     : options;
 
   const handleSelect = (val: string) => {
     onChange(val);
     setIsOpen(false);
-    setSearchQuery('');
+    setSearchQuery("");
   };
 
   return (
-    <div ref={containerRef} data-custom-input className={`relative select-none ${className}`}>
+    <div
+      ref={containerRef}
+      data-custom-input
+      className={`relative select-none ${className}`}
+    >
       {label && <label className="hesics-label">{label}</label>}
 
       {/* Trigger Button */}
@@ -97,21 +107,26 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         }}
         className={`w-full px-3.5 py-2.5 bg-[#08080A] border rounded-xl text-xs flex items-center justify-between gap-2 transition-all cursor-pointer ${
           disabled
-            ? 'opacity-50 cursor-not-allowed border-[#181820] bg-[#0A0A0E]'
+            ? "opacity-50 cursor-not-allowed border-[#181820] bg-[#0A0A0E]"
             : isOpen
-            ? 'border-[#77727E] ring-2 ring-[#77727E]/25 bg-[#0D0D12]'
-            : 'border-[#1F1F26] hover:border-[#32323E]'
+              ? "border-[#77727E] ring-2 ring-[#77727E]/25 bg-[#0D0D12]"
+              : "border-[#1F1F26] hover:border-[#32323E]"
         }`}
       >
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
-          {selectedOption?.icon && <span className="shrink-0">{selectedOption.icon}</span>}
-          <span className={`truncate font-medium text-xs ${selectedOption ? 'text-[#F4F4F6]' : 'text-[#606070]'}`}>
+          {selectedOption?.icon && (
+            <span className="shrink-0">{selectedOption.icon}</span>
+          )}
+          <span
+            className={`truncate font-medium text-xs ${selectedOption ? "text-[#F4F4F6]" : "text-[#606070]"}`}
+          >
             {selectedOption ? selectedOption.label : placeholder}
           </span>
           {selectedOption?.badge && (
             <span
               className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-md border shrink-0 ${
-                selectedOption.badgeColor || 'text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30'
+                selectedOption.badgeColor ||
+                "text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30"
               }`}
             >
               {selectedOption.badge}
@@ -121,7 +136,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
 
         <ChevronDown
           className={`w-3.5 h-3.5 text-[#707080] transition-transform duration-200 shrink-0 ${
-            isOpen ? 'rotate-180 text-[#77727E]' : ''
+            isOpen ? "rotate-180 text-[#77727E]" : ""
           }`}
         />
       </div>
@@ -141,7 +156,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       {isOpen && (
         <div
           className={`absolute ${
-            openUpward ? 'bottom-full mb-2' : 'top-full mt-2'
+            openUpward ? "bottom-full mb-2" : "top-full mt-2"
           } left-0 z-modalDropdown w-full min-w-[260px] bg-[#0E0E14] border border-[#282836] rounded-2xl shadow-2xl overflow-hidden backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-100`}
         >
           {searchable && (
@@ -163,7 +178,9 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
 
           <div className="max-h-56 overflow-y-auto p-1.5 space-y-1">
             {filteredOptions.length === 0 ? (
-              <div className="p-4 text-center text-xs text-[#606070]">No matches found</div>
+              <div className="p-4 text-center text-xs text-[#606070]">
+                No matches found
+              </div>
             ) : (
               filteredOptions.map((opt) => {
                 const isSelected = opt.value === value;
@@ -173,8 +190,8 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                     onClick={() => handleSelect(opt.value)}
                     className={`px-3 py-2.5 rounded-xl text-xs flex items-center justify-between gap-3 cursor-pointer transition-colors ${
                       isSelected
-                        ? 'bg-[#77727E]/25 text-[#F4F4F6] font-semibold border border-[#77727E]/40'
-                        : 'text-[#D4D4D8] hover:bg-[#161620] hover:text-white'
+                        ? "bg-[#77727E]/25 text-[#F4F4F6] font-semibold border border-[#77727E]/40"
+                        : "text-[#D4D4D8] hover:bg-[#161620] hover:text-white"
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -182,7 +199,9 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                       <div className="min-w-0">
                         <div className="truncate text-xs">{opt.label}</div>
                         {opt.sublabel && (
-                          <div className="text-[10px] text-[#707080] truncate mt-0.5">{opt.sublabel}</div>
+                          <div className="text-[10px] text-[#707080] truncate mt-0.5">
+                            {opt.sublabel}
+                          </div>
                         )}
                       </div>
                     </div>
@@ -191,13 +210,16 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                       {opt.badge && (
                         <span
                           className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-md border ${
-                            opt.badgeColor || 'text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30'
+                            opt.badgeColor ||
+                            "text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30"
                           }`}
                         >
                           {opt.badge}
                         </span>
                       )}
-                      {isSelected && <Check className="w-3.5 h-3.5 text-[#77727E]" />}
+                      {isSelected && (
+                        <Check className="w-3.5 h-3.5 text-[#77727E]" />
+                      )}
                     </div>
                   </div>
                 );

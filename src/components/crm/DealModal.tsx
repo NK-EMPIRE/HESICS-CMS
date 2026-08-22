@@ -1,9 +1,9 @@
-﻿import React, { useState } from 'react';
-import { X, Target } from 'lucide-react';
-import { db } from '../../lib/db/deals';
-import { Deal, DealStage, User as UserType } from '../../lib/types';
-import { DatePicker } from '../common/DatePicker';
-import { CustomSelect, Option } from '../common/CustomSelect';
+import React, { useState } from "react";
+import { X, Target } from "lucide-react";
+import { db } from "../../lib/db/deals";
+import { Deal, DealStage, User as UserType } from "../../lib/types";
+import { DatePicker } from "../common/DatePicker";
+import { CustomSelect, Option } from "../common/CustomSelect";
 
 interface DealModalProps {
   isOpen: boolean;
@@ -14,11 +14,36 @@ interface DealModalProps {
 }
 
 const STAGE_OPTIONS: Option[] = [
-  { value: 'discovery', label: 'Discovery', badge: '10%', badgeColor: 'text-[#808090] bg-[#14141A] border-[#202028]' },
-  { value: 'proposal', label: 'Proposal Sent', badge: '40%', badgeColor: 'text-indigo-300 bg-indigo-950/40 border-indigo-800/50' },
-  { value: 'negotiation', label: 'Commercial Negotiation', badge: '75%', badgeColor: 'text-amber-300 bg-amber-950/40 border-amber-800/50' },
-  { value: 'won', label: 'Closed Won', badge: '100%', badgeColor: 'text-emerald-400 bg-emerald-950/40 border-emerald-800/50' },
-  { value: 'lost', label: 'Closed Lost', badge: '0%', badgeColor: 'text-rose-400 bg-rose-950/40 border-rose-800/50' },
+  {
+    value: "discovery",
+    label: "Discovery",
+    badge: "10%",
+    badgeColor: "text-[#808090] bg-[#14141A] border-[#202028]",
+  },
+  {
+    value: "proposal",
+    label: "Proposal Sent",
+    badge: "40%",
+    badgeColor: "text-indigo-300 bg-indigo-950/40 border-indigo-800/50",
+  },
+  {
+    value: "negotiation",
+    label: "Commercial Negotiation",
+    badge: "75%",
+    badgeColor: "text-amber-300 bg-amber-950/40 border-amber-800/50",
+  },
+  {
+    value: "won",
+    label: "Closed Won",
+    badge: "100%",
+    badgeColor: "text-emerald-400 bg-emerald-950/40 border-emerald-800/50",
+  },
+  {
+    value: "lost",
+    label: "Closed Lost",
+    badge: "0%",
+    badgeColor: "text-rose-400 bg-rose-950/40 border-rose-800/50",
+  },
 ];
 
 export const DealModal: React.FC<DealModalProps> = ({
@@ -29,12 +54,14 @@ export const DealModal: React.FC<DealModalProps> = ({
   activeUser,
 }) => {
   const clients = db.getClients();
-  const [clientId, setClientId] = useState(deal?.client_id || clients[0]?.id || '');
-  const [title, setTitle] = useState(deal?.title || '');
-  const [value, setValue] = useState(deal?.value ? String(deal.value) : '');
-  const [stage, setStage] = useState<DealStage>(deal?.stage || 'discovery');
-  const [closeDate, setCloseDate] = useState(deal?.expected_close_date || '');
-  const [notes, setNotes] = useState(deal?.notes || '');
+  const [clientId, setClientId] = useState(
+    deal?.client_id || clients[0]?.id || "",
+  );
+  const [title, setTitle] = useState(deal?.title || "");
+  const [value, setValue] = useState(deal?.value ? String(deal.value) : "");
+  const [stage, setStage] = useState<DealStage>(deal?.stage || "discovery");
+  const [closeDate, setCloseDate] = useState(deal?.expected_close_date || "");
+  const [notes, setNotes] = useState(deal?.notes || "");
 
   if (!isOpen) return null;
 
@@ -42,8 +69,8 @@ export const DealModal: React.FC<DealModalProps> = ({
     value: c.id,
     label: c.name,
     sublabel: c.company_name,
-    badge: c.primary_service || 'Enterprise',
-    badgeColor: 'text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30',
+    badge: c.primary_service || "Enterprise",
+    badgeColor: "text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30",
   }));
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -65,7 +92,7 @@ export const DealModal: React.FC<DealModalProps> = ({
     } else {
       db.addDeal({
         client_id: clientId,
-        client_name: selectedClient?.name || 'General Client',
+        client_name: selectedClient?.name || "General Client",
         title: title.trim(),
         value: Number(value),
         stage,
@@ -91,10 +118,11 @@ export const DealModal: React.FC<DealModalProps> = ({
             </div>
             <div>
               <h2 className="text-base font-bold text-[#F4F4F6] tracking-tight font-display">
-                {deal ? 'Edit Deal Opportunity' : 'New Deal Opportunity'}
+                {deal ? "Edit Deal Opportunity" : "New Deal Opportunity"}
               </h2>
               <p className="text-xs text-[#808090]">
-                Track revenue probability, expected close velocity, and client account association.
+                Track revenue probability, expected close velocity, and client
+                account association.
               </p>
             </div>
           </div>
@@ -109,7 +137,9 @@ export const DealModal: React.FC<DealModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
-              <label className="hesics-label">Associated Client Account *</label>
+              <label className="hesics-label">
+                Associated Client Account *
+              </label>
               <CustomSelect
                 value={clientId}
                 onChange={setClientId}
@@ -175,11 +205,15 @@ export const DealModal: React.FC<DealModalProps> = ({
           </div>
 
           <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#1A1A22]">
-            <button type="button" onClick={onClose} className="hesics-btn-ghost">
+            <button
+              type="button"
+              onClick={onClose}
+              className="hesics-btn-ghost"
+            >
               Cancel
             </button>
             <button type="submit" className="hesics-btn-primary px-6">
-              {deal ? 'Save Changes' : 'Create Deal'}
+              {deal ? "Save Changes" : "Create Deal"}
             </button>
           </div>
         </form>
@@ -187,4 +221,3 @@ export const DealModal: React.FC<DealModalProps> = ({
     </div>
   );
 };
-

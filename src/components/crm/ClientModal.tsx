@@ -1,9 +1,9 @@
-﻿import React, { useState } from 'react';
-import { X, Building2, Briefcase } from 'lucide-react';
-import { db } from '../../lib/db/clients';
-import { Client, ClientStatus, User } from '../../lib/types';
-import { CustomSelect, Option } from '../common/CustomSelect';
-import { showToast } from '../common/Toast';
+import React, { useState } from "react";
+import { X, Building2, Briefcase } from "lucide-react";
+import { db } from "../../lib/db/clients";
+import { Client, ClientStatus, User } from "../../lib/types";
+import { CustomSelect, Option } from "../common/CustomSelect";
+import { showToast } from "../common/Toast";
 
 interface ClientModalProps {
   isOpen: boolean;
@@ -14,9 +14,24 @@ interface ClientModalProps {
 }
 
 const STATUS_OPTIONS: Option[] = [
-  { value: 'active', label: 'Active Retainer', badge: 'Active', badgeColor: 'text-emerald-400 bg-emerald-950/40 border-emerald-800/50' },
-  { value: 'lead', label: 'Prospective Lead', badge: 'Lead', badgeColor: 'text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30' },
-  { value: 'churned', label: 'Archived / Closed', badge: 'Closed', badgeColor: 'text-[#707080] bg-[#14141A] border-[#202028]' },
+  {
+    value: "active",
+    label: "Active Retainer",
+    badge: "Active",
+    badgeColor: "text-emerald-400 bg-emerald-950/40 border-emerald-800/50",
+  },
+  {
+    value: "lead",
+    label: "Prospective Lead",
+    badge: "Lead",
+    badgeColor: "text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30",
+  },
+  {
+    value: "churned",
+    label: "Archived / Closed",
+    badge: "Closed",
+    badgeColor: "text-[#707080] bg-[#14141A] border-[#202028]",
+  },
 ];
 
 export const ClientModal: React.FC<ClientModalProps> = ({
@@ -30,22 +45,26 @@ export const ClientModal: React.FC<ClientModalProps> = ({
   const serviceOptions: Option[] = services.map((s) => ({
     value: s.name,
     label: s.name,
-    sublabel: `Default: ₹${s.default_rate.toLocaleString('en-IN')}`,
+    sublabel: `Default: ₹${s.default_rate.toLocaleString("en-IN")}`,
     badge: s.category,
-    badgeColor: 'text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30',
+    badgeColor: "text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30",
   }));
 
-  const [name, setName] = useState(client?.name || '');
-  const [companyName, setCompanyName] = useState(client?.company_name || '');
-  const [email, setEmail] = useState(client?.email || '');
-  const [phone, setPhone] = useState(client?.phone || '');
-  const [status, setStatus] = useState<ClientStatus>(client?.status || 'active');
-  const [primaryService, setPrimaryService] = useState(
-    client?.primary_service || services[0]?.name || 'Enterprise Business OS Architecture & Cloud Infra'
+  const [name, setName] = useState(client?.name || "");
+  const [companyName, setCompanyName] = useState(client?.company_name || "");
+  const [email, setEmail] = useState(client?.email || "");
+  const [phone, setPhone] = useState(client?.phone || "");
+  const [status, setStatus] = useState<ClientStatus>(
+    client?.status || "active",
   );
-  const [gstin, setGstin] = useState(client?.gstin || '');
-  const [industry, setIndustry] = useState(client?.industry || '');
-  const [notes, setNotes] = useState(client?.notes || '');
+  const [primaryService, setPrimaryService] = useState(
+    client?.primary_service ||
+      services[0]?.name ||
+      "Enterprise Business OS Architecture & Cloud Infra",
+  );
+  const [gstin, setGstin] = useState(client?.gstin || "");
+  const [industry, setIndustry] = useState(client?.industry || "");
+  const [notes, setNotes] = useState(client?.notes || "");
 
   if (!isOpen) return null;
 
@@ -69,10 +88,10 @@ export const ClientModal: React.FC<ClientModalProps> = ({
 
     if (client) {
       db.updateClient(client.id, payload);
-      showToast('Client Updated', `Profile for "${name}" has been updated.`);
+      showToast("Client Updated", `Profile for "${name}" has been updated.`);
     } else {
       db.addClient(payload);
-      showToast('Client Created', `Client "${name}" has been added.`);
+      showToast("Client Created", `Client "${name}" has been added.`);
     }
 
     onSuccess();
@@ -90,10 +109,11 @@ export const ClientModal: React.FC<ClientModalProps> = ({
             </div>
             <div>
               <h2 className="text-base font-bold text-[#F4F4F6] tracking-tight font-display">
-                {client ? 'Edit Client Account' : 'Add New Client Account'}
+                {client ? "Edit Client Account" : "Add New Client Account"}
               </h2>
               <p className="text-xs text-[#808090]">
-                Configure client identity, primary service requirements, and key commercial contact points.
+                Configure client identity, primary service requirements, and key
+                commercial contact points.
               </p>
             </div>
           </div>
@@ -120,7 +140,9 @@ export const ClientModal: React.FC<ClientModalProps> = ({
               />
             </div>
             <div>
-              <label className="hesics-label">Company / Enterprise Entity</label>
+              <label className="hesics-label">
+                Company / Enterprise Entity
+              </label>
               <input
                 type="text"
                 value={companyName}
@@ -214,11 +236,15 @@ export const ClientModal: React.FC<ClientModalProps> = ({
 
           {/* Modal Footer */}
           <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#1A1A22]">
-            <button type="button" onClick={onClose} className="hesics-btn-ghost">
+            <button
+              type="button"
+              onClick={onClose}
+              className="hesics-btn-ghost"
+            >
               Cancel
             </button>
             <button type="submit" className="hesics-btn-primary px-6">
-              {client ? 'Save Profile' : 'Create Client'}
+              {client ? "Save Profile" : "Create Client"}
             </button>
           </div>
         </form>

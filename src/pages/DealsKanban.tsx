@@ -1,32 +1,39 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
-  Plus, Calendar, Target, Pencil, Trash2,
-  Sparkles, ArrowRight, HelpCircle, X
-} from 'lucide-react';
-import { db } from '../lib/db/deals';
-import { Deal, DealStage, User } from '../lib/types';
-import { canPerform } from '../lib/rbac';
-import { DealModal } from '../components/crm/DealModal';
-import { CustomSelect, Option } from '../components/common/CustomSelect';
-import { showToast } from '../components/common/Toast';
+  Plus,
+  Calendar,
+  Target,
+  Pencil,
+  Trash2,
+  Sparkles,
+  ArrowRight,
+  HelpCircle,
+  X,
+} from "lucide-react";
+import { db } from "../lib/db/deals";
+import { Deal, DealStage, User } from "../lib/types";
+import { canPerform } from "../lib/rbac";
+import { DealModal } from "../components/crm/DealModal";
+import { CustomSelect, Option } from "../components/common/CustomSelect";
+import { showToast } from "../components/common/Toast";
 
 interface DealsKanbanProps {
   activeUser: User;
 }
 
 const STAGES: { id: DealStage; label: string; dotColor: string }[] = [
-  { id: 'discovery', label: 'Discovery', dotColor: 'bg-slate-400' },
-  { id: 'proposal', label: 'Proposal Sent', dotColor: 'bg-indigo-400' },
-  { id: 'negotiation', label: 'Negotiation', dotColor: 'bg-amber-400' },
-  { id: 'won', label: 'Closed Won', dotColor: 'bg-emerald-400' },
-  { id: 'lost', label: 'Closed Lost', dotColor: 'bg-rose-400' },
+  { id: "discovery", label: "Discovery", dotColor: "bg-slate-400" },
+  { id: "proposal", label: "Proposal Sent", dotColor: "bg-indigo-400" },
+  { id: "negotiation", label: "Negotiation", dotColor: "bg-amber-400" },
+  { id: "won", label: "Closed Won", dotColor: "bg-emerald-400" },
+  { id: "lost", label: "Closed Lost", dotColor: "bg-rose-400" },
 ];
 
 const STAGE_MOVE_OPTIONS: Option[] = STAGES.map((s) => ({
   value: s.id,
   label: `Move: ${s.label}`,
   badge: s.label,
-  badgeColor: 'text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30',
+  badgeColor: "text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30",
 }));
 
 export const DealsKanban: React.FC<DealsKanbanProps> = ({ activeUser }) => {
@@ -36,10 +43,13 @@ export const DealsKanban: React.FC<DealsKanbanProps> = ({ activeUser }) => {
 
   // Drag-and-drop state
   const [draggedDeal, setDraggedDeal] = useState<Deal | null>(null);
-  const [pendingMove, setPendingMove] = useState<{ deal: Deal; targetStage: DealStage } | null>(null);
+  const [pendingMove, setPendingMove] = useState<{
+    deal: Deal;
+    targetStage: DealStage;
+  } | null>(null);
   const [dragOverStage, setDragOverStage] = useState<DealStage | null>(null);
 
-  const canWrite = canPerform(activeUser.role_id, 'deals:write');
+  const canWrite = canPerform(activeUser.role_id, "deals:write");
 
   const refreshDeals = () => {
     setDeals(db.getDeals());
@@ -55,7 +65,10 @@ export const DealsKanban: React.FC<DealsKanbanProps> = ({ activeUser }) => {
     const { deal, targetStage } = pendingMove;
     db.updateDeal(deal.id, { stage: targetStage });
     refreshDeals();
-    showToast('Pipeline Advanced', `Moved "${deal.title}" to ${targetStage.toUpperCase()}`);
+    showToast(
+      "Pipeline Advanced",
+      `Moved "${deal.title}" to ${targetStage.toUpperCase()}`,
+    );
     setPendingMove(null);
   };
 
@@ -66,7 +79,7 @@ export const DealsKanban: React.FC<DealsKanbanProps> = ({ activeUser }) => {
   const handleDeleteDeal = (id: string, title: string) => {
     if (window.confirm(`Delete deal opportunity "${title}"?`)) {
       db.deleteDeal(id);
-      showToast('Deal Deleted', `Removed "${title}" from pipeline.`);
+      showToast("Deal Deleted", `Removed "${title}" from pipeline.`);
       refreshDeals();
     }
   };
@@ -74,7 +87,7 @@ export const DealsKanban: React.FC<DealsKanbanProps> = ({ activeUser }) => {
   // Drag handlers
   const handleDragStart = (e: React.DragEvent, deal: Deal) => {
     setDraggedDeal(deal);
-    e.dataTransfer.setData('text/plain', deal.id);
+    e.dataTransfer.setData("text/plain", deal.id);
   };
 
   const handleDragOver = (e: React.DragEvent, stageId: DealStage) => {
@@ -99,14 +112,14 @@ export const DealsKanban: React.FC<DealsKanbanProps> = ({ activeUser }) => {
     setDraggedDeal(null);
   };
 
-  const fmt = (n: number) => `₹${n.toLocaleString('en-IN')}`;
+  const fmt = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
   const totalPipeline = deals
-    .filter((d) => d.stage !== 'won' && d.stage !== 'lost')
+    .filter((d) => d.stage !== "won" && d.stage !== "lost")
     .reduce((sum, d) => sum + Number(d.value), 0);
 
   const totalWon = deals
-    .filter((d) => d.stage === 'won')
+    .filter((d) => d.stage === "won")
     .reduce((sum, d) => sum + Number(d.value), 0);
 
   return (
@@ -114,9 +127,19 @@ export const DealsKanban: React.FC<DealsKanbanProps> = ({ activeUser }) => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1A1A20]">
         <div>
-          <h1 className="text-xl font-bold text-[#F4F4F6] tracking-tight font-display">Revenue Pipeline</h1>
+          <h1 className="text-xl font-bold text-[#F4F4F6] tracking-tight font-display">
+            Revenue Pipeline
+          </h1>
           <p className="text-xs text-[#828290] mt-1">
-            Active velocity: <span className="font-mono text-[#F4F4F6] font-semibold">{fmt(totalPipeline)}</span> • Won Revenue: <span className="font-mono text-emerald-400 font-semibold">{fmt(totalWon)}</span> • Drag cards to advance stages.
+            Active velocity:{" "}
+            <span className="font-mono text-[#F4F4F6] font-semibold">
+              {fmt(totalPipeline)}
+            </span>{" "}
+            • Won Revenue:{" "}
+            <span className="font-mono text-emerald-400 font-semibold">
+              {fmt(totalWon)}
+            </span>{" "}
+            • Drag cards to advance stages.
           </p>
         </div>
 
@@ -137,7 +160,10 @@ export const DealsKanban: React.FC<DealsKanbanProps> = ({ activeUser }) => {
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3.5 items-start">
         {STAGES.map((stage) => {
           const stageDeals = deals.filter((d) => d.stage === stage.id);
-          const stageTotal = stageDeals.reduce((sum, d) => sum + Number(d.value), 0);
+          const stageTotal = stageDeals.reduce(
+            (sum, d) => sum + Number(d.value),
+            0,
+          );
           const isDragTarget = dragOverStage === stage.id;
 
           return (
@@ -148,15 +174,17 @@ export const DealsKanban: React.FC<DealsKanbanProps> = ({ activeUser }) => {
               onDrop={(e) => handleDrop(e, stage.id)}
               className={`bg-[#09090C] border rounded-2xl p-3.5 space-y-3 min-h-[500px] flex flex-col transition-all duration-200 ${
                 isDragTarget
-                  ? 'border-[#77727E] ring-2 ring-[#77727E]/30 bg-[#0E0E14]'
-                  : 'border-[#181820]'
+                  ? "border-[#77727E] ring-2 ring-[#77727E]/30 bg-[#0E0E14]"
+                  : "border-[#181820]"
               }`}
             >
               {/* Column Header */}
               <div className="flex items-center justify-between pb-2.5 border-b border-[#16161E]">
                 <div className="flex items-center gap-2">
                   <span className={`w-2 h-2 rounded-full ${stage.dotColor}`} />
-                  <h3 className="text-xs font-bold text-[#F4F4F6] tracking-tight font-display">{stage.label}</h3>
+                  <h3 className="text-xs font-bold text-[#F4F4F6] tracking-tight font-display">
+                    {stage.label}
+                  </h3>
                 </div>
                 <span className="text-[10px] text-[#707080] font-mono px-2 py-0.5 bg-[#121218] rounded-md">
                   {stageDeals.length}
@@ -220,11 +248,13 @@ export const DealsKanban: React.FC<DealsKanbanProps> = ({ activeUser }) => {
                       )}
 
                       <div className="flex items-center justify-between text-xs pt-1.5 border-t border-[#181822]">
-                        <span className="font-bold text-[#F4F4F6] font-mono">{fmt(deal.value)}</span>
+                        <span className="font-bold text-[#F4F4F6] font-mono">
+                          {fmt(deal.value)}
+                        </span>
                         {deal.expected_close_date && (
                           <span className="text-[10px] text-[#606070] flex items-center gap-1 font-mono">
                             <Calendar className="w-2.5 h-2.5 text-[#77727E]" />
-                            {deal.expected_close_date.split('T')[0]}
+                            {deal.expected_close_date.split("T")[0]}
                           </span>
                         )}
                       </div>
@@ -233,7 +263,9 @@ export const DealsKanban: React.FC<DealsKanbanProps> = ({ activeUser }) => {
                       {canWrite && (
                         <CustomSelect
                           value={deal.stage}
-                          onChange={(newStg) => handleStageChange(deal, newStg as DealStage)}
+                          onChange={(newStg) =>
+                            handleStageChange(deal, newStg as DealStage)
+                          }
                           options={STAGE_MOVE_OPTIONS}
                           placeholder="Move Stage..."
                           className="w-full text-[10px]"
@@ -257,18 +289,25 @@ export const DealsKanban: React.FC<DealsKanbanProps> = ({ activeUser }) => {
                 <div className="w-8 h-8 rounded-xl bg-[#77727E]/20 border border-[#77727E]/40 flex items-center justify-center">
                   <Target className="w-4 h-4 text-[#77727E]" />
                 </div>
-                <h3 className="text-sm font-bold text-[#F4F4F6]">Confirm Pipeline Movement</h3>
+                <h3 className="text-sm font-bold text-[#F4F4F6]">
+                  Confirm Pipeline Movement
+                </h3>
               </div>
-              <button onClick={cancelMove} className="text-[#606070] hover:text-white p-1">
+              <button
+                onClick={cancelMove}
+                className="text-[#606070] hover:text-white p-1"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="p-4 bg-[#08080B] rounded-2xl border border-[#1A1A24] space-y-2 text-xs">
               <div className="text-[#9090A0]">
-                Are you sure you want to advance deal{' '}
-                <strong className="text-[#F4F4F6]">"{pendingMove.deal.title}"</strong> (
-                {fmt(pendingMove.deal.value)})?
+                Are you sure you want to advance deal{" "}
+                <strong className="text-[#F4F4F6]">
+                  "{pendingMove.deal.title}"
+                </strong>{" "}
+                ({fmt(pendingMove.deal.value)})?
               </div>
               <div className="flex items-center gap-2 pt-2 text-xs font-mono">
                 <span className="px-2.5 py-1 rounded-lg bg-[#14141C] border border-[#22222E] text-[#9090A0] capitalize">
@@ -282,10 +321,18 @@ export const DealsKanban: React.FC<DealsKanbanProps> = ({ activeUser }) => {
             </div>
 
             <div className="flex items-center justify-end gap-2.5 pt-2">
-              <button type="button" onClick={cancelMove} className="hesics-btn-ghost text-xs">
+              <button
+                type="button"
+                onClick={cancelMove}
+                className="hesics-btn-ghost text-xs"
+              >
                 Cancel
               </button>
-              <button type="button" onClick={confirmMove} className="hesics-btn-primary text-xs px-5">
+              <button
+                type="button"
+                onClick={confirmMove}
+                className="hesics-btn-primary text-xs px-5"
+              >
                 Confirm Movement
               </button>
             </div>

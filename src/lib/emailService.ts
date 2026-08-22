@@ -3,13 +3,26 @@ export interface EmailPayload {
   subject: string;
   html: string;
   text?: string;
-  category?: 'invitation' | 'task_assignment' | 'quotation' | 'invoice' | 'invoice_paid' | 'password_reset' | 'activity_log' | 'agreement_sign' | 'custom';
+  category?:
+    | "invitation"
+    | "task_assignment"
+    | "quotation"
+    | "invoice"
+    | "invoice_paid"
+    | "password_reset"
+    | "activity_log"
+    | "agreement_sign"
+    | "custom";
 }
 
 /**
  * Original Luxury Dark Email Template matching user's original screenshot exactly
  */
-export function wrapBrandEmailTemplate(title: string, contentHtml: string, actionButton?: { text: string; url: string }): string {
+export function wrapBrandEmailTemplate(
+  title: string,
+  contentHtml: string,
+  actionButton?: { text: string; url: string },
+): string {
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -53,13 +66,17 @@ export function wrapBrandEmailTemplate(title: string, contentHtml: string, actio
             <td style="padding: 36px; font-size: 14px; line-height: 1.65; color: #D4D4D8;">
               ${contentHtml}
 
-              ${actionButton ? `
+              ${
+                actionButton
+                  ? `
               <div style="margin-top: 32px; text-align: center;">
                 <a href="${actionButton.url}" target="_blank" style="display: inline-block; padding: 13px 32px; background-color: #77727E; color: #FFFFFF; font-size: 13px; font-weight: 600; text-decoration: none; border-radius: 12px; box-shadow: 0 4px 16px rgba(119, 114, 126, 0.35);">
                   ${actionButton.text} →
                 </a>
               </div>
-              ` : ''}
+              `
+                  : ""
+              }
             </td>
           </tr>
 
@@ -84,23 +101,31 @@ export function wrapBrandEmailTemplate(title: string, contentHtml: string, actio
 /**
  * Dispatch email via backend API endpoint
  */
-export async function sendEmail(payload: EmailPayload): Promise<{ success: boolean; error?: string }> {
+export async function sendEmail(
+  payload: EmailPayload,
+): Promise<{ success: boolean; error?: string }> {
   try {
-    const res = await fetch('/api/send-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const res = await fetch("/api/send-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      return { success: false, error: err.message || `Failed to send email (${res.status})` };
+      return {
+        success: false,
+        error: err.message || `Failed to send email (${res.status})`,
+      };
     }
 
     return { success: true };
   } catch (err: any) {
-    console.error('Email Dispatch Failure:', err);
-    return { success: false, error: err?.message || 'Network error while attempting to send email.' };
+    console.error("Email Dispatch Failure:", err);
+    return {
+      success: false,
+      error: err?.message || "Network error while attempting to send email.",
+    };
   }
 }
 
@@ -113,31 +138,36 @@ export async function sendCustomEmail(params: {
   recipientName?: string;
   actionUrl?: string;
   actionLabel?: string;
-  category?: EmailPayload['category'];
+  category?: EmailPayload["category"];
 }): Promise<{ success: boolean; error?: string }> {
   let finalHtml = params.html;
   if (!finalHtml && params.message) {
-    const recipient = params.recipientName || 'Member';
+    const recipient = params.recipientName || "Member";
     let cleanMessage = params.message.trim();
     // Prevent duplicate Dear greeting lines
-    const hasGreeting = cleanMessage.toLowerCase().startsWith('dear ');
-    const greetingHeader = hasGreeting ? '' : `<p style="margin: 0 0 16px 0;">Dear <strong style="color: #FFFFFF;">${recipient}</strong>,</p>`;
+    const hasGreeting = cleanMessage.toLowerCase().startsWith("dear ");
+    const greetingHeader = hasGreeting
+      ? ""
+      : `<p style="margin: 0 0 16px 0;">Dear <strong style="color: #FFFFFF;">${recipient}</strong>,</p>`;
 
-    const contentHtml = greetingHeader +
+    const contentHtml =
+      greetingHeader +
       `<div style="background-color: #121218; border: 1px solid #1E1E2A; border-radius: 14px; padding: 20px; margin: 16px 0; color: #D4D4D8; line-height: 1.65; white-space: pre-wrap;">` +
       cleanMessage +
       `</div>`;
 
-    const actionBtn = params.actionUrl ? { text: params.actionLabel || 'View Document', url: params.actionUrl } : undefined;
+    const actionBtn = params.actionUrl
+      ? { text: params.actionLabel || "View Document", url: params.actionUrl }
+      : undefined;
     finalHtml = wrapBrandEmailTemplate(params.subject, contentHtml, actionBtn);
   }
 
   return sendEmail({
     to: params.to,
     subject: params.subject,
-    html: finalHtml || params.message || '',
+    html: finalHtml || params.message || "",
     text: params.text,
-    category: params.category || 'custom',
+    category: params.category || "custom",
   });
 }
 
@@ -150,7 +180,10 @@ export async function sendInvitationEmail(params: {
   roleName: string;
   department: string;
 }) {
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://hub-hesics.vercel.app';
+  const origin =
+    typeof window !== "undefined"
+      ? window.location.origin
+      : "https://hub-hesics.vercel.app";
   const setupPasswordUrl = `${origin}?mode=setup_password&email=${encodeURIComponent(params.to)}`;
 
   const htmlContent = `
@@ -183,17 +216,16 @@ export async function sendInvitationEmail(params: {
     </p>
   `;
 
-  const finalHtml = wrapBrandEmailTemplate(
-    'Welcome to HESICS',
-    htmlContent,
-    { text: 'Set Up Password & Sign In', url: setupPasswordUrl }
-  );
+  const finalHtml = wrapBrandEmailTemplate("Welcome to HESICS", htmlContent, {
+    text: "Set Up Password & Sign In",
+    url: setupPasswordUrl,
+  });
 
   return sendEmail({
     to: params.to,
-    subject: 'Welcome to HESICS — Organization Access Granted',
+    subject: "Welcome to HESICS — Organization Access Granted",
     html: finalHtml,
-    category: 'invitation',
+    category: "invitation",
   });
 }
 
@@ -208,10 +240,10 @@ export async function sendQuotationEmail(params: {
   validUntil: string;
   scope: string;
 }) {
-  const formattedAmount = new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0
+  const formattedAmount = new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
   }).format(params.amount);
 
   const htmlContent = `
@@ -235,17 +267,16 @@ export async function sendQuotationEmail(params: {
     </p>
   `;
 
-  const finalHtml = wrapBrandEmailTemplate(
-    'Quotation Proposal',
-    htmlContent,
-    { text: 'View Quotation Details', url: 'https://hub-hesics.vercel.app' }
-  );
+  const finalHtml = wrapBrandEmailTemplate("Quotation Proposal", htmlContent, {
+    text: "View Quotation Details",
+    url: "https://hub-hesics.vercel.app",
+  });
 
   return sendEmail({
     to: params.to,
     subject: `Quotation #${params.quotationNumber} from HESICS`,
     html: finalHtml,
-    category: 'quotation',
+    category: "quotation",
   });
 }
 
@@ -259,10 +290,10 @@ export async function sendInvoiceEmail(params: {
   amount: number;
   dueDate: string;
 }) {
-  const formattedAmount = new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 0
+  const formattedAmount = new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
   }).format(params.amount);
 
   const htmlContent = `
@@ -282,17 +313,16 @@ export async function sendInvoiceEmail(params: {
     </div>
   `;
 
-  const finalHtml = wrapBrandEmailTemplate(
-    'Tax Invoice',
-    htmlContent,
-    { text: 'View Invoice', url: 'https://hub-hesics.vercel.app' }
-  );
+  const finalHtml = wrapBrandEmailTemplate("Tax Invoice", htmlContent, {
+    text: "View Invoice",
+    url: "https://hub-hesics.vercel.app",
+  });
 
   return sendEmail({
     to: params.to,
     subject: `Invoice #${params.invoiceNumber} from HESICS`,
     html: finalHtml,
-    category: 'invoice',
+    category: "invoice",
   });
 }
 
@@ -320,35 +350,39 @@ export async function sendTaskAssignmentEmail(params: {
 
     <div style="background-color: #121218; border: 1px solid #1E1E2A; border-radius: 12px; padding: 18px; margin-bottom: 22px;">
       <div style="font-size: 12px; color: #8A8A98; margin-bottom: 6px;">Target Date: <strong style="color: #FFFFFF;">${params.dueDate}</strong></div>
-      ${params.clientName ? `<div style="font-size: 12px; color: #8A8A98;">Client: <strong style="color: #FFFFFF;">${params.clientName}</strong></div>` : ''}
+      ${params.clientName ? `<div style="font-size: 12px; color: #8A8A98;">Client: <strong style="color: #FFFFFF;">${params.clientName}</strong></div>` : ""}
     </div>
   `;
 
-  const finalHtml = wrapBrandEmailTemplate(
-    'Task Assignment',
-    htmlContent,
-    { text: 'Open Workspace', url: 'https://hub-hesics.vercel.app' }
-  );
+  const finalHtml = wrapBrandEmailTemplate("Task Assignment", htmlContent, {
+    text: "Open Workspace",
+    url: "https://hub-hesics.vercel.app",
+  });
 
   return sendEmail({
     to: params.to,
     subject: `Task: ${params.taskTitle} — HESICS`,
     html: finalHtml,
-    category: 'task_assignment',
+    category: "task_assignment",
   });
 }
 
 /**
  * 5. Send Agreement Sign Link to Client
  */
-export function buildAgreementSignEmail(clientName: string, agreementId: string, scope: string, expiryDate: string): EmailPayload {
+export function buildAgreementSignEmail(
+  clientName: string,
+  agreementId: string,
+  scope: string,
+  expiryDate: string,
+): EmailPayload {
   const signUrl = `https://hub-hesics.vercel.app/#/sign-agreement/${agreementId}`;
   return {
-    to: '',
+    to: "",
     subject: `Service Agreement for Your Review & Signature — HESICS`,
-    category: 'agreement_sign',
+    category: "agreement_sign",
     html: wrapBrandEmailTemplate(
-      'Service Agreement',
+      "Service Agreement",
       `<p>Dear <strong style="color: #FFFFFF;">${clientName}</strong>,</p>
       <p>Your <strong>HESICS Service Agreement</strong> is ready for your review and digital signature.</p>
       <div style="background-color: #121218; border: 1px solid #1E1E2A; border-radius: 12px; padding: 18px; margin: 18px 0;">
@@ -356,7 +390,7 @@ export function buildAgreementSignEmail(clientName: string, agreementId: string,
         <div style="font-weight: 600; color: #FFFFFF;">${scope}</div>
       </div>
       <p style="color: #9A9AA8;">Click below to review the agreement and confirm your digital signature.</p>`,
-      { text: 'Review & Sign Agreement', url: signUrl }
+      { text: "Review & Sign Agreement", url: signUrl },
     ),
   };
 }

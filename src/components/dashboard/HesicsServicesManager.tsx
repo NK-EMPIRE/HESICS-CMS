@@ -1,9 +1,19 @@
-﻿import React, { useState } from 'react';
-import { Sparkles, Plus, Trash2, Edit3, DollarSign, Check, X, Shield, Layers } from 'lucide-react';
-import { db } from '../../lib/firebaseDb';
-import { HesicsService, User } from '../../lib/types';
-import { isMasterRoot } from '../../lib/rbac';
-import { showToast } from '../common/Toast';
+import React, { useState } from "react";
+import {
+  Sparkles,
+  Plus,
+  Trash2,
+  Edit3,
+  DollarSign,
+  Check,
+  X,
+  Shield,
+  Layers,
+} from "lucide-react";
+import { db } from "../../lib/firebaseDb";
+import { HesicsService, User } from "../../lib/types";
+import { isMasterRoot } from "../../lib/rbac";
+import { showToast } from "../common/Toast";
 
 interface HesicsServicesManagerProps {
   activeUser: User;
@@ -14,17 +24,20 @@ export const HesicsServicesManager: React.FC<HesicsServicesManagerProps> = ({
   activeUser,
   onServiceUpdated,
 }) => {
-  const isChief = isMasterRoot(activeUser.email) || activeUser.hierarchy === 'founder';
+  const isChief =
+    isMasterRoot(activeUser.email) || activeUser.hierarchy === "founder";
   if (!isChief) return null;
 
-  const [services, setServices] = useState<HesicsService[]>(() => db.getServices());
+  const [services, setServices] = useState<HesicsService[]>(() =>
+    db.getServices(),
+  );
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const [name, setName] = useState('');
-  const [category, setCategory] = useState('Technology & Engineering');
-  const [rate, setRate] = useState('');
-  const [description, setDescription] = useState('');
+  const [name, setName] = useState("");
+  const [category, setCategory] = useState("Technology & Engineering");
+  const [rate, setRate] = useState("");
+  const [description, setDescription] = useState("");
 
   const refreshServices = () => {
     const updated = db.getServices();
@@ -43,7 +56,10 @@ export const HesicsServicesManager: React.FC<HesicsServicesManagerProps> = ({
         default_rate: Number(rate),
         description: description.trim() || undefined,
       });
-      showToast('Service Updated', `"${name}" rates updated in master catalog.`);
+      showToast(
+        "Service Updated",
+        `"${name}" rates updated in master catalog.`,
+      );
     } else {
       db.addService({
         name: name.trim(),
@@ -52,12 +68,12 @@ export const HesicsServicesManager: React.FC<HesicsServicesManagerProps> = ({
         description: description.trim() || undefined,
         is_active: true,
       });
-      showToast('Service Added', `"${name}" added to HESICS services catalog.`);
+      showToast("Service Added", `"${name}" added to HESICS services catalog.`);
     }
 
-    setName('');
-    setRate('');
-    setDescription('');
+    setName("");
+    setRate("");
+    setDescription("");
     setIsAdding(false);
     setEditingId(null);
     refreshServices();
@@ -68,19 +84,19 @@ export const HesicsServicesManager: React.FC<HesicsServicesManagerProps> = ({
     setName(srv.name);
     setCategory(srv.category);
     setRate(String(srv.default_rate));
-    setDescription(srv.description || '');
+    setDescription(srv.description || "");
     setIsAdding(true);
   };
 
   const handleDelete = (id: string, srvName: string) => {
     if (window.confirm(`Delete "${srvName}" from master services catalog?`)) {
       db.deleteService(id);
-      showToast('Service Removed', `"${srvName}" removed from catalog.`);
+      showToast("Service Removed", `"${srvName}" removed from catalog.`);
       refreshServices();
     }
   };
 
-  const fmt = (n: number) => `₹${n.toLocaleString('en-IN')}`;
+  const fmt = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
   return (
     <div className="hesics-card p-6 space-y-5 border-[#2A2A38] bg-gradient-to-b from-[#0E0E14] to-[#0A0A0E]">
@@ -100,7 +116,8 @@ export const HesicsServicesManager: React.FC<HesicsServicesManagerProps> = ({
               </span>
             </div>
             <p className="text-[11px] text-[#808090]">
-              Define standardized deliverables and default commercial pricing for 1-click invoice & quotation mapping.
+              Define standardized deliverables and default commercial pricing
+              for 1-click invoice & quotation mapping.
             </p>
           </div>
         </div>
@@ -112,26 +129,35 @@ export const HesicsServicesManager: React.FC<HesicsServicesManagerProps> = ({
               setIsAdding(false);
               setEditingId(null);
             } else {
-              setName('');
-              setRate('');
-              setDescription('');
+              setName("");
+              setRate("");
+              setDescription("");
               setEditingId(null);
               setIsAdding(true);
             }
           }}
           className="hesics-btn-primary self-start sm:self-auto text-xs"
         >
-          {isAdding ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
-          <span>{isAdding ? 'Close Form' : 'Add Service'}</span>
+          {isAdding ? (
+            <X className="w-3.5 h-3.5" />
+          ) : (
+            <Plus className="w-3.5 h-3.5" />
+          )}
+          <span>{isAdding ? "Close Form" : "Add Service"}</span>
         </button>
       </div>
 
       {/* Add / Edit Form */}
       {isAdding && (
-        <form onSubmit={handleSaveService} className="p-4 bg-[#08080A] border border-[#22222E] rounded-2xl space-y-4 animate-in fade-in duration-150">
+        <form
+          onSubmit={handleSaveService}
+          className="p-4 bg-[#08080A] border border-[#22222E] rounded-2xl space-y-4 animate-in fade-in duration-150"
+        >
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="sm:col-span-2">
-              <label className="hesics-label">Service Deliverable Title *</label>
+              <label className="hesics-label">
+                Service Deliverable Title *
+              </label>
               <input
                 type="text"
                 required
@@ -143,7 +169,9 @@ export const HesicsServicesManager: React.FC<HesicsServicesManagerProps> = ({
               />
             </div>
             <div>
-              <label className="hesics-label">Default Commercial Rate (₹ INR) *</label>
+              <label className="hesics-label">
+                Default Commercial Rate (₹ INR) *
+              </label>
               <input
                 type="number"
                 required
@@ -168,7 +196,9 @@ export const HesicsServicesManager: React.FC<HesicsServicesManagerProps> = ({
               />
             </div>
             <div>
-              <label className="hesics-label">Scope Description & Key Deliverables</label>
+              <label className="hesics-label">
+                Scope Description & Key Deliverables
+              </label>
               <input
                 type="text"
                 value={description}
@@ -191,7 +221,7 @@ export const HesicsServicesManager: React.FC<HesicsServicesManagerProps> = ({
               Cancel
             </button>
             <button type="submit" className="hesics-btn-primary text-xs px-5">
-              {editingId ? 'Update Service' : 'Save to Catalog'}
+              {editingId ? "Update Service" : "Save to Catalog"}
             </button>
           </div>
         </form>
@@ -235,7 +265,9 @@ export const HesicsServicesManager: React.FC<HesicsServicesManagerProps> = ({
             )}
 
             <div className="flex items-center justify-between pt-2 border-t border-[#14141C] text-xs">
-              <span className="text-[10px] text-[#606070] font-mono">{srv.category}</span>
+              <span className="text-[10px] text-[#606070] font-mono">
+                {srv.category}
+              </span>
               <span className="font-mono font-bold text-[#F4F4F6] text-sm">
                 {fmt(srv.default_rate)}
               </span>

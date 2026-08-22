@@ -1,7 +1,7 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
-import { X, Download, Printer, Send, FileText } from 'lucide-react';
-import jsPDF from 'jspdf';
-import { EmailDispatchModal } from './EmailDispatchModal';
+import React, { useState, useEffect, useRef } from "react";
+import { X, Download, Printer, Send, FileText } from "lucide-react";
+import jsPDF from "jspdf";
+import { EmailDispatchModal } from "./EmailDispatchModal";
 
 interface PDFPreviewModalProps {
   isOpen: boolean;
@@ -14,7 +14,7 @@ interface PDFPreviewModalProps {
   emailDefaults?: {
     to: string;
     recipientName: string;
-    documentType: 'Task' | 'Invoice' | 'Quotation' | 'Report';
+    documentType: "Task" | "Invoice" | "Quotation" | "Report";
     documentNumber: string;
     defaultSubject: string;
     defaultMessage: string;
@@ -27,28 +27,28 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
   title,
   pdfDocument,
   pdfDataUrl: initialDataUrl,
-  fileName = 'document.pdf',
+  fileName = "document.pdf",
   onDispatchEmail,
   emailDefaults,
 }) => {
-  const [blobUrl, setBlobUrl] = useState<string>('');
+  const [blobUrl, setBlobUrl] = useState<string>("");
   const [resolvedDoc, setResolvedDoc] = useState<jsPDF | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
-  const prevBlobUrl = useRef<string>('');
+  const prevBlobUrl = useRef<string>("");
 
   useEffect(() => {
     if (!isOpen) return;
     setIsLoading(true);
     setHasError(false);
-    setBlobUrl('');
+    setBlobUrl("");
     setResolvedDoc(null);
 
     // Revoke previous blob URL
     if (prevBlobUrl.current) {
       URL.revokeObjectURL(prevBlobUrl.current);
-      prevBlobUrl.current = '';
+      prevBlobUrl.current = "";
     }
 
     const resolve = async () => {
@@ -59,7 +59,7 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
           // May be a Promise<jsPDF> or jsPDF
           doc = await Promise.resolve(pdfDocument);
           setResolvedDoc(doc);
-          const blob = doc.output('blob');
+          const blob = doc.output("blob");
           const url = URL.createObjectURL(blob);
           prevBlobUrl.current = url;
           setBlobUrl(url);
@@ -72,7 +72,7 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
           setBlobUrl(url);
         }
       } catch (err) {
-        console.error('PDF preview error:', err);
+        console.error("PDF preview error:", err);
         setHasError(true);
       } finally {
         setIsLoading(false);
@@ -93,19 +93,24 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
   const handleDownload = () => {
     if (resolvedDoc) {
       try {
-        const blob = resolvedDoc.output('blob');
+        const blob = resolvedDoc.output("blob");
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
+        const a = document.createElement("a");
         a.href = url;
-        a.download = fileName.endsWith('.pdf') ? fileName : fileName + '.pdf';
+        a.download = fileName.endsWith(".pdf") ? fileName : fileName + ".pdf";
         document.body.appendChild(a);
         a.click();
-        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 500);
-      } catch { resolvedDoc.save(fileName); }
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }, 500);
+      } catch {
+        resolvedDoc.save(fileName);
+      }
     } else if (blobUrl) {
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = blobUrl;
-      a.download = fileName.endsWith('.pdf') ? fileName : fileName + '.pdf';
+      a.download = fileName.endsWith(".pdf") ? fileName : fileName + ".pdf";
       document.body.appendChild(a);
       a.click();
       setTimeout(() => document.body.removeChild(a), 500);
@@ -113,12 +118,14 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
   };
 
   const handlePrint = () => {
-    const iframe = document.getElementById('hesics-pdf-preview-frame') as HTMLIFrameElement;
+    const iframe = document.getElementById(
+      "hesics-pdf-preview-frame",
+    ) as HTMLIFrameElement;
     if (iframe?.contentWindow) {
       iframe.contentWindow.focus();
       iframe.contentWindow.print();
     } else if (blobUrl) {
-      window.open(blobUrl, '_blank');
+      window.open(blobUrl, "_blank");
     }
   };
 
@@ -193,8 +200,12 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
                   <div className="absolute inset-0 border-4 border-t-[#77727E] border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin" />
                 </div>
                 <div className="text-center">
-                  <div className="text-sm font-semibold text-[#D4D4D8]">Generating PDF…</div>
-                  <div className="text-xs text-[#606070] mt-1">Fetching logo assets & building document</div>
+                  <div className="text-sm font-semibold text-[#D4D4D8]">
+                    Generating PDF…
+                  </div>
+                  <div className="text-xs text-[#606070] mt-1">
+                    Fetching logo assets & building document
+                  </div>
                 </div>
               </div>
             )}
@@ -202,8 +213,12 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
             {hasError && !isLoading && (
               <div className="flex flex-col items-center justify-center gap-3 text-xs text-[#707080]">
                 <div className="text-4xl">⚠️</div>
-                <div className="font-semibold text-[#D4D4D8]">PDF generation failed</div>
-                <div className="text-[#606070]">Try downloading directly using the button above.</div>
+                <div className="font-semibold text-[#D4D4D8]">
+                  PDF generation failed
+                </div>
+                <div className="text-[#606070]">
+                  Try downloading directly using the button above.
+                </div>
               </div>
             )}
 

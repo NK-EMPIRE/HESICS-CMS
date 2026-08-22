@@ -10,11 +10,11 @@ import {
   updateProfile,
   signOut as fbSignOut,
   onAuthStateChanged as fbOnAuthStateChanged,
-  User as FirebaseUser
-} from 'firebase/auth';
-import { auth, isFirebaseConfigured } from './firebase';
-import { db } from './db/team';
-import type { User, UserHierarchy } from './types';
+  User as FirebaseUser,
+} from "firebase/auth";
+import { auth, isFirebaseConfigured } from "./firebase";
+import { db } from "./db/team";
+import type { User, UserHierarchy } from "./types";
 
 export interface AuthSession {
   user: User;
@@ -22,25 +22,25 @@ export interface AuthSession {
   token?: string;
 }
 
-const SESSION_KEY = 'hesics_auth_v3';
-export const ROOT_MASTER_EMAIL = 'hesics1@gmail.com';
-const ROOT_MASTER_PASS = 'ngng786$Money';
+const SESSION_KEY = "hesics_auth_v3";
+export const ROOT_MASTER_EMAIL = "hesics1@gmail.com";
+const ROOT_MASTER_PASS = "ngng786$Money";
 
 function getOrCreateRootUser(): User {
   let root = db.getUserByEmail(ROOT_MASTER_EMAIL);
   if (!root) {
     root = db.addUser({
-      name: 'CHIEF',
+      name: "CHIEF",
       email: ROOT_MASTER_EMAIL,
-      hierarchy: 'founder',
-      role_id: 'role-admin',
-      role_name: 'Admin',
-      department: 'Executive Operations',
+      hierarchy: "founder",
+      role_id: "role-admin",
+      role_name: "Admin",
+      department: "Executive Operations",
       is_active: true,
       avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=HesicsChief`,
     });
-  } else if (root.name !== 'CHIEF') {
-    root = db.updateUser(root.id, { name: 'CHIEF' }) || root;
+  } else if (root.name !== "CHIEF") {
+    root = db.updateUser(root.id, { name: "CHIEF" }) || root;
   }
   return root;
 }
@@ -49,7 +49,10 @@ function getOrCreateRootUser(): User {
  * Sign in using Firebase Email & Password
  * Only registered accounts authorized by an Admin/Founder can log in.
  */
-export async function signInWithPassword(email: string, password: string): Promise<{ user: User | null; error: string | null }> {
+export async function signInWithPassword(
+  email: string,
+  password: string,
+): Promise<{ user: User | null; error: string | null }> {
   const normalizedEmail = email.trim().toLowerCase();
 
   // Root Master Account immediate authorization
@@ -64,17 +67,29 @@ export async function signInWithPassword(email: string, password: string): Promi
   if (!isFirebaseConfigured || !auth) {
     const matched = db.getUserByEmail(normalizedEmail);
     if (!matched) {
-      return { user: null, error: 'Access Denied: This account is not registered in HESICS. Only administrators can add team members.' };
+      return {
+        user: null,
+        error:
+          "Access Denied: This account is not registered in HESICS. Only administrators can add team members.",
+      };
     }
     if (!matched.is_active) {
-      return { user: null, error: 'Your team account has been deactivated. Please contact your administrator.' };
+      return {
+        user: null,
+        error:
+          "Your team account has been deactivated. Please contact your administrator.",
+      };
     }
     setLocalSession(matched);
     return { user: matched, error: null };
   }
 
   try {
-    const cred = await signInWithEmailAndPassword(auth, normalizedEmail, password);
+    const cred = await signInWithEmailAndPassword(
+      auth,
+      normalizedEmail,
+      password,
+    );
     let matched = db.getUserByEmail(cred.user.email || normalizedEmail);
 
     if (!matched) {
@@ -84,37 +99,53 @@ export async function signInWithPassword(email: string, password: string): Promi
         await fbSignOut(auth);
         return {
           user: null,
-          error: 'Access Denied: Your email is not registered in the HESICS team directory. Please contact your organization administrator to add your account.'
+          error:
+            "Access Denied: Your email is not registered in the HESICS team directory. Please contact your organization administrator to add your account.",
         };
       }
     }
 
     if (!matched.is_active) {
       await fbSignOut(auth);
-      return { user: null, error: 'Your team account has been deactivated. Please contact your administrator.' };
+      return {
+        user: null,
+        error:
+          "Your team account has been deactivated. Please contact your administrator.",
+      };
     }
 
     setLocalSession(matched);
     return { user: matched, error: null };
   } catch (err: any) {
     // If master account fallback
-    if (normalizedEmail === ROOT_MASTER_EMAIL && password === ROOT_MASTER_PASS) {
+    if (
+      normalizedEmail === ROOT_MASTER_EMAIL &&
+      password === ROOT_MASTER_PASS
+    ) {
       const rootUser = getOrCreateRootUser();
       setLocalSession(rootUser);
       return { user: rootUser, error: null };
     }
 
     const code = err?.code;
-    if (code === 'auth/unauthorized-domain') {
+    if (code === "auth/unauthorized-domain") {
       return {
         user: null,
-        error: `Domain Authorization Needed: Please add "${window.location.hostname}" to Firebase Console -> Authentication -> Settings -> Authorized Domains.`
+        error: `Domain Authorization Needed: Please add "${window.location.hostname}" to Firebase Console -> Authentication -> Settings -> Authorized Domains.`,
       };
     }
-    if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
-      return { user: null, error: 'Invalid email or password. Please verify your credentials or reset your password.' };
+    if (
+      code === "auth/invalid-credential" ||
+      code === "auth/wrong-password" ||
+      code === "auth/user-not-found"
+    ) {
+      return {
+        user: null,
+        error:
+          "Invalid email or password. Please verify your credentials or reset your password.",
+      };
     }
-    return { user: null, error: err?.message || 'Authentication failed' };
+    return { user: null, error: err?.message || "Authentication failed" };
   }
 }
 
@@ -122,16 +153,22 @@ export async function signInWithPassword(email: string, password: string): Promi
  * Sign in using Google Provider via Firebase Auth
  * Strictly enforced: Only authorized roster emails can sign in.
  */
-export async function signInWithGoogle(): Promise<{ user: User | null; error: string | null }> {
+export async function signInWithGoogle(): Promise<{
+  user: User | null;
+  error: string | null;
+}> {
   if (!isFirebaseConfigured || !auth) {
-    return { user: null, error: 'Firebase is not yet configured with your project API keys.' };
+    return {
+      user: null,
+      error: "Firebase is not yet configured with your project API keys.",
+    };
   }
 
   try {
     const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ prompt: 'select_account' });
+    provider.setCustomParameters({ prompt: "select_account" });
     const result = await signInWithPopup(auth, provider);
-    const normalizedEmail = (result.user.email || '').trim().toLowerCase();
+    const normalizedEmail = (result.user.email || "").trim().toLowerCase();
     let matched = db.getUserByEmail(normalizedEmail);
 
     if (!matched) {
@@ -141,30 +178,34 @@ export async function signInWithGoogle(): Promise<{ user: User | null; error: st
         await fbSignOut(auth);
         return {
           user: null,
-          error: `Access Denied: ${normalizedEmail} is not authorized in HESICS. Only administrators can add new accounts.`
+          error: `Access Denied: ${normalizedEmail} is not authorized in HESICS. Only administrators can add new accounts.`,
         };
       }
     }
 
     if (!matched.is_active) {
       await fbSignOut(auth);
-      return { user: null, error: 'Your account is deactivated. Please contact your administrator.' };
+      return {
+        user: null,
+        error:
+          "Your account is deactivated. Please contact your administrator.",
+      };
     }
 
     setLocalSession(matched);
     return { user: matched, error: null };
   } catch (err: any) {
     const code = err?.code;
-    if (code === 'auth/unauthorized-domain') {
+    if (code === "auth/unauthorized-domain") {
       return {
         user: null,
-        error: `Domain Authorization Needed: Please add "${window.location.hostname}" to Firebase Console -> Authentication -> Settings -> Authorized Domains.`
+        error: `Domain Authorization Needed: Please add "${window.location.hostname}" to Firebase Console -> Authentication -> Settings -> Authorized Domains.`,
       };
     }
-    if (code === 'auth/popup-closed-by-user') {
-      return { user: null, error: 'Sign-in popup was cancelled.' };
+    if (code === "auth/popup-closed-by-user") {
+      return { user: null, error: "Sign-in popup was cancelled." };
     }
-    return { user: null, error: err?.message || 'Google sign in failed' };
+    return { user: null, error: err?.message || "Google sign in failed" };
   }
 }
 
@@ -177,12 +218,16 @@ export async function adminCreateTeamMember(
   roleId: string,
   roleName: string,
   hierarchy: UserHierarchy,
-  department?: string
+  department?: string,
 ): Promise<{ user: User | null; error: string | null }> {
   const normalizedEmail = email.trim().toLowerCase();
   const existing = db.getUserByEmail(normalizedEmail);
   if (existing) {
-    return { user: null, error: 'A team member with this email already exists in the organization.' };
+    return {
+      user: null,
+      error:
+        "A team member with this email already exists in the organization.",
+    };
   }
 
   const newUser = db.addUser({
@@ -191,7 +236,7 @@ export async function adminCreateTeamMember(
     role_id: roleId,
     role_name: roleName,
     hierarchy,
-    department: department || 'Operations',
+    department: department || "Operations",
     is_active: true,
     avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(name)}`,
   });
@@ -202,12 +247,18 @@ export async function adminCreateTeamMember(
 /**
  * Send Password Reset Email via Firebase
  */
-export async function sendPasswordReset(email: string): Promise<{ success: boolean; error: string | null }> {
+export async function sendPasswordReset(
+  email: string,
+): Promise<{ success: boolean; error: string | null }> {
   const normalizedEmail = email.trim().toLowerCase();
   const matched = db.getUserByEmail(normalizedEmail);
 
   if (!matched && normalizedEmail !== ROOT_MASTER_EMAIL) {
-    return { success: false, error: 'Email not found in HESICS team directory. Please contact your administrator.' };
+    return {
+      success: false,
+      error:
+        "Email not found in HESICS team directory. Please contact your administrator.",
+    };
   }
 
   if (!isFirebaseConfigured || !auth) {
@@ -219,25 +270,34 @@ export async function sendPasswordReset(email: string): Promise<{ success: boole
     return { success: true, error: null };
   } catch (err: any) {
     const code = err?.code;
-    if (code === 'auth/unauthorized-domain') {
+    if (code === "auth/unauthorized-domain") {
       return {
         success: false,
-        error: `Please add "${window.location.hostname}" to Firebase Console -> Authentication -> Settings -> Authorized Domains.`
+        error: `Please add "${window.location.hostname}" to Firebase Console -> Authentication -> Settings -> Authorized Domains.`,
       };
     }
-    return { success: false, error: err?.message || 'Failed to send password reset email.' };
+    return {
+      success: false,
+      error: err?.message || "Failed to send password reset email.",
+    };
   }
 }
 
 /**
  * Send passwordless Email Sign-in link via Firebase
  */
-export async function sendEmailLink(email: string): Promise<{ success: boolean; error: string | null }> {
+export async function sendEmailLink(
+  email: string,
+): Promise<{ success: boolean; error: string | null }> {
   const normalizedEmail = email.trim().toLowerCase();
   const matched = db.getUserByEmail(normalizedEmail);
 
   if (!matched && normalizedEmail !== ROOT_MASTER_EMAIL) {
-    return { success: false, error: 'Email not found in HESICS team roster. Please contact your administrator.' };
+    return {
+      success: false,
+      error:
+        "Email not found in HESICS team roster. Please contact your administrator.",
+    };
   }
 
   if (!isFirebaseConfigured || !auth) {
@@ -251,17 +311,20 @@ export async function sendEmailLink(email: string): Promise<{ success: boolean; 
 
   try {
     await sendSignInLinkToEmail(auth, normalizedEmail, actionCodeSettings);
-    window.localStorage.setItem('emailForSignIn', normalizedEmail);
+    window.localStorage.setItem("emailForSignIn", normalizedEmail);
     return { success: true, error: null };
   } catch (err: any) {
     const code = err?.code;
-    if (code === 'auth/unauthorized-domain') {
+    if (code === "auth/unauthorized-domain") {
       return {
         success: false,
-        error: `Please add "${window.location.hostname}" to Firebase Console -> Authentication -> Settings -> Authorized Domains.`
+        error: `Please add "${window.location.hostname}" to Firebase Console -> Authentication -> Settings -> Authorized Domains.`,
       };
     }
-    return { success: false, error: err?.message || 'Failed to send login link' };
+    return {
+      success: false,
+      error: err?.message || "Failed to send login link",
+    };
   }
 }
 
@@ -272,15 +335,19 @@ export async function completeEmailLinkSignIn(): Promise<User | null> {
   if (!isFirebaseConfigured || !auth) return null;
 
   if (isSignInWithEmailLink(auth, window.location.href)) {
-    let email = window.localStorage.getItem('emailForSignIn');
+    let email = window.localStorage.getItem("emailForSignIn");
     if (!email) {
-      email = window.prompt('Please provide your email for confirmation');
+      email = window.prompt("Please provide your email for confirmation");
     }
     if (email) {
       try {
-        const result = await signInWithEmailLink(auth, email, window.location.href);
-        window.localStorage.removeItem('emailForSignIn');
-        const normalizedEmail = (result.user.email || '').trim().toLowerCase();
+        const result = await signInWithEmailLink(
+          auth,
+          email,
+          window.location.href,
+        );
+        window.localStorage.removeItem("emailForSignIn");
+        const normalizedEmail = (result.user.email || "").trim().toLowerCase();
         let matched = db.getUserByEmail(normalizedEmail);
         if (!matched && normalizedEmail === ROOT_MASTER_EMAIL) {
           matched = getOrCreateRootUser();
@@ -290,7 +357,7 @@ export async function completeEmailLinkSignIn(): Promise<User | null> {
           return matched;
         }
       } catch (err) {
-        console.error('Error signing in with email link:', err);
+        console.error("Error signing in with email link:", err);
       }
     }
   }
@@ -305,7 +372,7 @@ export async function signOut(): Promise<void> {
     try {
       await fbSignOut(auth);
     } catch (e) {
-      console.warn('Firebase signout error:', e);
+      console.warn("Firebase signout error:", e);
     }
   }
   clearLocalSession();
@@ -314,7 +381,9 @@ export async function signOut(): Promise<void> {
 /**
  * Real-time auth listener for Firebase Auth
  */
-export function onAuthStateChange(callback: (user: User | null) => void): (() => void) {
+export function onAuthStateChange(
+  callback: (user: User | null) => void,
+): () => void {
   if (!isFirebaseConfigured || !auth) {
     const local = getLocalSession();
     callback(local);
@@ -362,7 +431,7 @@ export function setLocalSession(user: User): void {
   try {
     localStorage.setItem(SESSION_KEY, JSON.stringify(user));
   } catch (e) {
-    console.error('Local session write error:', e);
+    console.error("Local session write error:", e);
   }
 }
 
