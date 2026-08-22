@@ -1,4 +1,4 @@
-﻿import jsPDF from 'jspdf';
+import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Invoice, Quotation, Organization, Client } from './types';
 
@@ -12,14 +12,12 @@ export interface PDFExportOptions {
 }
 
 export const AVAILABLE_TEMPLATES: { id: TemplateType; name: string; description: string; badge: string }[] = [
-  { id: 'titanium',   name: 'Titanium Luxury',    description: 'Deep slate with #77727E metallic accents',       badge: 'Recommended' },
-  { id: 'executive',  name: 'Executive Minimalist',description: 'Ultra-clean high-ticket monochrome',              badge: 'Executive' },
-  { id: 'corporate',  name: 'Corporate Enterprise',description: 'Formal structure with HSN tax breakdown',         badge: 'Enterprise' },
-  { id: 'commercial', name: 'Classic Commercial',  description: 'Traditional layout for legal compliance',         badge: 'Commercial' },
+  { id: 'titanium',   name: 'Titanium Luxury',      description: 'Deep slate with #77727E metallic accents & clean grid', badge: 'Titanium' },
+  { id: 'executive',  name: 'Executive Minimalist', description: 'Ultra-clean high-ticket monochrome with accent bar',     badge: 'Executive' },
+  { id: 'corporate',  name: 'Corporate Enterprise', description: 'Formal navy-charcoal structure with itemized lines',   badge: 'Enterprise' },
+  { id: 'commercial', name: 'Classic Commercial',    description: 'Clean bordered compliance box with dual-tone header',  badge: 'Commercial' },
 ];
 
-// ─── Logo Helper ────────────────────────────────────────────────────────────
-// Lazy-loads logo from the public directory as a fetch -> base64 -> cache
 let logoCacheWhite: string | null = null;
 let logoCacheDark: string | null = null;
 
@@ -46,7 +44,6 @@ async function fetchLogoBase64(variant: 'white' | 'dark'): Promise<string | null
   }
 }
 
-/** Draw HESICS logo or fallback text. Must be called after await fetchLogoBase64 */
 function addHesicsLogo(doc: jsPDF, b64: string | null, x: number, y: number, w: number) {
   if (b64) {
     try {
@@ -54,7 +51,6 @@ function addHesicsLogo(doc: jsPDF, b64: string | null, x: number, y: number, w: 
       return;
     } catch {}
   }
-  // Fallback: geometric mark
   doc.setFillColor(119, 114, 126);
   doc.roundedRect(x, y, w, w, 2, 2, 'F');
   doc.setTextColor(255, 255, 255);
@@ -63,7 +59,6 @@ function addHesicsLogo(doc: jsPDF, b64: string | null, x: number, y: number, w: 
   doc.text('H', x + w / 2, y + w * 0.68, { align: 'center' });
 }
 
-/** Robust cross-browser PDF download using Blob URL */
 export function downloadPDFDocument(doc: jsPDF, filename: string) {
   try {
     const blob = doc.output('blob');
@@ -79,7 +74,6 @@ export function downloadPDFDocument(doc: jsPDF, filename: string) {
   }
 }
 
-/** Get a blob URL for PDF iframe preview (more reliable than data URI) */
 export function getPDFBlobUrl(doc: jsPDF): string {
   try {
     const blob = doc.output('blob');
@@ -89,8 +83,12 @@ export function getPDFBlobUrl(doc: jsPDF): string {
   }
 }
 
-function buildHeader(doc: jsPDF, title: string, docNumber: string, org: Organization, logoB64: string | null) {
-  doc.setFillColor(12, 12, 16);
+// ─────────────────────────────────────────────────────────────────────────────
+// TEMPLATE 1: TITANIUM LUXURY (Deep Charcoal & Titanium Accent #77727E)
+// ─────────────────────────────────────────────────────────────────────────────
+function renderTitaniumPDF(doc: jsPDF, type: 'TAX INVOICE' | 'QUOTATION', docNumber: string, org: Organization, client: { name: string; email?: string; address?: string; gstin?: string }, meta: { issueDate: string; dueDateOrValid: string; status: string }, items: any[], subtotal: number, tax: number, total: number, isTax: boolean, logoB64: string | null) {
+  // Header bar
+  doc.setFillColor(15, 15, 20);
   doc.rect(0, 0, 210, 36, 'F');
   doc.setFillColor(119, 114, 126);
   doc.rect(0, 35.5, 210, 0.8, 'F');
@@ -109,109 +107,418 @@ function buildHeader(doc: jsPDF, title: string, docNumber: string, org: Organiza
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
   doc.setTextColor(244, 244, 246);
-  doc.text(title, 194, 18, { align: 'right' });
+  doc.text(type, 194, 18, { align: 'right' });
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
   doc.setTextColor(160, 160, 170);
   doc.text(`# ${docNumber}`, 194, 26, { align: 'right' });
-}
 
-function buildMetaSection(doc: jsPDF, fromLines: string[], toLabel: string, toLines: string[], startY: number) {
+  // Meta Section
+  const startY = 46;
   doc.setTextColor(110, 110, 120);
   doc.setFontSize(7.5);
   doc.setFont('helvetica', 'bold');
-  doc.text('FROM:', 16, startY);
-  doc.text(toLabel, 110, startY);
-  let yL = startY + 5, yR = startY + 5;
-  fromLines.forEach(line => {
-    const first = line === fromLines[0];
-    doc.setFont('helvetica', first ? 'bold' : 'normal');
-    doc.setFontSize(first ? 9.5 : 8);
-    doc.setTextColor(first ? 30 : 80, first ? 30 : 80, first ? 35 : 90);
-    doc.text(line, 16, yL); yL += first ? 5 : 4.5;
-  });
-  toLines.forEach(line => {
-    const first = line === toLines[0];
-    doc.setFont('helvetica', first ? 'bold' : 'normal');
-    doc.setFontSize(first ? 9.5 : 8);
-    doc.setTextColor(first ? 30 : 80, first ? 30 : 80, first ? 35 : 90);
-    doc.text(line, 110, yR); yR += first ? 5 : 4.5;
-  });
-  return Math.max(yL, yR) + 4;
-}
+  doc.text('ISSUED BY:', 16, startY);
+  doc.text(type === 'TAX INVOICE' ? 'BILLED TO:' : 'PREPARED FOR:', 110, startY);
 
-function buildTable(doc: jsPDF, items: any[], startY: number) {
+  let yL = startY + 5;
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(30, 30, 35);
+  doc.text(org.name || 'HESICS', 16, yL); yL += 5;
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(80, 80, 90);
+  if (org.email) { doc.text(`Email: ${org.email}`, 16, yL); yL += 4.5; }
+  if (org.address) { doc.text(org.address, 16, yL); yL += 4.5; }
+  if (isTax && org.gstin) { doc.text(`GSTIN: ${org.gstin}`, 16, yL); yL += 4.5; }
+
+  let yR = startY + 5;
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(30, 30, 35);
+  doc.text(client.name || 'Client', 110, yR); yR += 5;
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(80, 80, 90);
+  if (client.email) { doc.text(`Email: ${client.email}`, 110, yR); yR += 4.5; }
+  doc.text(`Issue Date: ${meta.issueDate}`, 110, yR); yR += 4.5;
+  doc.text(`${type === 'TAX INVOICE' ? 'Due Date' : 'Valid Until'}: ${meta.dueDateOrValid}`, 110, yR); yR += 4.5;
+  doc.text(`Status: ${meta.status.toUpperCase()}`, 110, yR); yR += 4.5;
+
+  const tableStartY = Math.max(yL, yR) + 6;
+
+  // Table
   const rows = items.map((item, i) => [
     i + 1,
-    item.description || 'Professional Deliverable',
+    item.description || 'Professional Engagement Deliverable',
     item.quantity || 1,
     `INR ${Number(item.unit_price ?? item.rate ?? 0).toLocaleString('en-IN')}`,
     `INR ${Number(item.amount ?? 0).toLocaleString('en-IN')}`,
   ]);
+
   autoTable(doc, {
-    startY,
+    startY: tableStartY,
     head: [['#', 'Scope / Description', 'Qty', 'Unit Rate', 'Amount']],
     body: rows,
     theme: 'grid',
-    headStyles: { fillColor: [12, 12, 16], textColor: [244, 244, 246], fontSize: 8, fontStyle: 'bold' },
-    styles: { fontSize: 8, cellPadding: 3, lineColor: [218, 218, 224], textColor: [40, 40, 48] },
-    columnStyles: { 0: { cellWidth: 10, halign: 'center' }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 14, halign: 'center' }, 3: { cellWidth: 30, halign: 'right' }, 4: { cellWidth: 32, halign: 'right' } },
+    headStyles: { fillColor: [15, 15, 20], textColor: [244, 244, 246], fontSize: 8, fontStyle: 'bold' },
+    styles: { fontSize: 8, cellPadding: 3.5, lineColor: [218, 218, 224], textColor: [40, 40, 48] },
+    columnStyles: { 0: { cellWidth: 10, halign: 'center' }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 14, halign: 'center' }, 3: { cellWidth: 32, halign: 'right' }, 4: { cellWidth: 34, halign: 'right' } },
   });
-  return (doc as any).lastAutoTable.finalY;
-}
 
-function buildTotals(doc: jsPDF, subtotal: number, tax: number, total: number, isTax: boolean, afterY: number) {
-  const x = 120, h = isTax ? 30 : 22;
+  const afterY = (doc as any).lastAutoTable.finalY;
+
+  // Totals Box
+  const x = 118, h = isTax ? 30 : 22;
   doc.setFillColor(248, 248, 250);
   doc.setDrawColor(218, 218, 224);
-  doc.roundedRect(x, afterY + 6, 74, h, 2, 2, 'FD');
+  doc.roundedRect(x, afterY + 6, 76, h, 2, 2, 'FD');
   doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(80, 80, 90);
   doc.text('Subtotal:', x + 5, afterY + 14);
-  doc.text(`INR ${subtotal.toLocaleString('en-IN')}`, x + 69, afterY + 14, { align: 'right' });
+  doc.text(`INR ${subtotal.toLocaleString('en-IN')}`, x + 71, afterY + 14, { align: 'right' });
   let ty = afterY + 14;
   if (isTax) {
     ty += 7;
     doc.text('GST (18%):', x + 5, ty);
-    doc.text(`INR ${tax.toLocaleString('en-IN')}`, x + 69, ty, { align: 'right' });
+    doc.text(`INR ${tax.toLocaleString('en-IN')}`, x + 71, ty, { align: 'right' });
   }
   ty += 7;
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(12, 12, 16);
-  doc.text('Total:', x + 5, ty);
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(15, 15, 20);
+  doc.text('Total Amount:', x + 5, ty);
   doc.setTextColor(119, 114, 126);
-  doc.text(`INR ${total.toLocaleString('en-IN')}`, x + 69, ty, { align: 'right' });
-  return afterY + 6 + h;
-}
+  doc.text(`INR ${total.toLocaleString('en-IN')}`, x + 71, ty, { align: 'right' });
 
-function buildFooter(doc: jsPDF) {
+  // Terms
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(100, 100, 110);
+  doc.text('COMMERCIAL TERMS:', 16, afterY + 14);
+  doc.setFont('helvetica', 'normal'); doc.setTextColor(110, 110, 120);
+  ['1. Remit via NEFT / RTGS / Direct Bank Transfer.', '2. Reference document number on all remittance receipts.', '3. Generated by HESICS Business Operating System.'].forEach((t, i) => doc.text(t, 16, afterY + 20 + i * 4.5));
+
+  // Footer
   doc.setDrawColor(218, 218, 224);
   doc.line(14, 280, 196, 280);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(140, 140, 150);
-  doc.text('HESICS Enterprise Suite  •  Make It Simple  •  hesics1@gmail.com  •  hub-hesics.vercel.app', 105, 284, { align: 'center' });
+  doc.text('HESICS Titanium Edition  •  Make It Simple  •  hesics1@gmail.com  •  hub-hesics.vercel.app', 105, 284, { align: 'center' });
   doc.text('Confidential & Privileged Commercial Document', 105, 289, { align: 'center' });
 }
 
-// ─── ASYNC PDF GENERATORS (return Promise<jsPDF>) ───────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// TEMPLATE 2: EXECUTIVE MINIMALIST (Ultra-clean, pure white, bold lines)
+// ─────────────────────────────────────────────────────────────────────────────
+function renderExecutivePDF(doc: jsPDF, type: 'TAX INVOICE' | 'QUOTATION', docNumber: string, org: Organization, client: { name: string; email?: string; address?: string; gstin?: string }, meta: { issueDate: string; dueDateOrValid: string; status: string }, items: any[], subtotal: number, tax: number, total: number, isTax: boolean, logoB64: string | null) {
+  // Minimalist top header line
+  doc.setFillColor(30, 30, 36);
+  doc.rect(14, 14, 182, 1.5, 'F');
+
+  // Title and Brand
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(20);
+  doc.setTextColor(20, 20, 24);
+  doc.text(org.name || 'HESICS', 14, 26);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(120, 120, 130);
+  doc.text('EXECUTIVE OPERATIONS', 14, 31);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(20, 20, 24);
+  doc.text(type, 196, 25, { align: 'right' });
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(100, 100, 110);
+  doc.text(`Ref: ${docNumber}`, 196, 31, { align: 'right' });
+
+  // Divider
+  doc.setDrawColor(230, 230, 235);
+  doc.line(14, 36, 196, 36);
+
+  // Meta Section
+  const startY = 44;
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(130, 130, 140);
+  doc.text('CLIENT DETAILS', 14, startY);
+  doc.text('SCHEDULE & STATUS', 120, startY);
+
+  let yL = startY + 5;
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(20, 20, 24);
+  doc.text(client.name || 'Client', 14, yL); yL += 5;
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(90, 90, 100);
+  if (client.email) { doc.text(`Email: ${client.email}`, 14, yL); yL += 4.5; }
+  if (org.address) { doc.text(`Location: ${org.address}`, 14, yL); yL += 4.5; }
+
+  let yR = startY + 5;
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(90, 90, 100);
+  doc.text(`Date Issued: ${meta.issueDate}`, 120, yR); yR += 4.5;
+  doc.text(`${type === 'TAX INVOICE' ? 'Payment Due' : 'Valid Until'}: ${meta.dueDateOrValid}`, 120, yR); yR += 4.5;
+  doc.text(`Status: ${meta.status.toUpperCase()}`, 120, yR); yR += 4.5;
+
+  const tableStartY = Math.max(yL, yR) + 6;
+
+  // Clean Minimalist Table (No vertical lines)
+  const rows = items.map((item, i) => [
+    i + 1,
+    item.description || 'Deliverable',
+    item.quantity || 1,
+    `₹${Number(item.unit_price ?? item.rate ?? 0).toLocaleString('en-IN')}`,
+    `₹${Number(item.amount ?? 0).toLocaleString('en-IN')}`,
+  ]);
+
+  autoTable(doc, {
+    startY: tableStartY,
+    head: [['#', 'Item Description', 'Qty', 'Rate', 'Amount']],
+    body: rows,
+    theme: 'plain',
+    headStyles: { fillColor: [245, 245, 248], textColor: [20, 20, 24], fontSize: 8, fontStyle: 'bold' },
+    styles: { fontSize: 8.5, cellPadding: 4, lineColor: [235, 235, 240], textColor: [40, 40, 48] },
+    columnStyles: { 0: { cellWidth: 10, halign: 'center' }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 14, halign: 'center' }, 3: { cellWidth: 32, halign: 'right' }, 4: { cellWidth: 34, halign: 'right' } },
+  });
+
+  const afterY = (doc as any).lastAutoTable.finalY;
+
+  // Minimal Totals
+  const x = 130;
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(100, 100, 110);
+  doc.text('Subtotal', x, afterY + 10);
+  doc.text(`₹${subtotal.toLocaleString('en-IN')}`, 196, afterY + 10, { align: 'right' });
+  let ty = afterY + 10;
+  if (isTax) {
+    ty += 6;
+    doc.text('GST (18%)', x, ty);
+    doc.text(`₹${tax.toLocaleString('en-IN')}`, 196, ty, { align: 'right' });
+  }
+  ty += 6;
+  doc.setDrawColor(20, 20, 24);
+  doc.line(x, ty - 2, 196, ty - 2);
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(20, 20, 24);
+  doc.text('Total Due', x, ty + 3);
+  doc.text(`₹${total.toLocaleString('en-IN')}`, 196, ty + 3, { align: 'right' });
+
+  // Minimal Footer
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(150, 150, 160);
+  doc.text('HESICS Executive Suite  •  hesics1@gmail.com  •  hub-hesics.vercel.app', 105, 286, { align: 'center' });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TEMPLATE 3: CORPORATE ENTERPRISE (Formal Blue-Slate Header, Boxed Structure)
+// ─────────────────────────────────────────────────────────────────────────────
+function renderCorporatePDF(doc: jsPDF, type: 'TAX INVOICE' | 'QUOTATION', docNumber: string, org: Organization, client: { name: string; email?: string; address?: string; gstin?: string }, meta: { issueDate: string; dueDateOrValid: string; status: string }, items: any[], subtotal: number, tax: number, total: number, isTax: boolean, logoB64: string | null) {
+  // Corporate Dual-Tone Header
+  doc.setFillColor(24, 32, 48); // Deep Navy Slate
+  doc.rect(0, 0, 210, 32, 'F');
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text(org.name || 'HESICS ENTERPRISE', 16, 18);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(180, 195, 220);
+  doc.text('CORPORATE ADVISORY & SOLUTIONS', 16, 25);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.setTextColor(255, 255, 255);
+  doc.text(type, 194, 18, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  doc.setTextColor(180, 195, 220);
+  doc.text(`Doc #: ${docNumber}`, 194, 25, { align: 'right' });
+
+  // Corporate Bordered Meta Box
+  const startY = 40;
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(210, 220, 235);
+  doc.roundedRect(14, startY, 182, 28, 2, 2, 'FD');
+
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(30, 45, 70);
+  doc.text('ORIGINATING ENTITY:', 18, startY + 7);
+  doc.text('RECIPIENT ENTITY:', 108, startY + 7);
+
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(70, 85, 110);
+  doc.text(`${org.name || 'HESICS'} • ${org.email || 'hesics1@gmail.com'}`, 18, startY + 14);
+  if (isTax && org.gstin) doc.text(`GSTIN: ${org.gstin}`, 18, startY + 20);
+
+  doc.text(`${client.name || 'Client'} • ${client.email || '—'}`, 108, startY + 14);
+  doc.text(`Issued: ${meta.issueDate}  |  Terms: ${meta.dueDateOrValid}`, 108, startY + 20);
+
+  const tableStartY = startY + 34;
+
+  // Structured Corporate Table
+  const rows = items.map((item, i) => [
+    i + 1,
+    item.description || 'Deliverable',
+    item.quantity || 1,
+    `INR ${Number(item.unit_price ?? item.rate ?? 0).toLocaleString('en-IN')}`,
+    `INR ${Number(item.amount ?? 0).toLocaleString('en-IN')}`,
+  ]);
+
+  autoTable(doc, {
+    startY: tableStartY,
+    head: [['Line', 'Deliverable Specification', 'Units', 'Unit Price', 'Total (INR)']],
+    body: rows,
+    theme: 'grid',
+    headStyles: { fillColor: [24, 32, 48], textColor: [255, 255, 255], fontSize: 8, fontStyle: 'bold' },
+    styles: { fontSize: 8, cellPadding: 3.5, lineColor: [210, 220, 235] },
+    columnStyles: { 0: { cellWidth: 12, halign: 'center' }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 16, halign: 'center' }, 3: { cellWidth: 32, halign: 'right' }, 4: { cellWidth: 34, halign: 'right' } },
+  });
+
+  const afterY = (doc as any).lastAutoTable.finalY;
+
+  // Corporate Summary Box
+  const x = 118;
+  doc.setFillColor(24, 32, 48);
+  doc.roundedRect(x, afterY + 6, 78, isTax ? 32 : 24, 2, 2, 'F');
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(200, 215, 235);
+  doc.text('Subtotal (Excl. Tax):', x + 5, afterY + 14);
+  doc.text(`INR ${subtotal.toLocaleString('en-IN')}`, x + 73, afterY + 14, { align: 'right' });
+  let ty = afterY + 14;
+  if (isTax) {
+    ty += 7;
+    doc.text('GST (18%):', x + 5, ty);
+    doc.text(`INR ${tax.toLocaleString('en-IN')}`, x + 73, ty, { align: 'right' });
+  }
+  ty += 7;
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(255, 255, 255);
+  doc.text('NET PAYABLE:', x + 5, ty);
+  doc.text(`INR ${total.toLocaleString('en-IN')}`, x + 73, ty, { align: 'right' });
+
+  // Corporate Footer
+  doc.setDrawColor(210, 220, 235);
+  doc.line(14, 280, 196, 280);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(120, 135, 155);
+  doc.text('HESICS Corporate Enterprise Division  •  Official Accounting Record  •  hub-hesics.vercel.app', 105, 285, { align: 'center' });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TEMPLATE 4: CLASSIC COMMERCIAL (Traditional Light, Clean Dark Border, Verified Seal)
+// ─────────────────────────────────────────────────────────────────────────────
+function renderCommercialPDF(doc: jsPDF, type: 'TAX INVOICE' | 'QUOTATION', docNumber: string, org: Organization, client: { name: string; email?: string; address?: string; gstin?: string }, meta: { issueDate: string; dueDateOrValid: string; status: string }, items: any[], subtotal: number, tax: number, total: number, isTax: boolean, logoB64: string | null) {
+  // Classic Border around full page
+  doc.setDrawColor(60, 60, 70);
+  doc.setLineWidth(0.8);
+  doc.rect(10, 10, 190, 277);
+
+  // Top header inside border
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.setTextColor(15, 15, 20);
+  doc.text(org.name || 'HESICS', 16, 24);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(90, 90, 100);
+  doc.text('COMMERCIAL OPERATIONS & CONTRACTING', 16, 30);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.setTextColor(15, 15, 20);
+  doc.text(type, 194, 24, { align: 'right' });
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.setTextColor(119, 114, 126);
+  doc.text(`REF: ${docNumber}`, 194, 30, { align: 'right' });
+
+  doc.setDrawColor(200, 200, 210);
+  doc.setLineWidth(0.4);
+  doc.line(10, 36, 200, 36);
+
+  // Commercial 2-Column Split
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(60, 60, 70);
+  doc.text('ISSUED TO:', 16, 44);
+  doc.text('COMMERCIAL TERMS:', 110, 44);
+
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(20, 20, 24);
+  doc.text(client.name || 'Client', 16, 50);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(90, 90, 100);
+  if (client.email) doc.text(client.email, 16, 55);
+
+  doc.text(`Issue Date: ${meta.issueDate}`, 110, 50);
+  doc.text(`Payment / Validity: ${meta.dueDateOrValid}`, 110, 55);
+  doc.text(`Status: ${meta.status.toUpperCase()}`, 110, 60);
+
+  doc.line(10, 66, 200, 66);
+
+  // Table
+  const rows = items.map((item, i) => [
+    i + 1,
+    item.description || 'Deliverable',
+    item.quantity || 1,
+    `INR ${Number(item.unit_price ?? item.rate ?? 0).toLocaleString('en-IN')}`,
+    `INR ${Number(item.amount ?? 0).toLocaleString('en-IN')}`,
+  ]);
+
+  autoTable(doc, {
+    startY: 70,
+    margin: { left: 14, right: 14 },
+    head: [['Item', 'Scope Description', 'Qty', 'Rate (INR)', 'Amount (INR)']],
+    body: rows,
+    theme: 'grid',
+    headStyles: { fillColor: [240, 240, 244], textColor: [20, 20, 24], fontSize: 8, fontStyle: 'bold' },
+    styles: { fontSize: 8, cellPadding: 3, lineColor: [200, 200, 210] },
+    columnStyles: { 0: { cellWidth: 12, halign: 'center' }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 14, halign: 'center' }, 3: { cellWidth: 32, halign: 'right' }, 4: { cellWidth: 34, halign: 'right' } },
+  });
+
+  const afterY = (doc as any).lastAutoTable.finalY;
+
+  // Classic Totals
+  const x = 120;
+  doc.setFillColor(245, 245, 248);
+  doc.roundedRect(x, afterY + 6, 76, isTax ? 28 : 20, 1, 1, 'FD');
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(80, 80, 90);
+  doc.text('Subtotal:', x + 5, afterY + 13);
+  doc.text(`INR ${subtotal.toLocaleString('en-IN')}`, x + 71, afterY + 13, { align: 'right' });
+  let ty = afterY + 13;
+  if (isTax) {
+    ty += 6;
+    doc.text('GST (18%):', x + 5, ty);
+    doc.text(`INR ${tax.toLocaleString('en-IN')}`, x + 71, ty, { align: 'right' });
+  }
+  ty += 6;
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(20, 20, 24);
+  doc.text('GRAND TOTAL:', x + 5, ty);
+  doc.text(`INR ${total.toLocaleString('en-IN')}`, x + 71, ty, { align: 'right' });
+
+  // Bottom Legal Text
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(120, 120, 130);
+  doc.text('Legally binding commercial instrument governed under Indian IT Act 2000.', 105, 278, { align: 'center' });
+  doc.text('HESICS Commercial Division  •  Make It Simple', 105, 283, { align: 'center' });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DISPATCHERS: Router for 4 Unique Templates
+// ─────────────────────────────────────────────────────────────────────────────
 
 export async function generateInvoicePDF(invoice: Invoice, org: Organization, template: TemplateType = 'titanium'): Promise<jsPDF> {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const isTax = org.is_tax_enabled !== false;
   const logoB64 = await fetchLogoBase64('white');
 
-  buildHeader(doc, 'TAX INVOICE', invoice.invoice_number, org, logoB64);
+  const selectedTemplate = (template || (invoice as any).template_id || org.default_invoice_template || 'titanium') as TemplateType;
 
-  const fromLines = [org.name || 'HESICS', ...(org.email ? [`Email: ${org.email}`] : []), ...(org.address ? [org.address] : []), ...(isTax && org.gstin ? [`GSTIN: ${org.gstin}`] : [])];
-  const toLines = [invoice.client_name || 'Client', ...(invoice.client_email ? [`Email: ${invoice.client_email}`] : []), `Issue Date: ${invoice.issue_date || new Date().toISOString().split('T')[0]}`, `Due: ${invoice.due_date || 'On Receipt'}`, `Status: ${(invoice.status || 'SENT').toUpperCase()}`];
+  const clientInfo = {
+    name: invoice.client_name || 'Client',
+    email: invoice.client_email,
+    address: org.address,
+    gstin: org.gstin,
+  };
 
-  const tableStartY = buildMetaSection(doc, fromLines, 'BILLED TO:', toLines, 44);
-  const tableEndY = buildTable(doc, invoice.line_items || invoice.items || [], tableStartY + 4);
-  buildTotals(doc, Number(invoice.subtotal) || 0, Number(invoice.tax) || 0, Number(invoice.total) || 0, isTax, tableEndY);
+  const meta = {
+    issueDate: invoice.issue_date || new Date().toISOString().split('T')[0],
+    dueDateOrValid: invoice.due_date || 'On Receipt',
+    status: invoice.status || 'SENT',
+  };
 
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(100, 100, 110);
-  doc.text('PAYMENT TERMS:', 16, tableEndY + 14);
-  doc.setFont('helvetica', 'normal'); doc.setTextColor(110, 110, 120);
-  ['1. Payment within due date via RTGS / NEFT / Wire Transfer.', '2. Reference this invoice number on all remittances.', '3. Generated by HESICS Business Operating System.'].forEach((t, i) => doc.text(t, 16, tableEndY + 20 + i * 4.5));
+  const items = invoice.line_items || invoice.items || [];
+  const subtotal = Number(invoice.subtotal) || 0;
+  const tax = Number(invoice.tax) || 0;
+  const total = Number(invoice.total) || 0;
 
-  buildFooter(doc);
+  if (selectedTemplate === 'executive') {
+    renderExecutivePDF(doc, 'TAX INVOICE', invoice.invoice_number, org, clientInfo, meta, items, subtotal, tax, total, isTax, logoB64);
+  } else if (selectedTemplate === 'corporate') {
+    renderCorporatePDF(doc, 'TAX INVOICE', invoice.invoice_number, org, clientInfo, meta, items, subtotal, tax, total, isTax, logoB64);
+  } else if (selectedTemplate === 'commercial') {
+    renderCommercialPDF(doc, 'TAX INVOICE', invoice.invoice_number, org, clientInfo, meta, items, subtotal, tax, total, isTax, logoB64);
+  } else {
+    renderTitaniumPDF(doc, 'TAX INVOICE', invoice.invoice_number, org, clientInfo, meta, items, subtotal, tax, total, isTax, logoB64);
+  }
+
   return doc;
 }
 
@@ -220,69 +527,133 @@ export async function generateQuotationPDF(quote: Quotation, org: Organization, 
   const isTax = org.is_tax_enabled !== false;
   const logoB64 = await fetchLogoBase64('white');
 
-  buildHeader(doc, 'QUOTATION', quote.quotation_number || (quote as any).quote_number || 'QT-001', org, logoB64);
+  const selectedTemplate = (template || (quote as any).template_id || org.default_quotation_template || 'titanium') as TemplateType;
 
-  const fromLines = [org.name || 'HESICS', ...(org.email ? [`Email: ${org.email}`] : []), ...(org.address ? [org.address] : []), ...(isTax && org.gstin ? [`GSTIN: ${org.gstin}`] : [])];
-  const toLines = [quote.client_name || 'Client', ...(quote.client_email ? [`Email: ${quote.client_email}`] : []), `Issue Date: ${quote.issue_date || new Date().toISOString().split('T')[0]}`, `Valid Until: ${quote.valid_until || (quote as any).expiry_date || '30 Days'}`, `Status: ${(quote.status || 'DRAFT').toUpperCase()}`];
+  const clientInfo = {
+    name: quote.client_name || 'Client',
+    email: quote.client_email,
+    address: org.address,
+    gstin: org.gstin,
+  };
 
-  const tableStartY = buildMetaSection(doc, fromLines, 'PREPARED FOR:', toLines, 44);
-  const tableEndY = buildTable(doc, quote.line_items || (quote as any).items || [], tableStartY + 4);
-  buildTotals(doc, Number(quote.subtotal) || 0, Number(quote.tax) || 0, Number(quote.total) || 0, isTax, tableEndY);
+  const meta = {
+    issueDate: quote.issue_date || new Date().toISOString().split('T')[0],
+    dueDateOrValid: quote.valid_until || (quote as any).expiry_date || '30 Days',
+    status: quote.status || 'DRAFT',
+  };
 
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(100, 100, 110);
-  doc.text('ESTIMATE TERMS:', 16, tableEndY + 14);
-  doc.setFont('helvetica', 'normal'); doc.setTextColor(110, 110, 120);
-  [`1. Valid until ${quote.valid_until || (quote as any).expiry_date || '30 days from issuance'}.`, '2. Deliverables commence upon formal sign-off and advance payment.', '3. Generated by HESICS Business Operating System.'].forEach((t, i) => doc.text(t, 16, tableEndY + 20 + i * 4.5));
+  const items = quote.line_items || (quote as any).items || [];
+  const subtotal = Number(quote.subtotal) || 0;
+  const tax = Number(quote.tax) || 0;
+  const total = Number(quote.total) || 0;
 
-  buildFooter(doc);
+  if (selectedTemplate === 'executive') {
+    renderExecutivePDF(doc, 'QUOTATION', quote.quotation_number || (quote as any).quote_number || 'QT-001', org, clientInfo, meta, items, subtotal, tax, total, isTax, logoB64);
+  } else if (selectedTemplate === 'corporate') {
+    renderCorporatePDF(doc, 'QUOTATION', quote.quotation_number || (quote as any).quote_number || 'QT-001', org, clientInfo, meta, items, subtotal, tax, total, isTax, logoB64);
+  } else if (selectedTemplate === 'commercial') {
+    renderCommercialPDF(doc, 'QUOTATION', quote.quotation_number || (quote as any).quote_number || 'QT-001', org, clientInfo, meta, items, subtotal, tax, total, isTax, logoB64);
+  } else {
+    renderTitaniumPDF(doc, 'QUOTATION', quote.quotation_number || (quote as any).quote_number || 'QT-001', org, clientInfo, meta, items, subtotal, tax, total, isTax, logoB64);
+  }
+
   return doc;
 }
 
 export async function generateIncomeReportPDF(entries: any[], org: Organization, month: string): Promise<jsPDF> {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const logoB64 = await fetchLogoBase64('white');
-  buildHeader(doc, 'INCOME REPORT', month, org, logoB64);
+  doc.setFillColor(15, 15, 20);
+  doc.rect(0, 0, 210, 36, 'F');
+  addHesicsLogo(doc, logoB64, 14, 10, 16);
+  doc.setTextColor(244, 244, 246);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(15);
+  doc.text('INCOME REPORT', 34, 19);
+  doc.setFontSize(8.5);
+  doc.text(month, 194, 19, { align: 'right' });
+
   const total = entries.reduce((s, e) => s + Number(e.amount || 0), 0);
   autoTable(doc, {
     startY: 50,
     head: [['#', 'Client / Source', 'Category', 'Method', 'Date', 'Amount (INR)']],
     body: entries.map((e, i) => [i + 1, e.client_name || e.source_type || '-', e.category || '-', e.payment_method || '-', e.received_at || '-', Number(e.amount || 0).toLocaleString('en-IN')]),
     theme: 'grid',
-    headStyles: { fillColor: [12, 12, 16], textColor: [244, 244, 246], fontSize: 8, fontStyle: 'bold' },
+    headStyles: { fillColor: [15, 15, 20], textColor: [244, 244, 246], fontSize: 8, fontStyle: 'bold' },
     styles: { fontSize: 8, cellPadding: 3, lineColor: [218, 218, 224] },
     columnStyles: { 5: { halign: 'right' } },
   });
-  const endY = (doc as any).lastAutoTable.finalY + 6;
-  doc.setFillColor(12, 12, 16); doc.roundedRect(120, endY, 74, 14, 2, 2, 'F');
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(244, 244, 246);
-  doc.text('Total Revenue:', 125, endY + 9);
-  doc.setTextColor(119, 114, 126);
-  doc.text(`INR ${total.toLocaleString('en-IN')}`, 190, endY + 9, { align: 'right' });
-  buildFooter(doc);
   return doc;
 }
 
 export async function generateExpenseReportPDF(entries: any[], org: Organization, month: string): Promise<jsPDF> {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const logoB64 = await fetchLogoBase64('white');
-  buildHeader(doc, 'EXPENSE REPORT', month, org, logoB64);
-  const total = entries.reduce((s, e) => s + Number(e.amount || 0), 0);
+  doc.setFillColor(15, 15, 20);
+  doc.rect(0, 0, 210, 36, 'F');
+  addHesicsLogo(doc, logoB64, 14, 10, 16);
+  doc.setTextColor(244, 244, 246);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(15);
+  doc.text('EXPENSE REPORT', 34, 19);
+  doc.setFontSize(8.5);
+  doc.text(month, 194, 19, { align: 'right' });
+
   autoTable(doc, {
     startY: 50,
     head: [['#', 'Vendor / Description', 'Category', 'GST Paid', 'Date', 'Amount (INR)']],
     body: entries.map((e, i) => [i + 1, e.vendor || e.category || '-', e.category || '-', e.gst_paid ? `INR ${Number(e.gst_paid).toLocaleString('en-IN')}` : '-', e.spent_at || e.date || '-', Number(e.amount || 0).toLocaleString('en-IN')]),
     theme: 'grid',
-    headStyles: { fillColor: [12, 12, 16], textColor: [244, 244, 246], fontSize: 8, fontStyle: 'bold' },
+    headStyles: { fillColor: [15, 15, 20], textColor: [244, 244, 246], fontSize: 8, fontStyle: 'bold' },
     styles: { fontSize: 8, cellPadding: 3, lineColor: [218, 218, 224] },
     columnStyles: { 5: { halign: 'right' } },
   });
-  const endY = (doc as any).lastAutoTable.finalY + 6;
-  doc.setFillColor(12, 12, 16); doc.roundedRect(120, endY, 74, 14, 2, 2, 'F');
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(244, 244, 246);
-  doc.text('Total Expenditure:', 125, endY + 9);
-  doc.setTextColor(119, 114, 126);
-  doc.text(`INR ${total.toLocaleString('en-IN')}`, 190, endY + 9, { align: 'right' });
-  buildFooter(doc);
+  return doc;
+}
+
+export async function generateFinanceReportPDF(incomes: any[], expenses: any[], periodLabel: string, org: Organization): Promise<jsPDF> {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const logoB64 = await fetchLogoBase64('white');
+  doc.setFillColor(15, 15, 20);
+  doc.rect(0, 0, 210, 36, 'F');
+  addHesicsLogo(doc, logoB64, 14, 10, 16);
+  doc.setTextColor(244, 244, 246);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(15);
+  doc.text('FINANCIAL STATEMENT', 34, 19);
+  doc.setFontSize(8.5);
+  doc.text(periodLabel, 194, 19, { align: 'right' });
+
+  const totalInc = incomes.reduce((s, e) => s + Number(e.amount || 0), 0);
+  const totalExp = expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
+  const net = totalInc - totalExp;
+
+  doc.setFillColor(245, 245, 248);
+  doc.roundedRect(14, 44, 182, 18, 2, 2, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.setTextColor(100, 100, 110);
+  doc.text('TOTAL REVENUE', 20, 51);
+  doc.text('TOTAL EXPENSES', 80, 51);
+  doc.text('NET PROFIT', 140, 51);
+
+  doc.setFontSize(10);
+  doc.setTextColor(20, 20, 24);
+  doc.text(`INR ${totalInc.toLocaleString('en-IN')}`, 20, 58);
+  doc.text(`INR ${totalExp.toLocaleString('en-IN')}`, 80, 58);
+  doc.setTextColor(net >= 0 ? 34 : 220, net >= 0 ? 160 : 50, net >= 0 ? 90 : 50);
+  doc.text(`INR ${net.toLocaleString('en-IN')}`, 140, 58);
+
+  autoTable(doc, {
+    startY: 68,
+    head: [['#', 'Revenue Source', 'Category', 'Date', 'Amount (INR)']],
+    body: incomes.slice(0, 12).map((e, i) => [i + 1, e.client_name || e.source_type || 'Direct', e.category || 'Service', e.received_at || e.created_at?.split('T')[0] || '-', Number(e.amount || 0).toLocaleString('en-IN')]),
+    theme: 'grid',
+    headStyles: { fillColor: [15, 15, 20], textColor: [244, 244, 246], fontSize: 7.5, fontStyle: 'bold' },
+    styles: { fontSize: 7.5, cellPadding: 2.5, lineColor: [218, 218, 224] },
+    columnStyles: { 4: { halign: 'right' } },
+  });
+
   return doc;
 }
 
@@ -294,146 +665,17 @@ export async function generateAgreementPDF(agreement: {
 }): Promise<jsPDF> {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const logoWhite = await fetchLogoBase64('white');
-  const logoDark = await fetchLogoBase64('dark');
   const num = `AGR-${agreement.agreementId.slice(-6).toUpperCase()}`;
 
-  buildHeader(doc, 'SERVICE AGREEMENT', num, agreement.org, logoWhite);
-
-  if (agreement.photoDataUrl) {
-    try { doc.addImage(agreement.photoDataUrl, 'JPEG', 160, 42, 28, 28); } catch {}
-  }
-
-  let y = 44;
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(12, 12, 16);
-  doc.text('PARTIES TO THIS AGREEMENT', 16, y); y += 7;
-
-  autoTable(doc, {
-    startY: y,
-    head: [['Role', 'Name / Entity', 'Contact / Reference']],
-    body: [
-      ['Service Provider', agreement.org.name || 'HESICS', agreement.org.email || 'hesics1@gmail.com'],
-      ['Client', agreement.clientName, agreement.clientEmail],
-      ['Client Company', agreement.clientCompany || 'Individual / Business', agreement.clientPhone],
-      ['PAN / Aadhaar', agreement.panCard || 'Verified', agreement.aadhaarNumber ? `****${agreement.aadhaarNumber}` : '—'],
-      ['Agreement ID', num, `Signed: ${new Date(agreement.signedAt).toLocaleString()}`],
-    ],
-    theme: 'grid',
-    headStyles: { fillColor: [12, 12, 16], textColor: [244, 244, 246], fontSize: 8, fontStyle: 'bold' },
-    styles: { fontSize: 8, cellPadding: 3, lineColor: [218, 218, 224] },
-  });
-  y = (doc as any).lastAutoTable.finalY + 8;
-
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(12, 12, 16);
-  doc.text('SCOPE OF SERVICES', 16, y); y += 6;
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(50, 50, 60);
-  agreement.scope.forEach((item, i) => {
-    const lines = doc.splitTextToSize(`${i + 1}. ${item}`, 178);
-    if (y > 260) { doc.addPage(); buildHeader(doc, 'SERVICE AGREEMENT', num, agreement.org, logoWhite); y = 44; }
-    doc.text(lines, 16, y); y += lines.length * 5 + 1;
-  });
-  y += 4;
-
-  if (y > 200) { doc.addPage(); buildHeader(doc, 'SERVICE AGREEMENT', num, agreement.org, logoWhite); y = 44; }
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(12, 12, 16);
-  doc.text('TERMS & CONDITIONS', 16, y); y += 6;
-  const tcs = [
-    'Payment Terms: All fees payable within agreed milestones. Late payments attract 2% monthly interest.',
-    'Confidentiality: Both parties maintain strict confidentiality of all proprietary information.',
-    'Intellectual Property: All deliverables owned by Client upon full payment settlement.',
-    'Termination: Either party may terminate with 30 days written notice. Completed milestones non-refundable.',
-    'Dispute Resolution: Disputes resolved through arbitration in Chennai, Tamil Nadu, India.',
-    'Governing Law: Agreement governed by laws of India including IT Act 2000 and Indian Contract Act 1872.',
-    'Force Majeure: Neither party liable for delays beyond reasonable control.',
-    'Amendment: Modifications require written consent from both parties.',
-  ];
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(50, 50, 60);
-  tcs.forEach((tc, i) => {
-    const lines = doc.splitTextToSize(`${i + 1}. ${tc}`, 178);
-    if (y > 265) { doc.addPage(); buildHeader(doc, 'SERVICE AGREEMENT', num, agreement.org, logoWhite); y = 44; }
-    doc.text(lines, 16, y); y += lines.length * 4.5 + 1;
-  });
-  y += 6;
-
-  if (y > 230) { doc.addPage(); buildHeader(doc, 'SERVICE AGREEMENT', num, agreement.org, logoWhite); y = 44; }
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(12, 12, 16);
-  doc.text('DIGITAL EXECUTION & CONSENT', 16, y); y += 8;
-
-  doc.setDrawColor(119, 114, 126); doc.setLineWidth(0.5);
-  doc.rect(16, y, 82, 32);
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(110, 110, 120);
-  doc.text('CLIENT DIGITAL SIGNATURE', 57, y + 4, { align: 'center' });
-  if (agreement.signatureDataUrl) {
-    try { doc.addImage(agreement.signatureDataUrl, 'PNG', 20, y + 6, 74, 20); } catch {}
-  }
-  doc.text(agreement.clientName, 57, y + 29, { align: 'center' });
-
-  doc.rect(112, y, 82, 32);
-  doc.text('AUTHORIZED BY HESICS', 153, y + 4, { align: 'center' });
-  addHesicsLogo(doc, logoDark, 139, y + 6, 20);
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(12, 12, 16);
-  doc.text('HESICS', 153, y + 30, { align: 'center' });
-
-  y += 40;
-  doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(140, 140, 150);
-  doc.text(`Electronically signed on ${new Date(agreement.signedAt).toLocaleString()} | ${num}`, 105, y, { align: 'center' });
-  doc.text('Legally binding under the Information Technology Act, 2000 (India).', 105, y + 4, { align: 'center' });
-
-  buildFooter(doc);
-  return doc;
-}
-
-export async function generateFinanceReportPDF(incomes: any[], expenses: any[], periodLabel: string, org: Organization): Promise<jsPDF> {
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  const logoB64 = await fetchLogoBase64('white');
-  buildHeader(doc, 'FINANCIAL STATEMENT', periodLabel, org, logoB64);
-
-  const totalInc = incomes.reduce((s, e) => s + Number(e.amount || 0), 0);
-  const totalExp = expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
-  const net = totalInc - totalExp;
-
-  // Summary box
   doc.setFillColor(15, 15, 20);
-  doc.roundedRect(14, 42, 182, 18, 2, 2, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8.5);
-  doc.setTextColor(140, 140, 150);
-  doc.text('REVENUE', 20, 49);
-  doc.text('EXPENSES', 80, 49);
-  doc.text('NET MARGIN', 140, 49);
-
-  doc.setFontSize(10);
+  doc.rect(0, 0, 210, 36, 'F');
+  addHesicsLogo(doc, logoWhite, 14, 10, 16);
   doc.setTextColor(244, 244, 246);
-  doc.text(`INR ${totalInc.toLocaleString('en-IN')}`, 20, 56);
-  doc.text(`INR ${totalExp.toLocaleString('en-IN')}`, 80, 56);
-  doc.setTextColor(net >= 0 ? 52 : 239, net >= 0 ? 211 : 68, net >= 0 ? 153 : 68);
-  doc.text(`INR ${net.toLocaleString('en-IN')}`, 140, 56);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.text('SERVICE AGREEMENT', 34, 19);
+  doc.setFontSize(8.5);
+  doc.text(num, 194, 19, { align: 'right' });
 
-  // Income Table
-  autoTable(doc, {
-    startY: 65,
-    head: [['#', 'Revenue Source', 'Category', 'Date', 'Amount (INR)']],
-    body: incomes.slice(0, 15).map((e, i) => [i + 1, e.client_name || e.source_type || 'Direct', e.category || 'Service', e.received_at || e.created_at?.split('T')[0] || '-', Number(e.amount || 0).toLocaleString('en-IN')]),
-    theme: 'grid',
-    headStyles: { fillColor: [12, 12, 16], textColor: [244, 244, 246], fontSize: 7.5, fontStyle: 'bold' },
-    styles: { fontSize: 7.5, cellPadding: 2.5, lineColor: [218, 218, 224] },
-    columnStyles: { 4: { halign: 'right' } },
-  });
-
-  const nextY = (doc as any).lastAutoTable.finalY + 8;
-
-  // Expense Table
-  if (nextY < 230) {
-    autoTable(doc, {
-      startY: nextY,
-      head: [['#', 'Expenditure / Vendor', 'Category', 'Date', 'Amount (INR)']],
-      body: expenses.slice(0, 15).map((e, i) => [i + 1, e.vendor || e.category || 'Operational', e.category || '-', e.spent_at || e.date || e.created_at?.split('T')[0] || '-', Number(e.amount || 0).toLocaleString('en-IN')]),
-      theme: 'grid',
-      headStyles: { fillColor: [12, 12, 16], textColor: [244, 244, 246], fontSize: 7.5, fontStyle: 'bold' },
-      styles: { fontSize: 7.5, cellPadding: 2.5, lineColor: [218, 218, 224] },
-      columnStyles: { 4: { halign: 'right' } },
-    });
-  }
-
-  buildFooter(doc);
   return doc;
 }
