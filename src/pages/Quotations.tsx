@@ -4,7 +4,7 @@ import {
   Plus, FileText, Download, CheckCircle2,
   Trash2, Edit3, ArrowRight, DollarSign, FileSpreadsheet, Eye
 } from 'lucide-react';
-import { db } from '../lib/firebaseDb';
+import { db } from '../lib/db/invoices';
 import { Quotation, QuotationStatus, User } from '../lib/types';
 import { QuotationModal } from '../components/invoices/QuotationModal';
 import { generateQuotationPDF, TemplateType } from '../lib/pdfEngine';

@@ -5,7 +5,7 @@ import {
   DollarSign, TrendingUp, TrendingDown, Plus,
   Trash2, FileSpreadsheet, Calendar, Percent
 } from 'lucide-react';
-import { db } from '../lib/firebaseDb';
+import { db } from '../lib/db/finance';
 import { User, IncomeEntry, ExpenseEntry } from '../lib/types';
 import { IncomeModal } from '../components/finance/IncomeModal';
 import { ExpenseModal } from '../components/finance/ExpenseModal';

@@ -1,6 +1,6 @@
 ﻿import React, { useState } from 'react';
 import { X, CalendarClock } from 'lucide-react';
-import { db } from '../../lib/firebaseDb';
+import { db } from '../../lib/db/activities';
 import { ActivityType, User as UserType } from '../../lib/types';
 import { DatePicker } from '../common/DatePicker';
 import { CustomSelect, Option } from '../common/CustomSelect';

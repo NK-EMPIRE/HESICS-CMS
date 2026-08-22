@@ -1,6 +1,6 @@
 ﻿import React, { useState } from 'react';
 import { X, DollarSign, Building2, User as UserIcon } from 'lucide-react';
-import { db } from '../../lib/firebaseDb';
+import { db } from '../../lib/db/finance';
 import { User as UserType } from '../../lib/types';
 import { DatePicker } from '../common/DatePicker';
 import { CustomSelect, Option } from '../common/CustomSelect';

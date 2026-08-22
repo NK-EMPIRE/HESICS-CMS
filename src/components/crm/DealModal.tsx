@@ -1,6 +1,6 @@
 ﻿import React, { useState } from 'react';
 import { X, Target } from 'lucide-react';
-import { db } from '../../lib/firebaseDb';
+import { db } from '../../lib/db/deals';
 import { Deal, DealStage, User as UserType } from '../../lib/types';
 import { DatePicker } from '../common/DatePicker';
 import { CustomSelect, Option } from '../common/CustomSelect';

@@ -13,7 +13,7 @@ import {
   User as FirebaseUser
 } from 'firebase/auth';
 import { auth, isFirebaseConfigured } from './firebase';
-import { db } from './firebaseDb';
+import { db } from './db/team';
 import type { User, UserHierarchy } from './types';
 
 export interface AuthSession {

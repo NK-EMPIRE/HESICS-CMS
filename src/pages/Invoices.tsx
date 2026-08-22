@@ -4,7 +4,7 @@ import {
   Plus, Receipt, Download, CheckCircle2,
   Trash2, Edit3, Clock, DollarSign, FileSpreadsheet, Eye
 } from 'lucide-react';
-import { db } from '../lib/firebaseDb';
+import { db } from '../lib/db/invoices';
 import { Invoice, InvoiceStatus, User } from '../lib/types';
 import { InvoiceModal } from '../components/invoices/InvoiceModal';
 import { generateInvoicePDF, TemplateType } from '../lib/pdfEngine';

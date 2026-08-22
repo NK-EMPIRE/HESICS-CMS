@@ -3,7 +3,7 @@ import {
   Plus, Calendar, Target, Pencil, Trash2,
   Sparkles, ArrowRight, HelpCircle, X
 } from 'lucide-react';
-import { db } from '../lib/firebaseDb';
+import { db } from '../lib/db/deals';
 import { Deal, DealStage, User } from '../lib/types';
 import { canPerform } from '../lib/rbac';
 import { DealModal } from '../components/crm/DealModal';

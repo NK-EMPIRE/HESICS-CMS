@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Plus, Trash2, Send, Download, FileText, Sparkles, Eye } from 'lucide-react';
-import { db } from '../../lib/firebaseDb';
+import { db } from '../../lib/db/invoices';
 import { Quotation, QuotationStatus, LineItem, User as UserType, HesicsService } from '../../lib/types';
 import { DatePicker } from '../common/DatePicker';
 import { CustomSelect, Option } from '../common/CustomSelect';

@@ -6,7 +6,7 @@ import {
   Trash2, Edit3, UserCheck, MessageSquare,
   Download, Link2
 } from 'lucide-react';
-import { db } from '../lib/firebaseDb';
+import { db } from '../lib/db/clients';
 import { Client, ClientStatus, User, Activity } from '../lib/types';
 import { ClientModal } from '../components/crm/ClientModal';
 import { ActivityModal } from '../components/crm/ActivityModal';

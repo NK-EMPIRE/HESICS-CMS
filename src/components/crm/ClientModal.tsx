@@ -1,6 +1,6 @@
 ﻿import React, { useState } from 'react';
 import { X, Building2, Briefcase } from 'lucide-react';
-import { db } from '../../lib/firebaseDb';
+import { db } from '../../lib/db/clients';
 import { Client, ClientStatus, User } from '../../lib/types';
 import { CustomSelect, Option } from '../common/CustomSelect';
 import { showToast } from '../common/Toast';

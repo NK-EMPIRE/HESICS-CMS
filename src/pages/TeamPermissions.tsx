@@ -5,7 +5,7 @@ import {
   UserX, Pencil, X, ChevronDown, Plus, Briefcase,
   Layers, Lock, Check, Mail, Send
 } from 'lucide-react';
-import { db } from '../lib/firebaseDb';
+import { db } from '../lib/db/team';
 import { PermissionKey, User, UserHierarchy, Role } from '../lib/types';
 import {
   isAdminOrAbove, canManageUser, getAllowedRoleTiers,
