@@ -1,3 +1,4 @@
+import { Analytics } from '@vercel/analytics/react';
 import { Meetings } from './pages/Meetings';
 ﻿import React, { useState, useEffect } from 'react';
 import { AppShell } from './components/layout/AppShell';
@@ -87,9 +88,12 @@ export function App() {
   };
 
   return (
-    <AppShell currentTab={currentTab} onTabChange={setCurrentTab} activeUser={activeUser} onLogout={async () => { await signOut(); setActiveUser(null); setCurrentTab('dashboard'); }}>
-      {renderContent()}
-    </AppShell>
+    <>
+      <AppShell currentTab={currentTab} onTabChange={setCurrentTab} activeUser={activeUser} onLogout={async () => { await signOut(); setActiveUser(null); setCurrentTab('dashboard'); }}>
+        {renderContent()}
+      </AppShell>
+      <Analytics />
+    </>
   );
 }
 
