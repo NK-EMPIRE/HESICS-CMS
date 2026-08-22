@@ -16,10 +16,9 @@ const requiredEnvVars = [
 const missingVars = requiredEnvVars.filter((key) => !import.meta.env[key]);
 
 if (missingVars.length > 0) {
-  throw new Error(
-    `[HESICS Firebase Startup Error] Missing required environment variables: ${missingVars.join(", ")}. ` +
-      `Please configure these in your .env or Vercel project settings.`,
-  );
+  const errorMsg = `Firebase configuration missing: Missing required environment variables [${missingVars.join(", ")}]. Please add these in your Vercel Project Settings -> Environment Variables and redeploy.`;
+  console.error("[HESICS Firebase Error]", errorMsg);
+  throw new Error(errorMsg);
 }
 
 export const firebaseConfig = {
