@@ -1,9 +1,17 @@
+import React, { useState, useEffect } from 'react';
+import {
+  HashRouter,
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+  useParams,
+} from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
-import { Meetings } from './pages/Meetings';
-﻿import React, { useState, useEffect } from 'react';
 import { AppShell } from './components/layout/AppShell';
 import { Dashboard } from './pages/Dashboard';
 import { Clients } from './pages/Clients';
+import { ClientDetail } from './pages/ClientDetail';
 import { DealsKanban } from './pages/DealsKanban';
 import { Finance } from './pages/Finance';
 import { Quotations } from './pages/Quotations';
@@ -13,36 +21,34 @@ import { Settings } from './pages/Settings';
 import { PrivateSpace } from './pages/PrivateSpace';
 import { AuditLogs } from './pages/AuditLogs';
 import { Agreements } from './pages/Agreements';
+import { Meetings } from './pages/Meetings';
 import { SignAgreement } from './pages/SignAgreement';
 import { Login } from './pages/Login';
-import { db } from './lib/firebaseDb';
 import { getLocalSession, setLocalSession, signOut, onAuthStateChange } from './lib/firebaseAuth';
 import { User } from './lib/types';
 
-// Parse hash route for public sign portal
-function getHashRoute(): { route: string; param?: string } {
-  const hash = window.location.hash.replace('#', '');
-  if (hash.startsWith('/sign-agreement/')) {
-    return { route: 'sign-agreement', param: hash.replace('/sign-agreement/', '') };
-  }
-  return { route: '' };
+// ClientDetail wrapper extracting :clientId from route params
+function ClientDetailRouteWrapper({ activeUser }: { activeUser: User }) {
+  const { clientId } = useParams<{ clientId: string }>();
+  const navigate = useNavigate();
+  return (
+    <ClientDetail
+      clientId={clientId || ''}
+      activeUser={activeUser}
+      onBack={() => navigate('/clients')}
+    />
+  );
 }
 
-export function App() {
-  const [currentTab, setCurrentTab] = useState('dashboard');
-  const [activeUser, setActiveUser] = useState<User | null>(() => getLocalSession());
-  const [hashRoute, setHashRoute] = useState(getHashRoute);
+// SignAgreement wrapper extracting :agreementId
+function SignAgreementRouteWrapper() {
+  const { agreementId } = useParams<{ agreementId: string }>();
+  return <SignAgreement agreementId={agreementId || ''} />;
+}
 
-  useEffect(() => {
-    const handleHash = () => setHashRoute(getHashRoute());
-    window.addEventListener('hashchange', handleHash);
-    return () => window.removeEventListener('hashchange', handleHash);
-  }, []);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChange((user) => { if (user) setActiveUser(user); });
-    return unsubscribe;
-  }, []);
+// Keyboard shortcuts listener component (inside Router context)
+function KeyboardShortcuts() {
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -50,50 +56,85 @@ export function App() {
       if (el && ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       switch (e.key.toLowerCase()) {
-        case 'c': setCurrentTab('clients'); break;
-        case 'd': setCurrentTab('deals'); break;
-        case 'f': setCurrentTab('finance'); break;
-        case 'q': setCurrentTab('quotations'); break;
+        case 'c': navigate('/clients'); break;
+        case 'd': navigate('/deals'); break;
+        case 'f': navigate('/finance'); break;
+        case 'q': navigate('/quotations'); break;
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [navigate]);
+
+  return null;
+}
+
+export function App() {
+  const [activeUser, setActiveUser] = useState<User | null>(() => getLocalSession());
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChange((user) => {
+      if (user) setActiveUser(user);
+    });
+    return unsubscribe;
   }, []);
 
-  // Public e-sign portal — no auth required
-  if (hashRoute.route === 'sign-agreement' && hashRoute.param) {
-    return <SignAgreement agreementId={hashRoute.param} />;
-  }
-
-  if (!activeUser) {
-    return <Login onLogin={(user) => { setActiveUser(user); setLocalSession(user); }} />;
-  }
-
-  const renderContent = () => {
-    switch (currentTab) {
-      case 'dashboard':    return <Dashboard activeUser={activeUser} onNavigate={setCurrentTab} />;
-      case 'private_space':return <PrivateSpace activeUser={activeUser} />;
-      case 'clients':      return <Clients activeUser={activeUser} />;
-      case 'deals':        return <DealsKanban activeUser={activeUser} />;
-      case 'meetings':     return <Meetings activeUser={activeUser} />;
-      case 'finance':      return <Finance activeUser={activeUser} />;
-      case 'quotations':   return <Quotations activeUser={activeUser} />;
-      case 'invoices':     return <Invoices activeUser={activeUser} />;
-      case 'agreements':   return <Agreements activeUser={activeUser} />;
-      case 'team':         return <TeamPermissions activeUser={activeUser} />;
-      case 'audit_logs':   return <AuditLogs activeUser={activeUser} />;
-      case 'settings':     return <Settings activeUser={activeUser} />;
-      default:             return <Dashboard activeUser={activeUser} onNavigate={setCurrentTab} />;
-    }
+  const handleLogout = async () => {
+    await signOut();
+    setActiveUser(null);
   };
 
   return (
-    <>
-      <AppShell currentTab={currentTab} onTabChange={setCurrentTab} activeUser={activeUser} onLogout={async () => { await signOut(); setActiveUser(null); setCurrentTab('dashboard'); }}>
-        {renderContent()}
-      </AppShell>
+    <HashRouter>
+      <KeyboardShortcuts />
+      <Routes>
+        {/* Public E-Sign Portal — No Auth Required */}
+        <Route path="/sign-agreement/:agreementId" element={<SignAgreementRouteWrapper />} />
+
+        {/* Authenticated Dashboard / Workspaces */}
+        {!activeUser ? (
+          <Route
+            path="*"
+            element={
+              <Login
+                onLogin={(user) => {
+                  setActiveUser(user);
+                  setLocalSession(user);
+                }}
+              />
+            }
+          />
+        ) : (
+          <Route
+            path="/*"
+            element={
+              <AppShell activeUser={activeUser} onLogout={handleLogout}>
+                <Routes>
+                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="/dashboard" element={<Dashboard activeUser={activeUser} onNavigate={() => {}} />} />
+                  <Route path="/clients" element={<Clients activeUser={activeUser} />} />
+                  <Route path="/clients/:clientId" element={<ClientDetailRouteWrapper activeUser={activeUser} />} />
+                  <Route path="/deals" element={<DealsKanban activeUser={activeUser} />} />
+                  <Route path="/meetings" element={<Meetings activeUser={activeUser} />} />
+                  <Route path="/finance" element={<Finance activeUser={activeUser} />} />
+                  <Route path="/quotations" element={<Quotations activeUser={activeUser} />} />
+                  <Route path="/quotations/:quoteId" element={<Quotations activeUser={activeUser} />} />
+                  <Route path="/invoices" element={<Invoices activeUser={activeUser} />} />
+                  <Route path="/invoices/:invoiceId" element={<Invoices activeUser={activeUser} />} />
+                  <Route path="/agreements" element={<Agreements activeUser={activeUser} />} />
+                  <Route path="/team" element={<TeamPermissions activeUser={activeUser} />} />
+                  <Route path="/audit-logs" element={<AuditLogs activeUser={activeUser} />} />
+                  <Route path="/private-space" element={<PrivateSpace activeUser={activeUser} />} />
+                  <Route path="/settings" element={<Settings activeUser={activeUser} />} />
+                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                </Routes>
+              </AppShell>
+            }
+          />
+        )}
+      </Routes>
       <Analytics />
-    </>
+    </HashRouter>
   );
 }
 
