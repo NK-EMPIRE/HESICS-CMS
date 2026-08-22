@@ -1,4 +1,4 @@
-import { CustomDatePicker } from '../common/CustomDatePicker';
+import { DatePicker } from '../common/DatePicker';
 import React, { useState, useEffect } from 'react';
 import {
   Table as TableIcon, Plus, Trash2, Edit3, Check, X,
@@ -309,9 +309,10 @@ export const NotionWorkspace: React.FC<NotionWorkspaceProps> = ({
                         if (col.type === 'date') {
                           return (
                             <td key={col.id} className="p-1.5 border-r border-[#171720] min-w-[140px]">
-                              <CustomDatePicker
-                                dateValue={val || ''}
-                                onDateChange={(newVal) => handleCellChange(row.id, col.id, newVal)}
+                              <DatePicker
+                                value={val || ''}
+                                onChange={(newVal) => handleCellChange(row.id, col.id, newVal)}
+                                placeholder="Select date..."
                               />
                             </td>
                           );
