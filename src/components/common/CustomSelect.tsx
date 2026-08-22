@@ -59,7 +59,15 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       const rect = containerRef.current.getBoundingClientRect();
       const windowHeight = window.innerHeight;
       const spaceBelow = windowHeight - rect.bottom;
-      if (spaceBelow < 280 && rect.top > 280) {
+
+      const scrollParent = containerRef.current.closest('.overflow-y-auto');
+      let spaceBelowParent = spaceBelow;
+      if (scrollParent) {
+        const parentRect = scrollParent.getBoundingClientRect();
+        spaceBelowParent = parentRect.bottom - rect.bottom;
+      }
+
+      if ((spaceBelow < 290 || spaceBelowParent < 290) && rect.top > 200) {
         setOpenUpward(true);
       } else {
         setOpenUpward(false);

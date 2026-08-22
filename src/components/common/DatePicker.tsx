@@ -81,7 +81,16 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       const rect = containerRef.current.getBoundingClientRect();
       const windowHeight = window.innerHeight;
       const spaceBelow = windowHeight - rect.bottom;
-      if (spaceBelow < 330 && rect.top > 330) {
+      
+      // Check closest scrollable container if any
+      const scrollParent = containerRef.current.closest('.overflow-y-auto');
+      let spaceBelowParent = spaceBelow;
+      if (scrollParent) {
+        const parentRect = scrollParent.getBoundingClientRect();
+        spaceBelowParent = parentRect.bottom - rect.bottom;
+      }
+
+      if ((spaceBelow < 360 || spaceBelowParent < 360) && rect.top > 250) {
         setOpenUpward(true);
       } else {
         setOpenUpward(false);
@@ -213,7 +222,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
         <div
           className={`absolute ${
             openUpward ? "bottom-full mb-2" : "top-full mt-2"
-          } left-0 z-modalDropdown w-72 bg-[#0D0D12] border border-[#262632] rounded-2xl p-4 shadow-2xl space-y-3 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-100`}
+          } left-0 sm:left-auto right-0 sm:right-auto z-modalDropdown w-72 bg-[#0D0D12] border border-[#262632] rounded-2xl p-4 shadow-2xl space-y-3 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-100`}
         >
           <div className="flex items-center justify-between text-xs font-semibold text-[#F4F4F6]">
             <button

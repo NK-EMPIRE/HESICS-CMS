@@ -285,7 +285,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   return (
     <>
       <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-modal flex items-center justify-center p-4">
-        <div className="bg-[#0D0D11] border border-[#22222B] rounded-3xl w-full max-w-4xl max-h-[92vh] overflow-y-auto p-8 pb-16 space-y-6 pb-28 shadow-2xl shadow-black/80">
+        <div className="bg-[#0D0D11] border border-[#22222B] rounded-3xl w-full max-w-4xl max-h-[92vh] overflow-y-auto p-8 pb-36 space-y-6 pb-36 shadow-2xl shadow-black/80">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-[#1C1C26] pb-4">
             <div className="flex items-center gap-3">
