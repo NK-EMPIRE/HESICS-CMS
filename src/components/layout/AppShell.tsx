@@ -193,12 +193,12 @@ export const AppShell: React.FC<AppShellProps> = ({
       {/* Sidebar */}
       <aside
         className={`${
-          collapsed ? "w-14" : "w-56"
+          collapsed ? "w-16" : "w-64"
         } transition-all duration-200 border-r border-[#191920] bg-[#09090C] flex flex-col justify-between shrink-0`}
       >
         {/* Workspace Brand Block */}
         <div>
-          <div className="h-12 px-3 border-b border-[#191920] flex items-center justify-between">
+          <div className="h-14 px-4 border-b border-[#191920] flex items-center justify-between">
             {!collapsed ? (
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="w-7 h-7 rounded-lg bg-[#050505] border border-[#77727E]/30 flex items-center justify-center shrink-0 p-1">
@@ -231,7 +231,7 @@ export const AppShell: React.FC<AppShellProps> = ({
           </div>
 
           {/* Navigation Links */}
-          <div className="p-2 space-y-0.5">
+          <div className="p-3 space-y-1">
             {baseNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = isCurrentActive(item.path);
@@ -248,7 +248,7 @@ export const AppShell: React.FC<AppShellProps> = ({
                   disabled={!isAllowed}
                   onClick={() => navigate(item.path)}
                   title={collapsed ? item.label : undefined}
-                  className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-medium transition-all ${
+                  className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
                     isActive
                       ? "bg-[#77727E]/20 text-[#F4F4F6] border border-[#77727E]/40 font-semibold"
                       : isAllowed
@@ -325,7 +325,7 @@ export const AppShell: React.FC<AppShellProps> = ({
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#08080B]">
-        <div className="flex-1 overflow-y-auto w-full">{children}</div>
+        <div className="flex-1 overflow-y-auto w-full p-6 sm:p-8 md:p-10"><div className="max-w-7xl mx-auto w-full space-y-8">{children}</div></div>
       </main>
     </div>
   );

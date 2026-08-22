@@ -53,12 +53,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
           : `₹${n.toLocaleString("en-IN")}`;
 
   return (
-    <div className="space-y-6 w-full">
+    <div className="space-y-8 w-full">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1A1A20]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 pb-6 border-b border-[#1A1A20]">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-[#F4F4F6] tracking-tight font-display">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#F4F4F6] tracking-tight font-display">
               {isAdminUser
                 ? "Executive Command Overview"
                 : "Operational Dashboard"}
@@ -68,7 +68,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               {activeUser.role_name || "Admin"}
             </span>
           </div>
-          <p className="text-xs text-[#828290] mt-1">
+          <p className="text-sm text-[#8E8E9E] mt-1.5">
             Real-time pipeline metrics, financial cash flow, and client
             operations.
           </p>
@@ -120,14 +120,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
       )}
 
       {/* KPI Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {/* Total Collected Revenue */}
-        <div className="hesics-card p-5 space-y-2 relative overflow-hidden">
+        <div className="hesics-card p-7 space-y-2 relative overflow-hidden">
           <div className="flex items-center justify-between text-xs text-[#787886]">
             <span className="font-medium">Collected Revenue</span>
             <DollarSign className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="text-2xl font-bold text-[#F4F4F6] font-display font-mono">
+          <div className="text-3xl font-extrabold text-[#F4F4F6] font-display font-mono tracking-tight">
             {fmt(stats.cashCollected)}
           </div>
           <div className="text-[11px] text-[#60606E]">
@@ -136,7 +136,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         {/* Active Pipeline Value */}
-        <div className="hesics-card p-5 space-y-2 relative overflow-hidden">
+        <div className="hesics-card p-7 space-y-2 relative overflow-hidden">
           <div className="flex items-center justify-between text-xs text-[#787886]">
             <span className="font-medium">Active Pipeline</span>
             <Target className="w-4 h-4 text-[#77727E]" />
@@ -150,7 +150,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         {/* Net Profit Margin */}
-        <div className="hesics-card p-5 space-y-2 relative overflow-hidden">
+        <div className="hesics-card p-7 space-y-2 relative overflow-hidden">
           <div className="flex items-center justify-between text-xs text-[#787886]">
             <span className="font-medium">Net Profit Margin</span>
             {stats.netProfit >= 0 ? (
@@ -160,7 +160,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             )}
           </div>
           <div
-            className={`text-2xl font-bold font-display font-mono ${stats.netProfit >= 0 ? "text-emerald-400" : "text-rose-400"}`}
+            className={`text-3xl font-extrabold font-display font-mono tracking-tight ${stats.netProfit >= 0 ? "text-emerald-400" : "text-rose-400"}`}
           >
             {fmt(stats.netProfit)}
           </div>
@@ -170,7 +170,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         {/* Client Accounts */}
-        <div className="hesics-card p-5 space-y-2 relative overflow-hidden">
+        <div className="hesics-card p-7 space-y-2 relative overflow-hidden">
           <div className="flex items-center justify-between text-xs text-[#787886]">
             <span className="font-medium">Active Enterprise Clients</span>
             <Users className="w-4 h-4 text-indigo-400" />
@@ -193,7 +193,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* Main Grid: Pipeline Summary & Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Pipeline Breakdown (2 cols) */}
-        <div className="hesics-card p-6 space-y-5 lg:col-span-2">
+        <div className="hesics-card p-7 space-y-5 lg:col-span-2">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-sm font-bold text-[#F4F4F6]">
@@ -247,7 +247,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         {/* Quick Operations Sidebar (1 col) */}
-        <div className="hesics-card p-6 space-y-4">
+        <div className="hesics-card p-7 space-y-4">
           <div>
             <h2 className="text-sm font-bold text-[#F4F4F6]">
               Recent Touchpoints

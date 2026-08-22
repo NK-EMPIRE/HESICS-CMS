@@ -228,14 +228,14 @@ export const HesicsServicesManager: React.FC<HesicsServicesManagerProps> = ({
       )}
 
       {/* Services Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {services.map((srv) => (
           <div
             key={srv.id}
-            className="p-4 bg-[#08080B] border border-[#1A1A24] hover:border-[#77727E]/50 rounded-2xl space-y-2.5 transition-all group relative"
+            className="p-5 bg-[#08080B] border border-[#1A1A24] hover:border-[#77727E]/50 rounded-2xl space-y-2.5 transition-all group relative"
           >
             <div className="flex items-start justify-between gap-2">
-              <span className="text-xs font-bold text-[#F4F4F6] group-hover:text-white leading-tight">
+              <span className="text-sm font-bold text-[#F4F4F6] group-hover:text-white leading-tight">
                 {srv.name}
               </span>
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
