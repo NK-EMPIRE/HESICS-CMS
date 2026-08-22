@@ -86,7 +86,7 @@ export const DownloadManagerModal: React.FC<DownloadManagerModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-[99999] flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-confirmDialog flex items-center justify-center p-4">
       <div className="bg-[#0D0D11] border border-[#22222B] rounded-3xl w-full max-w-xl shadow-2xl shadow-black/90 overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-7 py-5 border-b border-[#1C1C26] bg-[#0A0A0E]">

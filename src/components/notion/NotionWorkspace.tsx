@@ -377,7 +377,7 @@ export const NotionWorkspace: React.FC<NotionWorkspaceProps> = ({
 
       {/* Add Column Modal */}
       {showAddCol && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-confirmDialog flex items-center justify-center p-4">
           <div className="bg-[#0D0D12] border border-[#22222B] rounded-2xl p-6 w-full max-w-sm space-y-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-[#1C1C26] pb-3">
               <h3 className="text-xs font-bold text-[#F4F4F6]">New Database Property</h3>

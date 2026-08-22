@@ -174,7 +174,7 @@ export const Meetings: React.FC<MeetingsProps> = ({ activeUser }) => {
 
       {/* Live Video Room Modal / Embedded Zoom & HESICS Room */}
       {activeMeetingRoom && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-confirmDialog flex items-center justify-center p-4">
           <div className="bg-[#0E0E14] border border-[#242432] rounded-3xl w-full max-w-4xl h-[75vh] flex flex-col shadow-2xl overflow-hidden">
             {/* Room Header */}
             <div className="px-6 py-3.5 border-b border-[#1E1E2A] flex items-center justify-between bg-[#0A0A0F]">
@@ -341,7 +341,7 @@ export const Meetings: React.FC<MeetingsProps> = ({ activeUser }) => {
 
       {/* Schedule Meeting Modal */}
       {showScheduleModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-confirmDialog flex items-center justify-center p-4">
           <div className="bg-[#0E0E13] border border-[#22222B] rounded-2xl w-full max-w-md shadow-2xl p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-[#1C1C26] pb-3">
               <div className="flex items-center gap-2">

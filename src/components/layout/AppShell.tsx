@@ -107,7 +107,7 @@ export const AppShell: React.FC<AppShellProps> = ({
       <aside
         className={`${
           collapsed ? 'w-14' : 'w-56'
-        } transition-all duration-200 border-r border-[#191920] bg-[#09090C] flex flex-col justify-between shrink-0 z-30`}
+        } transition-all duration-200 border-r border-[#191920] bg-[#09090C] flex flex-col justify-between shrink-0`}
       >
         {/* Workspace Brand Block */}
         <div>

@@ -115,7 +115,7 @@ export const CustomDatePicker: React.FC<CustomDatePickerProps> = ({
 
       {/* Titanium Popover Modal */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 z-50 bg-[#0E0E13] border border-[#262634] rounded-2xl p-4 shadow-2xl w-72 space-y-3">
+        <div className="absolute top-full left-0 mt-2 z-modalDropdown bg-[#0E0E13] border border-[#262634] rounded-2xl p-4 shadow-2xl w-72 space-y-3">
           {/* Month Header */}
           <div className="flex items-center justify-between border-b border-[#1C1C26] pb-2.5">
             <button

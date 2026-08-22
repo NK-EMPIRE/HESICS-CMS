@@ -250,7 +250,7 @@ export const DealsKanban: React.FC<DealsKanbanProps> = ({ activeUser }) => {
 
       {/* Stage Movement Confirmation Modal */}
       {pendingMove && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-confirmDialog flex items-center justify-center p-4">
           <div className="bg-[#0D0D12] border border-[#262632] rounded-3xl w-full max-w-md p-6 space-y-5 shadow-2xl animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between border-b border-[#1C1C26] pb-3">
               <div className="flex items-center gap-2.5">

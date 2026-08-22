@@ -88,7 +88,7 @@ export const EmailDispatchModal: React.FC<EmailDispatchModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-modal flex items-center justify-center p-4">
       <div className="bg-[#0D0D11] border border-[#22222B] rounded-3xl w-full max-w-2xl max-h-[92vh] overflow-y-auto p-7 space-y-5 shadow-2xl shadow-black/80">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[#1C1C26] pb-4">

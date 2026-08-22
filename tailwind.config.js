@@ -6,6 +6,13 @@ export default {
   ],
   theme: {
     extend: {
+      zIndex: {
+        dropdown: '100',
+        modal: '200',
+        modalDropdown: '250',
+        confirmDialog: '300',
+        toast: '400',
+      },
       colors: {
         // HESICS Brand System
         hesics: {

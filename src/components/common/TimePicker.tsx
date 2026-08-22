@@ -66,7 +66,7 @@ export const TimePicker: React.FC<TimePickerProps> = ({
 
       {/* 12-Hour Dropdown Popover */}
       {isOpen && (
-        <div className="absolute top-full mt-2 left-0 z-[999999] w-64 bg-[#0D0D12] border border-[#282836] rounded-2xl p-4 shadow-2xl space-y-3 backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-100">
+        <div className="absolute top-full mt-2 left-0 z-modalDropdown w-64 bg-[#0D0D12] border border-[#282836] rounded-2xl p-4 shadow-2xl space-y-3 backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-100">
           <div className="text-[11px] font-bold text-[#D4D4D8] uppercase tracking-wider font-mono border-b border-[#1C1C26] pb-2">
             Select Time (12-Hour)
           </div>

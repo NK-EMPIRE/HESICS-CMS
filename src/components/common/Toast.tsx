@@ -46,7 +46,7 @@ export const ToastContainer: React.FC = () => {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-[99999] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none">
+    <div className="fixed bottom-6 right-6 z-toast flex flex-col gap-2.5 max-w-sm w-full pointer-events-none">
       {toasts.map((t) => (
         <div
           key={t.id}

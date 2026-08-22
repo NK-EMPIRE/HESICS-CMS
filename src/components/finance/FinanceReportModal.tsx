@@ -128,7 +128,7 @@ export const FinanceReportModal: React.FC<FinanceReportModalProps> = ({
   const totalExp = filteredExpenses.reduce((s, e) => s + Number(e.amount || 0), 0);
 
   return (
-    <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-[99999] flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-confirmDialog flex items-center justify-center p-4">
       <div className="bg-[#0D0D11] border border-[#22222B] rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-[#1C1C26]">

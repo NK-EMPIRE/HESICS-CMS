@@ -48,7 +48,7 @@ export const UserConfirmModal: React.FC<UserConfirmModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-confirmDialog flex items-center justify-center p-4">
       <div className="bg-[#0D0D11] border border-rose-900/40 rounded-3xl w-full max-w-lg shadow-2xl shadow-rose-950/20 overflow-hidden">
         {/* Header */}
         <div className="p-6 border-b border-[#1C1C26] flex items-start justify-between bg-[#120B0F]">

@@ -124,7 +124,7 @@ export const PDFPreviewModal: React.FC<PDFPreviewModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[9999] flex items-center justify-center p-3 sm:p-6">
+      <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-confirmDialog flex items-center justify-center p-3 sm:p-6">
         <div className="bg-[#0D0D12] border border-[#262632] rounded-3xl w-full max-w-5xl h-[92vh] flex flex-col shadow-2xl overflow-hidden">
           {/* Top Control Bar */}
           <div className="px-6 py-4 border-b border-[#1C1C26] flex items-center justify-between bg-[#08080B] shrink-0">
