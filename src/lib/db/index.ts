@@ -258,6 +258,7 @@ export class FirebaseDataStore {
               );
               this.users = hasRoot ? list : [ROOT_MASTER_USER, ...list];
               setStorageItem("users", this.users);
+              this.notify();
             }
           }
         },
@@ -274,6 +275,7 @@ export class FirebaseDataStore {
             if (list.length > 0) {
               this.clients = list;
               setStorageItem("clients", list);
+              this.notify();
             }
           }
         },
@@ -290,6 +292,7 @@ export class FirebaseDataStore {
             if (list.length > 0) {
               this.deals = list;
               setStorageItem("deals", list);
+              this.notify();
             }
           }
         },
@@ -306,6 +309,7 @@ export class FirebaseDataStore {
             if (list.length > 0) {
               this.invoices = list;
               setStorageItem("invoices", list);
+              this.notify();
             }
           }
         },
@@ -322,6 +326,7 @@ export class FirebaseDataStore {
             if (list.length > 0) {
               this.quotations = list;
               setStorageItem("quotations", list);
+              this.notify();
             }
           }
         },
@@ -788,6 +793,7 @@ export class FirebaseDataStore {
     };
     this.clients = [newClient, ...this.clients];
     setStorageItem("clients", this.clients);
+    this.notify();
 
     logAudit(
       client.owner_id || "usr-admin",
@@ -878,6 +884,7 @@ export class FirebaseDataStore {
     };
     this.deals = [newDeal, ...this.deals];
     setStorageItem("deals", this.deals);
+    this.notify();
 
     logAudit(
       deal.owner_id || "usr-admin",
@@ -989,6 +996,7 @@ export class FirebaseDataStore {
     };
     this.quotations = [newQuote, ...this.quotations];
     setStorageItem("quotations", this.quotations);
+    this.notify();
 
     const firestore = dbInstance;
     if (firestore) {
@@ -1081,6 +1089,7 @@ export class FirebaseDataStore {
     };
     this.invoices = [newInv, ...this.invoices];
     setStorageItem("invoices", this.invoices);
+    this.notify();
 
     logAudit(
       "usr-admin",

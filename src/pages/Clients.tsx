@@ -67,6 +67,14 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
     }
   };
 
+  React.useEffect(() => {
+    refreshClients();
+    const unsub = db.subscribe(() => {
+      refreshClients();
+    });
+    return () => unsub();
+  }, []);
+
   const filtered = clients.filter((c) => {
     const q = search.toLowerCase();
     const matchesSearch =

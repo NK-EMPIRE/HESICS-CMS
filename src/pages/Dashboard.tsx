@@ -41,6 +41,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
     setStats(db.getOrgStats());
   };
 
+  React.useEffect(() => {
+    refreshData();
+    const unsub = db.subscribe(() => {
+      refreshData();
+    });
+    return () => unsub();
+  }, []);
+
   const isAdminUser = isAdminOrAbove(activeUser.hierarchy);
 
   const fmt = (n: number) =>
