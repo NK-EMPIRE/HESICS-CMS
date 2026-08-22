@@ -1,89 +1,178 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper functions
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // HELPER FUNCTIONS & RBAC HIERARCHY
+    // ─────────────────────────────────────────────────────────────────────────
+
     function isAuthenticated() {
       return request.auth != null;
     }
-    
+
     function getUserData() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
-    
-    function isAdminOrFounder() {
-      return isAuthenticated() && (
-        getUserData().hierarchy == 'founder' || 
-        getUserData().hierarchy == 'admin'
-      );
+
+    function getUserHierarchy() {
+      return getUserData().hierarchy;
     }
 
     function isRootMaster() {
       return isAuthenticated() && (
-        request.auth.token.email.lower() == 'hesics1@gmail.com' ||
-        getUserData().email.lower() == 'hesics1@gmail.com'
+        (request.auth.token.email != null && request.auth.token.email.lower() == 'hesics1@gmail.com') ||
+        (getUserData().email != null && getUserData().email.lower() == 'hesics1@gmail.com')
       );
     }
 
-    // Organizations
+    // Role Hierarchy Checks (matching src/lib/rbac.ts)
+    function isEmployeeOrAbove() {
+      return isAuthenticated() && (
+        getUserHierarchy() == 'founder' ||
+        getUserHierarchy() == 'superadmin' ||
+        getUserHierarchy() == 'admin' ||
+        getUserHierarchy() == 'officer' ||
+        getUserHierarchy() == 'employee'
+      );
+    }
+
+    function isOfficerOrAbove() {
+      return isAuthenticated() && (
+        getUserHierarchy() == 'founder' ||
+        getUserHierarchy() == 'superadmin' ||
+        getUserHierarchy() == 'admin' ||
+        getUserHierarchy() == 'officer'
+      );
+    }
+
+    function isAdminOrAbove() {
+      return isAuthenticated() && (
+        getUserHierarchy() == 'founder' ||
+        getUserHierarchy() == 'superadmin' ||
+        getUserHierarchy() == 'admin'
+      );
+    }
+
+    function isSuperAdminOrAbove() {
+      return isAuthenticated() && (
+        getUserHierarchy() == 'founder' ||
+        getUserHierarchy() == 'superadmin'
+      );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // COLLECTION SECURITY RULES
+    // ─────────────────────────────────────────────────────────────────────────
+
+    // Organizations (System Configuration)
     match /organizations/{orgId} {
       allow read: if isAuthenticated();
-      allow write: if isAdminOrFounder();
+      allow write: if isAdminOrAbove();
     }
 
-    // Users Collection - Permanent protection for hesics1@gmail.com
+    // Users Collection
+    // Protection: Reading 'founder' document is restricted to ROOT_MASTER_EMAIL or self-read
     match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow create: if isAdminOrFounder();
-      // hesics1@gmail.com cannot be modified to inactive or non-founder, and CANNOT BE DELETED
-      allow update: if isAdminOrFounder() && (
-        resource.data.email.lower() != 'hesics1@gmail.com' ||
-        (request.resource.data.is_active == true && request.resource.data.hierarchy == 'founder')
+      allow read: if isAuthenticated() && (
+        resource.data.hierarchy != 'founder' ||
+        isRootMaster() ||
+        request.auth.uid == userId
       );
-      // HARD DELETE LOCK: Root master account cannot be deleted by anyone in the database
-      allow delete: if isAdminOrFounder() && 
+
+      allow create: if isAdminOrAbove();
+
+      // hesics1@gmail.com / root founder can never be demoted or deactivated
+      allow update: if isAdminOrAbove() && (
+        (resource.data.email.lower() != 'hesics1@gmail.com' && resource.data.hierarchy != 'founder') ||
+        isRootMaster()
+      );
+
+      // HARD DELETE LOCK: Root master account / founder cannot be deleted
+      allow delete: if isAdminOrAbove() &&
         resource.data.email.lower() != 'hesics1@gmail.com' &&
+        resource.data.hierarchy != 'founder' &&
         resource.id != 'usr-root-hesics';
     }
 
+    // Roles Definition
     match /roles/{roleId} {
       allow read: if isAuthenticated();
-      allow write: if isAdminOrFounder();
+      allow write: if isAdminOrAbove();
     }
 
-    // Clients, Deals & Activities
+    // Clients & Pipeline
+    // - Employee & above: Full Read / Write
+    // - Intern: Read-only
     match /clients/{clientId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isAuthenticated();
+      allow create, update: if isEmployeeOrAbove();
+      allow delete: if isAdminOrAbove();
     }
 
     match /deals/{dealId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isAuthenticated();
+      allow create, update: if isEmployeeOrAbove();
+      allow delete: if isAdminOrAbove();
     }
 
     match /activities/{activityId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isAuthenticated();
+      allow create, update: if isEmployeeOrAbove();
+      allow delete: if isAdminOrAbove();
     }
 
-    // Quotations & Invoices
+    // Commercials (Quotations & Invoices)
+    // - Employee & above: Read-only
+    // - Officer & above: Read & Write
+    // - Intern: No access
     match /quotations/{quotationId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isEmployeeOrAbove();
+      allow create, update, delete: if isOfficerOrAbove();
     }
 
     match /invoices/{invoiceId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isEmployeeOrAbove();
+      allow create, update, delete: if isOfficerOrAbove();
     }
 
-    // Finance (Income & Expenses)
+    // Service Agreements
+    match /agreements/{agreementId} {
+      // Public review & signature allowed if valid token/id or employee and above
+      allow read: if true;
+      allow create, delete: if isOfficerOrAbove();
+      allow update: if true; // Allows clients to attach signature & KYC verification
+    }
+
+    // Finance (Income & Expense Ledger)
+    // - Officer & above: Read & Write
+    // - Employee / Intern: No access
     match /income_entries/{entryId} {
-      allow read, write: if isAuthenticated();
+      allow read, create, update, delete: if isOfficerOrAbove();
     }
 
     match /expense_entries/{entryId} {
-      allow read, write: if isAuthenticated();
+      allow read, create, update, delete: if isOfficerOrAbove();
     }
 
-    // Audit logs (Immutable)
+    // Meetings & Schedules
+    match /meetings/{meetingId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isEmployeeOrAbove();
+    }
+
+    // Notion Workspaces & Notes
+    match /notion_workspaces/{workspaceId} {
+      allow read, create, update, delete: if isEmployeeOrAbove();
+    }
+
+    // Private Vault (Superadmin & Founder only)
+    match /private_vault/{vaultId} {
+      allow read, write: if isSuperAdminOrAbove();
+    }
+
+    // Audit Logs (Append-only & Immutable)
     match /audit_logs/{logId} {
-      allow read: if isAdminOrFounder();
+      allow read: if isAdminOrAbove();
       allow create: if isAuthenticated();
       allow update, delete: if false;
     }

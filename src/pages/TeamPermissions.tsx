@@ -60,7 +60,7 @@ const hierarchyBadge: Record<UserHierarchy, string> = {
 };
 
 const hierarchyDisplayName: Record<UserHierarchy, string> = {
-  founder: 'Admin',
+  founder: 'Chief',
   superadmin: 'Superadmin',
   admin: 'Admin',
   officer: 'Officer',
