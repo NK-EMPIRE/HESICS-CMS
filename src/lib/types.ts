@@ -87,7 +87,14 @@ export interface Permission {
 
 export type ClientSource =
   "referral" | "instagram" | "cold_dm" | "website" | "other";
-export type ClientStatus = "lead" | "active" | "churned";
+export type ClientStatus =
+  | "lead"
+  | "qualified"
+  | "active"
+  | "at_risk"
+  | "dormant"
+  | "churned"
+  | "archived";
 
 export interface Client {
   id: string;
@@ -105,6 +112,13 @@ export interface Client {
   tags?: string[];
   owner_id?: string;
   owner_name?: string;
+  workspace_id?: string;
+  workspace_name?: string;
+  next_action?: string;
+  next_action_due?: string;
+  last_contacted_at?: string;
+  relationship_health?: "healthy" | "watch" | "at_risk";
+  archived_at?: string;
   total_revenue?: number;
   created_at: string;
   updated_at: string;

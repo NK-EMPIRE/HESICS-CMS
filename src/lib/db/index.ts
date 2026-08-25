@@ -781,6 +781,43 @@ export class FirebaseDataStore {
     return this.clients.find((c) => c.id === id);
   }
 
+  findPotentialClientDuplicates(input: {
+    name?: string;
+    company_name?: string;
+    email?: string;
+    phone?: string;
+    exclude_id?: string;
+  }): Client[] {
+    const normalize = (value?: string) => value?.trim().toLowerCase().replace(/\s+/g, " ");
+    const email = normalize(input.email);
+    const phone = normalize(input.phone)?.replace(/[^0-9+]/g, "");
+    const name = normalize(input.name);
+    const company = normalize(input.company_name);
+    return this.clients.filter((client) => {
+      if (client.id === input.exclude_id || client.status === "archived") return false;
+      const sameEmail = Boolean(email && normalize(client.email) === email);
+      const samePhone = Boolean(phone && normalize(client.phone)?.replace(/[^0-9+]/g, "") === phone);
+      const sameIdentity = Boolean(
+        name && company && normalize(client.name) === name && normalize(client.company_name) === company,
+      );
+      return sameEmail || samePhone || sameIdentity;
+    });
+  }
+
+  archiveClient(id: string): Client | undefined {
+    return this.updateClient(id, {
+      status: "archived",
+      archived_at: new Date().toISOString(),
+    });
+  }
+
+  restoreClient(id: string): Client | undefined {
+    return this.updateClient(id, {
+      status: "active",
+      archived_at: undefined,
+    });
+  }
+
   addClient(
     client: Omit<Client, "id" | "org_id" | "created_at" | "updated_at">,
   ): Client {

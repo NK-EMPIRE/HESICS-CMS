@@ -34,8 +34,22 @@ interface ClientsProps {
 
 const statusBadge: Record<ClientStatus, string> = {
   lead: "text-[#D4D4D8] bg-[#77727E]/15 border-[#77727E]/30",
+  qualified: "text-sky-400 bg-sky-950/40 border-sky-800/50",
   active: "text-emerald-400 bg-emerald-950/40 border-emerald-800/50",
+  at_risk: "text-orange-400 bg-orange-950/40 border-orange-800/50",
+  dormant: "text-amber-400 bg-amber-950/40 border-amber-800/50",
   churned: "text-[#707080] bg-[#18181E] border-[#22222A]",
+  archived: "text-[#606070] bg-[#101015] border-[#22222A]",
+};
+
+const statusLabel: Record<ClientStatus, string> = {
+  lead: "Lead",
+  qualified: "Qualified",
+  active: "Active",
+  at_risk: "At risk",
+  dormant: "Dormant",
+  churned: "Churned",
+  archived: "Archived",
 };
 
 export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
@@ -44,6 +58,7 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
   const [selectedStatus, setSelectedStatus] = useState<ClientStatus | "all">(
     "all",
   );
+  const [showArchived, setShowArchived] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [viewingClientId, setViewingClientId] = useState<string | null>(null);
   const [resourceTab, setResourceTab] = useState<
@@ -83,12 +98,13 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
       (c.email && c.email.toLowerCase().includes(q));
     const matchesStatus =
       selectedStatus === "all" || c.status === selectedStatus;
-    return matchesSearch && matchesStatus;
+    const matchesArchive = showArchived ? c.status === "archived" : c.status !== "archived";
+    return matchesSearch && matchesStatus && matchesArchive;
   });
 
   const handleDeleteClient = (client: Client) => {
-    if (window.confirm(`Permanently remove client "${client.name}"?`)) {
-      db.deleteClient(client.id);
+    if (window.confirm(`Archive client "${client.name}"? This keeps the history and removes it from active views.`)) {
+      db.archiveClient(client.id);
       if (selectedClient?.id === client.id) setSelectedClient(null);
       refreshClients();
     }
@@ -128,14 +144,14 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
     <div className="space-y-6 w-full">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1A1A20]">
-        <div>
-          <h1 className="text-xl font-bold text-[#F4F4F6] tracking-tight font-display">
-            Client Directory
-          </h1>
-          <p className="text-xs text-[#828290] mt-1">
-            Accounts, communication history, and revenue metrics.
-          </p>
-        </div>
+          <div>
+            <h1 className="text-xl font-bold text-[#F4F4F6] tracking-tight font-display">
+              Clients
+            </h1>
+            <p className="text-xs text-[#828290] mt-1">
+              One workspace for relationships, follow-ups, commercial work, and history.
+            </p>
+          </div>
 
         {canWrite && (
           <button
@@ -164,7 +180,7 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
         </div>
 
         <div className="flex items-center gap-1.5 bg-[#09090C] border border-[#1C1C22] p-1 rounded-xl">
-          {(["all", "lead", "active", "churned"] as const).map((st) => (
+          {(["all", "lead", "qualified", "active", "at_risk", "dormant", "churned"] as const).map((st) => (
             <button
               key={st}
               onClick={() => setSelectedStatus(st)}
@@ -174,9 +190,15 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
                   : "text-[#707080] hover:text-[#D4D4D8]"
               }`}
             >
-              {st}
+              {st === "all" ? "All active" : statusLabel[st]}
             </button>
           ))}
+          <button
+            onClick={() => setShowArchived((value) => !value)}
+            className={`px-3.5 py-1.5 text-xs rounded-lg font-medium transition-all ${showArchived ? "bg-[#77727E] text-white" : "text-[#707080] hover:text-[#D4D4D8]"}`}
+          >
+            {showArchived ? "Archived" : "Show archived"}
+          </button>
         </div>
       </div>
 
@@ -211,17 +233,28 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
                         <span
                           className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-md border ${statusBadge[c.status]}`}
                         >
-                          {c.status}
+                          {statusLabel[c.status]}
                         </span>
+                        {c.next_action_due && (
+                          <span className={`text-[9px] ${new Date(c.next_action_due) < new Date() ? "text-rose-400" : "text-[#707080]"}`}>
+                            {new Date(c.next_action_due) < new Date() ? "Follow-up overdue" : "Next action"}
+                          </span>
+                        )}
                       </div>
                       <div className="text-[11px] text-[#707080] flex items-center gap-3">
                         {c.company_name && <span>{c.company_name}</span>}
                         {c.email && <span>{c.email}</span>}
+                        {c.owner_name && <span className="hidden xl:inline">Owner: {c.owner_name}</span>}
                       </div>
+                      {c.next_action && (
+                        <div className="text-[10px] text-[#8D8D9A] truncate max-w-[460px]">
+                          Next: {c.next_action}
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0">
-                      {canWrite && (
+                      {canWrite && c.status !== "archived" && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -233,7 +266,7 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
                           <Edit3 className="w-3.5 h-3.5" />
                         </button>
                       )}
-                      {canDelete && (
+                      {canDelete && c.status !== "archived" && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -267,7 +300,7 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
                   <span
                     className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-md border ${statusBadge[selectedClient.status]}`}
                   >
-                    {selectedClient.status}
+                    {statusLabel[selectedClient.status]}
                   </span>
                 </div>
                 {selectedClient.company_name && (
@@ -276,6 +309,23 @@ export const Clients: React.FC<ClientsProps> = ({ activeUser }) => {
                   </div>
                 )}
               </div>
+              <div className="grid grid-cols-2 gap-2 text-[10px]">
+                <div className="rounded-lg bg-[#0A0A0E] border border-[#1A1A22] p-2">
+                  <div className="text-[#606070] uppercase tracking-wider">Health</div>
+                  <div className="mt-1 text-[#D4D4D8] capitalize">{selectedClient.relationship_health || "healthy"}</div>
+                </div>
+                <div className="rounded-lg bg-[#0A0A0E] border border-[#1A1A22] p-2">
+                  <div className="text-[#606070] uppercase tracking-wider">Owner</div>
+                  <div className="mt-1 text-[#D4D4D8] truncate">{selectedClient.owner_name || "Unassigned"}</div>
+                </div>
+              </div>
+              {selectedClient.next_action && (
+                <div className="rounded-xl border border-amber-900/30 bg-amber-950/10 p-3 text-xs">
+                  <div className="text-[9px] uppercase tracking-wider font-bold text-amber-400">Next action</div>
+                  <div className="mt-1 text-[#D4D4D8]">{selectedClient.next_action}</div>
+                  {selectedClient.next_action_due && <div className="mt-1 text-[10px] text-[#888894]">Due {new Date(selectedClient.next_action_due).toLocaleDateString()}</div>}
+                </div>
+              )}
               <div className="space-y-1.5 text-xs">
                 {selectedClient.email && (
                   <div className="flex items-center gap-2 text-[#9090A0]">

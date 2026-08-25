@@ -15,6 +15,24 @@ interface ClientModalProps {
 
 const STATUS_OPTIONS: Option[] = [
   {
+    value: "qualified",
+    label: "Qualified Opportunity",
+    badge: "Qualified",
+    badgeColor: "text-sky-400 bg-sky-950/40 border-sky-800/50",
+  },
+  {
+    value: "at_risk",
+    label: "At Risk",
+    badge: "At Risk",
+    badgeColor: "text-orange-400 bg-orange-950/40 border-orange-800/50",
+  },
+  {
+    value: "dormant",
+    label: "Dormant / Follow-up",
+    badge: "Dormant",
+    badgeColor: "text-amber-400 bg-amber-950/40 border-amber-800/50",
+  },
+  {
     value: "active",
     label: "Active Retainer",
     badge: "Active",
@@ -28,7 +46,7 @@ const STATUS_OPTIONS: Option[] = [
   },
   {
     value: "churned",
-    label: "Archived / Closed",
+    label: "Churned / Closed",
     badge: "Closed",
     badgeColor: "text-[#707080] bg-[#14141A] border-[#202028]",
   },
@@ -65,23 +83,51 @@ export const ClientModal: React.FC<ClientModalProps> = ({
   const [gstin, setGstin] = useState(client?.gstin || "");
   const [industry, setIndustry] = useState(client?.industry || "");
   const [notes, setNotes] = useState(client?.notes || "");
+  const [tags, setTags] = useState((client?.tags || []).join(", "));
+  const [nextAction, setNextAction] = useState(client?.next_action || "");
+  const [nextActionDue, setNextActionDue] = useState(client?.next_action_due || "");
+  const [validationError, setValidationError] = useState("");
 
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    setValidationError("");
+    const normalizedEmail = email.trim().toLowerCase();
+    if (name.trim().length < 2) {
+      setValidationError("Enter a client contact name with at least 2 characters.");
+      return;
+    }
+    if (normalizedEmail && !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalizedEmail)) {
+      setValidationError("Enter a valid business email address.");
+      return;
+    }
+    const duplicates = db.findPotentialClientDuplicates({
+      name,
+      company_name: companyName,
+      email: normalizedEmail,
+      phone,
+      exclude_id: client?.id,
+    });
+    if (duplicates.length > 0) {
+      setValidationError(`A possible duplicate already exists: ${duplicates[0].name}${duplicates[0].company_name ? ` (${duplicates[0].company_name})` : ""}. Review the Clients workspace before continuing.`);
+      return;
+    }
 
     const payload = {
       name: name.trim(),
       company_name: companyName.trim() || undefined,
-      email: email.trim() || undefined,
+      email: normalizedEmail || undefined,
       phone: phone.trim() || undefined,
       status,
       primary_service: primaryService,
       gstin: gstin.trim() || undefined,
       industry: industry.trim() || undefined,
       notes: notes.trim() || undefined,
+      tags: tags.split(",").map((tag) => tag.trim()).filter(Boolean).slice(0, 12),
+      next_action: nextAction.trim() || undefined,
+      next_action_due: nextActionDue || undefined,
+      relationship_health: (status === "at_risk" ? "at_risk" : status === "dormant" ? "watch" : "healthy") as Client["relationship_health"],
       owner_id: client?.owner_id || activeUser.id,
       owner_name: client?.owner_name || activeUser.name,
     };
@@ -223,6 +269,40 @@ export const ClientModal: React.FC<ClientModalProps> = ({
           </div>
 
           {/* Row 5: Notes */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label className="hesics-label">Tags</label>
+              <input
+                type="text"
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+                placeholder="priority, retainer, referral"
+                className="hesics-input text-xs"
+              />
+              <p className="text-[10px] text-[#606070] mt-1">Separate tags with commas.</p>
+            </div>
+            <div>
+              <label className="hesics-label">Next Action Due</label>
+              <input
+                type="date"
+                value={nextActionDue}
+                onChange={(e) => setNextActionDue(e.target.value)}
+                className="hesics-input text-xs"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="hesics-label">Next Action</label>
+            <input
+              type="text"
+              value={nextAction}
+              onChange={(e) => setNextAction(e.target.value)}
+              placeholder="e.g. Send revised proposal"
+              className="hesics-input text-xs"
+            />
+          </div>
+
           <div>
             <label className="hesics-label">Commercial Notes & Brief</label>
             <textarea
@@ -233,6 +313,12 @@ export const ClientModal: React.FC<ClientModalProps> = ({
               className="hesics-input text-xs resize-none leading-relaxed"
             />
           </div>
+
+          {validationError && (
+            <div className="rounded-xl border border-rose-900/50 bg-rose-950/20 px-3 py-2 text-xs text-rose-300" role="alert">
+              {validationError}
+            </div>
+          )}
 
           {/* Modal Footer */}
           <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#1A1A22]">
