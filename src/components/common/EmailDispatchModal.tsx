@@ -1,6 +1,15 @@
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import { X, Send, Mail, CheckCircle2, FileText, Sparkles } from "lucide-react";
 import { sendCustomEmail } from "../../lib/emailService";
+
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 
 interface EmailDispatchModalProps {
   isOpen: boolean;
@@ -46,6 +55,10 @@ export const EmailDispatchModal: React.FC<EmailDispatchModalProps> = ({
     setIsSending(true);
     setErrorMsg("");
 
+    const safeRecipientName = escapeHtml(recipientName || "Client");
+    const safeMessage = escapeHtml(message);
+    const safeDocumentType = escapeHtml(documentType);
+    const safeDocumentNumber = escapeHtml(documentNumber || "");
     const formattedHtml = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background-color: #0D0D11; border: 1px solid #202028; border-radius: 16px; overflow: hidden; color: #F4F4F6;">
         <div style="background-color: #08080A; padding: 24px; border-bottom: 1px solid #1C1C24; text-align: center;">
@@ -53,11 +66,11 @@ export const EmailDispatchModal: React.FC<EmailDispatchModalProps> = ({
           <div style="font-size: 10px; color: #77727E; text-transform: uppercase; letter-spacing: 0.15em; margin-top: 4px;">Business Operating System</div>
         </div>
         <div style="padding: 28px; font-size: 14px; line-height: 1.6; color: #D4D4D8;">
-          <div style="margin-bottom: 16px; font-weight: 600; color: #F4F4F6;">Dear ${recipientName || "Client"},</div>
-          <div style="white-space: pre-wrap; margin-bottom: 24px; color: #C0C0C8;">${message}</div>
+          <div style="margin-bottom: 16px; font-weight: 600; color: #F4F4F6;">Dear ${safeRecipientName},</div>
+          <div style="white-space: pre-wrap; margin-bottom: 24px; color: #C0C0C8;">${safeMessage}</div>
           <div style="padding: 16px; background-color: #121217; border: 1px solid #1E1E26; border-radius: 12px; font-size: 12px; color: #9090A0; margin-bottom: 20px;">
             <div style="font-weight: 700; color: #F4F4F6; margin-bottom: 4px;">Commercial Document Reference:</div>
-            <div>${documentType} ${documentNumber ? `#${documentNumber}` : ""} • Formally generated & sealed</div>
+            <div>${safeDocumentType} ${documentNumber ? `#${safeDocumentNumber}` : ""} • Formally generated &amp; sealed</div>
           </div>
           <div style="font-size: 12px; color: #707080; border-top: 1px solid #1C1C24; pt: 16px; margin-top: 24px;">
             HESICS Enterprise Suite • Confidential Commercial Communication
@@ -91,7 +104,8 @@ export const EmailDispatchModal: React.FC<EmailDispatchModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-modal flex items-center justify-center p-4">
+    typeof document !== "undefined" && createPortal(
+      <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-[11000] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={`Send ${documentType} by email`}>
       <div className="bg-[#0D0D11] border border-[#22222B] rounded-3xl w-full max-w-2xl max-h-[92vh] overflow-y-auto p-7 space-y-5 shadow-2xl shadow-black/80">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[#1C1C26] pb-4">
@@ -235,6 +249,8 @@ export const EmailDispatchModal: React.FC<EmailDispatchModalProps> = ({
           </form>
         )}
       </div>
-    </div>
+      </div>,
+      document.body,
+    )
   );
 };

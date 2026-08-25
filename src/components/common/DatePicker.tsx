@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -40,6 +41,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [openUpward, setOpenUpward] = useState(false);
+  const [popoverPosition, setPopoverPosition] = useState({ top: 0, left: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
 
   const parsedDate = value ? new Date(value) : new Date();
@@ -80,6 +82,8 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     if (isOpen && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       const windowHeight = window.innerHeight;
+      const popoverHeight = 360;
+      const popoverWidth = 288;
       const spaceBelow = windowHeight - rect.bottom;
       
       // Check closest scrollable container if any
@@ -90,11 +94,12 @@ export const DatePicker: React.FC<DatePickerProps> = ({
         spaceBelowParent = parentRect.bottom - rect.bottom;
       }
 
-      if ((spaceBelow < 360 || spaceBelowParent < 360) && rect.top > 250) {
-        setOpenUpward(true);
-      } else {
-        setOpenUpward(false);
-      }
+      const shouldOpenUpward = (spaceBelow < popoverHeight || spaceBelowParent < popoverHeight) && rect.top > popoverHeight;
+      setOpenUpward(shouldOpenUpward);
+      setPopoverPosition({
+        top: Math.max(8, shouldOpenUpward ? rect.top - popoverHeight - 8 : rect.bottom + 8),
+        left: Math.min(Math.max(8, rect.left), Math.max(8, window.innerWidth - popoverWidth - 8)),
+      });
     }
   }, [isOpen]);
 
@@ -218,11 +223,12 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       )}
 
       {/* Dropdown Calendar Popover */}
-      {isOpen && (
+      {isOpen && typeof document !== "undefined" && createPortal(
         <div
-          className={`absolute ${
-            openUpward ? "bottom-full mb-2" : "top-full mt-2"
-          } left-0 sm:left-auto right-0 sm:right-auto z-modalDropdown w-72 bg-[#0D0D12] border border-[#262632] rounded-2xl p-4 shadow-2xl space-y-3 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-100`}
+          role="dialog"
+          aria-label="Calendar date picker"
+          style={{ top: popoverPosition.top, left: popoverPosition.left }}
+          className="fixed z-[10000] w-72 bg-[#0D0D12] border border-[#262632] rounded-2xl p-4 shadow-2xl space-y-3 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-100"
         >
           <div className="flex items-center justify-between text-xs font-semibold text-[#F4F4F6]">
             <button
@@ -308,7 +314,8 @@ export const DatePicker: React.FC<DatePickerProps> = ({
               Today
             </button>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

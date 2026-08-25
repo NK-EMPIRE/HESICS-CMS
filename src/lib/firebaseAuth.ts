@@ -24,7 +24,6 @@ export interface AuthSession {
 
 const SESSION_KEY = "hesics_auth_v3";
 export const ROOT_MASTER_EMAIL = "hesics1@gmail.com";
-const ROOT_MASTER_PASS = import.meta.env.VITE_ROOT_MASTER_PASS;
 
 function getOrCreateRootUser(): User {
   let root = db.getUserByEmail(ROOT_MASTER_EMAIL);
@@ -55,33 +54,11 @@ export async function signInWithPassword(
 ): Promise<{ user: User | null; error: string | null }> {
   const normalizedEmail = email.trim().toLowerCase();
 
-  // Root Master Account immediate authorization
-  if (normalizedEmail === ROOT_MASTER_EMAIL) {
-    if (Boolean(ROOT_MASTER_PASS) && password === ROOT_MASTER_PASS) {
-      const rootUser = getOrCreateRootUser();
-      setLocalSession(rootUser);
-      return { user: rootUser, error: null };
-    }
-  }
-
   if (!isFirebaseConfigured || !auth) {
-    const matched = db.getUserByEmail(normalizedEmail);
-    if (!matched) {
-      return {
-        user: null,
-        error:
-          "Access Denied: This account is not registered in HESICS. Only administrators can add team members.",
-      };
-    }
-    if (!matched.is_active) {
-      return {
-        user: null,
-        error:
-          "Your team account has been deactivated. Please contact your administrator.",
-      };
-    }
-    setLocalSession(matched);
-    return { user: matched, error: null };
+    return {
+      user: null,
+      error: "Authentication is unavailable because Firebase is not configured. Contact the administrator.",
+    };
   }
 
   try {
@@ -117,16 +94,6 @@ export async function signInWithPassword(
     setLocalSession(matched);
     return { user: matched, error: null };
   } catch (err: any) {
-    // If master account fallback
-    if (
-      normalizedEmail === ROOT_MASTER_EMAIL &&
-      password === ROOT_MASTER_PASS
-    ) {
-      const rootUser = getOrCreateRootUser();
-      setLocalSession(rootUser);
-      return { user: rootUser, error: null };
-    }
-
     const code = err?.code;
     if (code === "auth/unauthorized-domain") {
       return {

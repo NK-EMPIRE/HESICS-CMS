@@ -128,8 +128,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     if (res.user) {
       handleLoginSuccess(res.user);
     } else {
-      // If first time, authenticate user directly
-      handleLoginSuccess(existingUser);
+      setErrorMsg(res.error || "Unable to authenticate this account. Use the password reset flow or contact your administrator.");
     }
   };
 

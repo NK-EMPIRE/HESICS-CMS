@@ -1,3 +1,20 @@
+import { auth } from "./firebase";
+
+export const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+const sanitizeEmailHtml = (value: string) =>
+  value
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "")
+    .replace(/<iframe[\s\S]*?>[\s\S]*?<\/iframe>/gi, "")
+    .replace(/\son[a-z]+\s*=\s*(['\"]).*?\1/gi, "")
+    .replace(/javascript:/gi, "");
+
 export interface EmailPayload {
   to: string;
   subject: string;
@@ -105,9 +122,16 @@ export async function sendEmail(
   payload: EmailPayload,
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    const idToken = auth?.currentUser ? await auth.currentUser.getIdToken() : null;
+    if (!idToken) {
+      return { success: false, error: "You must be signed in to send email." };
+    }
     const res = await fetch("/api/send-email", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${idToken}`,
+      },
       body: JSON.stringify(payload),
     });
 
@@ -115,7 +139,7 @@ export async function sendEmail(
       const err = await res.json().catch(() => ({}));
       return {
         success: false,
-        error: err.message || `Failed to send email (${res.status})`,
+        error: err.error || err.message || `Failed to send email (${res.status})`,
       };
     }
 
@@ -165,7 +189,7 @@ export async function sendCustomEmail(params: {
   return sendEmail({
     to: params.to,
     subject: params.subject,
-    html: finalHtml || params.message || "",
+    html: sanitizeEmailHtml(finalHtml || escapeHtml(params.message || "")),
     text: params.text,
     category: params.category || "custom",
   });

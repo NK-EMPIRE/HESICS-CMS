@@ -164,6 +164,26 @@ export class FirebaseDataStore {
   );
   private agreements: ClientAgreement[] = getStorageItem("agreements", []);
   private listeners: Set<() => void> = new Set();
+  private persistenceState: "local" | "connecting" | "synced" | "error" = isFirebaseConfigured ? "connecting" : "local";
+  private persistenceError = "";
+
+  getPersistenceStatus(): { state: "local" | "connecting" | "synced" | "error"; error?: string } {
+    return {
+      state: this.persistenceState,
+      error: this.persistenceError || undefined,
+    };
+  }
+
+  private markPersistenceSynced() {
+    this.persistenceState = "synced";
+    this.persistenceError = "";
+  }
+
+  private markPersistenceError(error: unknown) {
+    this.persistenceState = "error";
+    this.persistenceError = error instanceof Error ? error.message : "Remote data synchronization failed.";
+    this.notify();
+  }
 
   subscribe(fn: () => void): () => void {
     this.listeners.add(fn);
@@ -248,19 +268,15 @@ export class FirebaseDataStore {
       onSnapshot(
         collection(firestore, "users"),
         (snapshot) => {
-          if (!snapshot.empty) {
-            const list: User[] = [];
-            snapshot.forEach((d) => list.push(d.data() as User));
-            if (list.length > 0) {
-              // Keep ROOT_MASTER_USER intact
-              const hasRoot = list.some(
-                (u) => u.email.toLowerCase() === ROOT_MASTER_EMAIL,
-              );
-              this.users = hasRoot ? list : [ROOT_MASTER_USER, ...list];
-              setStorageItem("users", this.users);
-              this.notify();
-            }
-          }
+          const list: User[] = [];
+          snapshot.forEach((d) => list.push(d.data() as User));
+          // Keep ROOT_MASTER_USER intact while treating an empty remote collection as authoritative.
+          const hasRoot = list.some(
+            (u) => u.email.toLowerCase() === ROOT_MASTER_EMAIL,
+          );
+          this.users = hasRoot ? list : [ROOT_MASTER_USER, ...list];
+          setStorageItem("users", this.users);
+          this.notify();
         },
         (err) => console.warn("Firestore users sync notice:", err.message),
       );
@@ -269,32 +285,28 @@ export class FirebaseDataStore {
       onSnapshot(
         collection(firestore, "clients"),
         (snapshot) => {
-          if (!snapshot.empty) {
-            const list: Client[] = [];
-            snapshot.forEach((d) => list.push(d.data() as Client));
-            if (list.length > 0) {
-              this.clients = list;
-              setStorageItem("clients", list);
-              this.notify();
-            }
-          }
+          const list: Client[] = [];
+          snapshot.forEach((d) => list.push(d.data() as Client));
+          this.clients = list;
+          setStorageItem("clients", list);
+          this.notify();
+          this.markPersistenceSynced();
         },
-        (err) => console.warn("Firestore clients sync notice:", err.message),
+        (err) => {
+          console.warn("Firestore clients sync notice:", err.message);
+          this.markPersistenceError(err);
+        },
       );
 
       // 3. Deals real-time sync
       onSnapshot(
         collection(firestore, "deals"),
         (snapshot) => {
-          if (!snapshot.empty) {
-            const list: Deal[] = [];
-            snapshot.forEach((d) => list.push(d.data() as Deal));
-            if (list.length > 0) {
-              this.deals = list;
-              setStorageItem("deals", list);
-              this.notify();
-            }
-          }
+          const list: Deal[] = [];
+          snapshot.forEach((d) => list.push(d.data() as Deal));
+          this.deals = list;
+          setStorageItem("deals", list);
+          this.notify();
         },
         (err) => console.warn("Firestore deals sync notice:", err.message),
       );
@@ -303,15 +315,11 @@ export class FirebaseDataStore {
       onSnapshot(
         collection(firestore, "invoices"),
         (snapshot) => {
-          if (!snapshot.empty) {
-            const list: Invoice[] = [];
-            snapshot.forEach((d) => list.push(d.data() as Invoice));
-            if (list.length > 0) {
-              this.invoices = list;
-              setStorageItem("invoices", list);
-              this.notify();
-            }
-          }
+          const list: Invoice[] = [];
+          snapshot.forEach((d) => list.push(d.data() as Invoice));
+          this.invoices = list;
+          setStorageItem("invoices", list);
+          this.notify();
         },
         (err) => console.warn("Firestore invoices sync notice:", err.message),
       );
@@ -320,15 +328,11 @@ export class FirebaseDataStore {
       onSnapshot(
         collection(firestore, "quotations"),
         (snapshot) => {
-          if (!snapshot.empty) {
-            const list: Quotation[] = [];
-            snapshot.forEach((d) => list.push(d.data() as Quotation));
-            if (list.length > 0) {
-              this.quotations = list;
-              setStorageItem("quotations", list);
-              this.notify();
-            }
-          }
+          const list: Quotation[] = [];
+          snapshot.forEach((d) => list.push(d.data() as Quotation));
+          this.quotations = list;
+          setStorageItem("quotations", list);
+          this.notify();
         },
         (err) => console.warn("Firestore quotations sync notice:", err.message),
       );
@@ -337,15 +341,11 @@ export class FirebaseDataStore {
       onSnapshot(
         collection(firestore, "agreements"),
         (snapshot) => {
-          if (!snapshot.empty) {
-            const list: ClientAgreement[] = [];
-            snapshot.forEach((d) => list.push(d.data() as ClientAgreement));
-            if (list.length > 0) {
-              this.agreements = list;
-              setStorageItem("agreements", list);
-              this.notify();
-            }
-          }
+          const list: ClientAgreement[] = [];
+          snapshot.forEach((d) => list.push(d.data() as ClientAgreement));
+          this.agreements = list;
+          setStorageItem("agreements", list);
+          this.notify();
         },
         (err) => console.warn("Firestore agreements sync notice:", err.message),
       );
@@ -354,14 +354,11 @@ export class FirebaseDataStore {
       onSnapshot(
         collection(firestore, "income_entries"),
         (snapshot) => {
-          if (!snapshot.empty) {
-            const list: IncomeEntry[] = [];
-            snapshot.forEach((d) => list.push(d.data() as IncomeEntry));
-            if (list.length > 0) {
-              this.incomeEntries = list;
-              setStorageItem("income_entries", list);
-            }
-          }
+          const list: IncomeEntry[] = [];
+          snapshot.forEach((d) => list.push(d.data() as IncomeEntry));
+          this.incomeEntries = list;
+          setStorageItem("income_entries", list);
+          this.notify();
         },
         (err) => console.warn("Firestore income sync notice:", err.message),
       );
@@ -370,14 +367,11 @@ export class FirebaseDataStore {
       onSnapshot(
         collection(firestore, "meetings"),
         (snapshot) => {
-          if (!snapshot.empty) {
-            const list: MeetingItem[] = [];
-            snapshot.forEach((d) => list.push(d.data() as MeetingItem));
-            if (list.length > 0) {
-              this.meetings = list;
-              setStorageItem("meetings", list);
-            }
-          }
+          const list: MeetingItem[] = [];
+          snapshot.forEach((d) => list.push(d.data() as MeetingItem));
+          this.meetings = list;
+          setStorageItem("meetings", list);
+          this.notify();
         },
         (err) => console.warn("Firestore meetings sync notice:", err.message),
       );
@@ -404,14 +398,11 @@ export class FirebaseDataStore {
       onSnapshot(
         collection(firestore, "expense_entries"),
         (snapshot) => {
-          if (!snapshot.empty) {
-            const list: ExpenseEntry[] = [];
-            snapshot.forEach((d) => list.push(d.data() as ExpenseEntry));
-            if (list.length > 0) {
-              this.expenseEntries = list;
-              setStorageItem("expense_entries", list);
-            }
-          }
+          const list: ExpenseEntry[] = [];
+          snapshot.forEach((d) => list.push(d.data() as ExpenseEntry));
+          this.expenseEntries = list;
+          setStorageItem("expense_entries", list);
+          this.notify();
         },
         (err) => console.warn("Firestore expense sync notice:", err.message),
       );
@@ -847,9 +838,12 @@ export class FirebaseDataStore {
 
     const firestore = dbInstance;
     if (firestore) {
-      setDoc(doc(firestore, "clients", newClient.id), newClient).catch(
-        console.error,
-      );
+      setDoc(doc(firestore, "clients", newClient.id), newClient)
+        .then(() => this.markPersistenceSynced())
+        .catch((error) => {
+          console.error("Client persistence failed:", error);
+          this.markPersistenceError(error);
+        });
     }
     return newClient;
   }
@@ -877,7 +871,12 @@ export class FirebaseDataStore {
 
     const firestore = dbInstance;
     if (firestore) {
-      updateDoc(doc(firestore, "clients", id), updates).catch(console.error);
+      updateDoc(doc(firestore, "clients", id), updates)
+        .then(() => this.markPersistenceSynced())
+        .catch((error) => {
+          console.error("Client update persistence failed:", error);
+          this.markPersistenceError(error);
+        });
     }
     return updated;
   }
@@ -900,7 +899,12 @@ export class FirebaseDataStore {
 
     const firestore = dbInstance;
     if (firestore) {
-      deleteDoc(doc(firestore, "clients", id)).catch(console.error);
+      deleteDoc(doc(firestore, "clients", id))
+        .then(() => this.markPersistenceSynced())
+        .catch((error) => {
+          console.error("Client archive persistence failed:", error);
+          this.markPersistenceError(error);
+        });
     }
   }
 
