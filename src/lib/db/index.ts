@@ -18,6 +18,8 @@ import {
 import { dbInstance, isFirebaseConfigured } from "../firebase";
 import {
   collection,
+  query,
+  where,
   doc,
   getDocs,
   setDoc,
@@ -248,6 +250,9 @@ export class FirebaseDataStore {
     if (!firestore) return;
 
     try {
+      const orgCollection = (name: string) =>
+        query(collection(firestore, name), where("org_id", "==", this.org.id));
+
       // 0. Organization Settings real-time sync
       onSnapshot(
         collection(firestore, "organization"),
@@ -266,7 +271,7 @@ export class FirebaseDataStore {
 
       // 1. Users real-time sync
       onSnapshot(
-        collection(firestore, "users"),
+        orgCollection("users"),
         (snapshot) => {
           const list: User[] = [];
           snapshot.forEach((d) => list.push(d.data() as User));
@@ -283,7 +288,7 @@ export class FirebaseDataStore {
 
       // 2. Clients real-time sync
       onSnapshot(
-        collection(firestore, "clients"),
+        orgCollection("clients"),
         (snapshot) => {
           const list: Client[] = [];
           snapshot.forEach((d) => list.push(d.data() as Client));
@@ -300,7 +305,7 @@ export class FirebaseDataStore {
 
       // 3. Deals real-time sync
       onSnapshot(
-        collection(firestore, "deals"),
+        orgCollection("deals"),
         (snapshot) => {
           const list: Deal[] = [];
           snapshot.forEach((d) => list.push(d.data() as Deal));
@@ -313,7 +318,7 @@ export class FirebaseDataStore {
 
       // 4. Invoices real-time sync
       onSnapshot(
-        collection(firestore, "invoices"),
+        orgCollection("invoices"),
         (snapshot) => {
           const list: Invoice[] = [];
           snapshot.forEach((d) => list.push(d.data() as Invoice));
@@ -326,7 +331,7 @@ export class FirebaseDataStore {
 
       // 5. Quotations real-time sync
       onSnapshot(
-        collection(firestore, "quotations"),
+        orgCollection("quotations"),
         (snapshot) => {
           const list: Quotation[] = [];
           snapshot.forEach((d) => list.push(d.data() as Quotation));
@@ -339,7 +344,7 @@ export class FirebaseDataStore {
 
       // 6. Agreements real-time sync
       onSnapshot(
-        collection(firestore, "agreements"),
+        orgCollection("agreements"),
         (snapshot) => {
           const list: ClientAgreement[] = [];
           snapshot.forEach((d) => list.push(d.data() as ClientAgreement));
@@ -352,7 +357,7 @@ export class FirebaseDataStore {
 
       // 7. Income Entries real-time sync
       onSnapshot(
-        collection(firestore, "income_entries"),
+        orgCollection("income_entries"),
         (snapshot) => {
           const list: IncomeEntry[] = [];
           snapshot.forEach((d) => list.push(d.data() as IncomeEntry));
@@ -365,7 +370,7 @@ export class FirebaseDataStore {
 
       // 9. Meetings real-time sync
       onSnapshot(
-        collection(firestore, "meetings"),
+        orgCollection("meetings"),
         (snapshot) => {
           const list: MeetingItem[] = [];
           snapshot.forEach((d) => list.push(d.data() as MeetingItem));
@@ -378,7 +383,7 @@ export class FirebaseDataStore {
 
       // 10. Notion Workspaces real-time sync
       onSnapshot(
-        collection(firestore, "notion_workspaces"),
+        orgCollection("notion_workspaces"),
         (snapshot) => {
           if (!snapshot.empty) {
             const map: Record<string, NotionWorkspaceDoc> = {};
@@ -396,7 +401,7 @@ export class FirebaseDataStore {
 
       // 8. Expense Entries real-time sync
       onSnapshot(
-        collection(firestore, "expense_entries"),
+        orgCollection("expense_entries"),
         (snapshot) => {
           const list: ExpenseEntry[] = [];
           snapshot.forEach((d) => list.push(d.data() as ExpenseEntry));
