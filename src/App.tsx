@@ -20,6 +20,7 @@ import { Invoices } from "./pages/Invoices";
 import { TeamPermissions } from "./pages/TeamPermissions";
 import { Settings } from "./pages/Settings";
 import { PrivateSpace } from "./pages/PrivateSpace";
+import { Management } from "./pages/Management";
 import { AuditLogs } from "./pages/AuditLogs";
 import { Agreements } from "./pages/Agreements";
 import { Meetings } from "./pages/Meetings";
@@ -202,6 +203,10 @@ export function App() {
                   <Route
                     path="/private-space"
                     element={<PrivateSpace activeUser={activeUser} />}
+                  />
+                  <Route
+                    path="/management"
+                    element={<Management activeUser={activeUser} />}
                   />
                   <Route
                     path="/settings"

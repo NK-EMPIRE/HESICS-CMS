@@ -288,6 +288,7 @@ export interface ExpenseEntry {
 
 export interface PrivateVaultItem {
   id: string;
+  org_id?: string;
   type: "income" | "expense" | "client" | "note" | "task";
   title: string;
   amount?: number;
@@ -295,7 +296,45 @@ export interface PrivateVaultItem {
   client_contact?: string;
   due_date?: string;
   is_completed?: boolean;
+  status?: "backlog" | "in_progress" | "review" | "done";
+  priority?: "low" | "medium" | "high" | "critical";
+  owner_id?: string;
+  owner_name?: string;
+  tags?: string[];
+  board_x?: number;
+  board_y?: number;
+  board_color?: "amber" | "blue" | "green" | "pink";
   content?: string;
+  created_at: string;
+}
+
+export type DomainStatus = "active" | "expiring" | "expired" | "parked";
+
+export interface DomainRecord {
+  id: string;
+  org_id: string;
+  name: string;
+  registrar?: string;
+  status: DomainStatus;
+  renewal_date?: string;
+  auto_renew?: boolean;
+  purpose?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ManagementFile {
+  id: string;
+  org_id: string;
+  name: string;
+  category: "contract" | "finance" | "brand" | "operations" | "other";
+  storage_path?: string;
+  download_url?: string;
+  content_type?: string;
+  size_bytes?: number;
+  uploaded_by?: string;
+  uploaded_by_name?: string;
   created_at: string;
 }
 

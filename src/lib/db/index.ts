@@ -14,6 +14,8 @@ import {
   ClientAgreement,
   MeetingItem,
   NotionWorkspaceDoc,
+  DomainRecord,
+  ManagementFile,
 } from "../types";
 import { dbInstance, isFirebaseConfigured } from "../firebase";
 import {
@@ -164,6 +166,8 @@ export class FirebaseDataStore {
     "private_vault",
     [],
   );
+  private domains: DomainRecord[] = getStorageItem("domains", []);
+  private managementFiles: ManagementFile[] = getStorageItem("management_files", []);
   private agreements: ClientAgreement[] = getStorageItem("agreements", []);
   private listeners: Set<() => void> = new Set();
   private persistenceState: "local" | "connecting" | "synced" | "error" = isFirebaseConfigured ? "connecting" : "local";
@@ -413,8 +417,56 @@ export class FirebaseDataStore {
         },
         (err) => console.warn("Firestore expense sync notice:", err.message),
       );
+
+      // 11. Superadmin-only vault and management collections
+      onSnapshot(
+        orgCollection("private_vault"),
+        (snapshot) => {
+          const list: PrivateVaultItem[] = [];
+          snapshot.forEach((d) => list.push(d.data() as PrivateVaultItem));
+          this.privateVaultItems = list;
+          setStorageItem("private_vault", list);
+          this.notify();
+          this.markPersistenceSynced();
+        },
+        (err) => {
+          console.warn("Firestore private vault sync notice:", err.message);
+          this.markPersistenceError(err);
+        },
+      );
+
+      onSnapshot(
+        orgCollection("domains"),
+        (snapshot) => {
+          const list: DomainRecord[] = [];
+          snapshot.forEach((d) => list.push(d.data() as DomainRecord));
+          this.domains = list;
+          setStorageItem("domains", list);
+          this.notify();
+        },
+        (err) => {
+          console.warn("Firestore domains sync notice:", err.message);
+          this.markPersistenceError(err);
+        },
+      );
+
+      onSnapshot(
+        orgCollection("management_files"),
+        (snapshot) => {
+          const list: ManagementFile[] = [];
+          snapshot.forEach((d) => list.push(d.data() as ManagementFile));
+          this.managementFiles = list;
+          setStorageItem("management_files", list);
+          this.notify();
+        },
+        (err) => {
+          console.warn("Firestore management files sync notice:", err.message);
+          this.markPersistenceError(err);
+        },
+      );
     } catch (err) {
       console.warn("Firestore real-time listeners initialization error:", err);
+      this.markPersistenceError(err);
     }
   }
 
@@ -709,6 +761,7 @@ export class FirebaseDataStore {
   ): PrivateVaultItem {
     const newItem: PrivateVaultItem = {
       ...item,
+      org_id: this.org.id,
       id: `pvt-${Date.now()}`,
       created_at: new Date().toISOString(),
     };
@@ -772,6 +825,94 @@ export class FirebaseDataStore {
         id,
         target.title,
       );
+    }
+  }
+
+  getDomains(): DomainRecord[] {
+    return this.domains;
+  }
+
+  addDomain(domain: Omit<DomainRecord, "id" | "org_id" | "created_at" | "updated_at">): DomainRecord {
+    const now = new Date().toISOString();
+    const created: DomainRecord = {
+      ...domain,
+      id: `domain-${Date.now()}`,
+      org_id: this.org.id,
+      created_at: now,
+      updated_at: now,
+    };
+    this.domains = [created, ...this.domains];
+    setStorageItem("domains", this.domains);
+    this.notify();
+    const firestore = dbInstance;
+    if (firestore) {
+      setDoc(doc(firestore, "domains", created.id), created)
+        .then(() => this.markPersistenceSynced())
+        .catch((error) => this.markPersistenceError(error));
+    }
+    return created;
+  }
+
+  updateDomain(id: string, updates: Partial<DomainRecord>): DomainRecord | undefined {
+    this.domains = this.domains.map((domain) =>
+      domain.id === id ? { ...domain, ...updates, updated_at: new Date().toISOString() } : domain,
+    );
+    setStorageItem("domains", this.domains);
+    const updated = this.domains.find((domain) => domain.id === id);
+    this.notify();
+    const firestore = dbInstance;
+    if (firestore && updated) {
+      updateDoc(doc(firestore, "domains", id), updates)
+        .then(() => this.markPersistenceSynced())
+        .catch((error) => this.markPersistenceError(error));
+    }
+    return updated;
+  }
+
+  deleteDomain(id: string): void {
+    this.domains = this.domains.filter((domain) => domain.id !== id);
+    setStorageItem("domains", this.domains);
+    this.notify();
+    const firestore = dbInstance;
+    if (firestore) {
+      deleteDoc(doc(firestore, "domains", id))
+        .then(() => this.markPersistenceSynced())
+        .catch((error) => this.markPersistenceError(error));
+    }
+  }
+
+  getManagementFiles(): ManagementFile[] {
+    return this.managementFiles;
+  }
+
+  addManagementFile(file: Omit<ManagementFile, "id" | "org_id" | "created_at">): ManagementFile {
+    const created: ManagementFile = {
+      ...file,
+      id: `file-${Date.now()}`,
+      org_id: this.org.id,
+      created_at: new Date().toISOString(),
+    };
+    this.managementFiles = [created, ...this.managementFiles];
+    setStorageItem("management_files", this.managementFiles);
+    this.notify();
+    const firestore = dbInstance;
+    if (firestore) {
+      setDoc(doc(firestore, "management_files", created.id), created)
+        .then(() => this.markPersistenceSynced())
+        .catch((error) => this.markPersistenceError(error));
+    }
+    return created;
+  }
+
+  deleteManagementFile(id: string): void {
+    this.managementFiles = this.managementFiles.filter((file) => file.id !== id);
+    setStorageItem("management_files", this.managementFiles);
+    this.notify();
+    const firestore = dbInstance;
+    if (firestore) {
+      deleteDoc(doc(firestore, "management_files", id))
+        .then(() => this.markPersistenceSynced())
+        .catch((error) => this.markPersistenceError(error));
     }
   }
 
@@ -1526,9 +1667,11 @@ export class FirebaseDataStore {
   saveNotionWorkspace(docData: NotionWorkspaceDoc): void {
     this.notionDocs[docData.id] = {
       ...docData,
+      org_id: this.org.id,
       updated_at: new Date().toISOString(),
     };
     setStorageItem("notion_docs", this.notionDocs);
+    this.notify();
 
     const firestore = dbInstance;
     if (firestore) {

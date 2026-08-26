@@ -71,7 +71,7 @@ export const AppShell: React.FC<AppShellProps> = ({
   }, []);
 
   // Private space strictly for Superadmin (Chief is stealth Admin)
-  const isSuper = isSuperadmin(activeUser.hierarchy);
+  const isSuper = isSuperadmin(activeUser.hierarchy) || activeUser.hierarchy === "founder";
   const isAdmin = isAdminOrAbove(activeUser.hierarchy);
 
   const coldCount = db.getClients().filter((c) => {
@@ -94,6 +94,14 @@ export const AppShell: React.FC<AppShellProps> = ({
     },
     ...(isSuper
       ? [
+          {
+            path: "/management",
+            label: "Management",
+            icon: Briefcase,
+            perm: "superadmin:vault" as PermissionKey,
+            badge: "Command Center",
+            badgeColor: "bg-sky-950/40 text-sky-300 border-sky-800/50",
+          },
           {
             path: "/private-space",
             label: "Private Vault",

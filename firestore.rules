@@ -164,6 +164,18 @@ service cloud.firestore {
       allow delete: if isSuperAdminOrAbove() && sameOrg(resource.data);
     }
 
+    match /domains/{domainId} {
+      allow read: if isSuperAdminOrAbove() && sameOrg(resource.data);
+      allow create, update: if isSuperAdminOrAbove() && sameOrg(request.resource.data);
+      allow delete: if isSuperAdminOrAbove() && sameOrg(resource.data);
+    }
+
+    match /management_files/{fileId} {
+      allow read: if isSuperAdminOrAbove() && sameOrg(resource.data);
+      allow create, update: if isSuperAdminOrAbove() && sameOrg(request.resource.data);
+      allow delete: if isSuperAdminOrAbove() && sameOrg(resource.data);
+    }
+
     match /audit_logs/{logId} {
       allow read: if isAdminOrAbove();
       allow create: if isAuthenticated();
