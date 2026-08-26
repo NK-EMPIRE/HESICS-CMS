@@ -262,6 +262,8 @@ export class FirebaseDataStore {
             if (docData && docData.name) {
               this.org = { ...this.org, ...docData };
               setStorageItem("org", this.org);
+              this.markPersistenceSynced();
+              this.notify();
             }
           }
         },
@@ -442,7 +444,12 @@ export class FirebaseDataStore {
     if (firestore) {
       setDoc(doc(firestore, "organization", this.org.id), this.org, {
         merge: true,
-      }).catch(console.error);
+      })
+        .then(() => this.markPersistenceSynced())
+        .catch((error) => {
+          console.error("Organization persistence failed:", error);
+          this.markPersistenceError(error);
+        });
     }
     return this.org;
   }

@@ -70,6 +70,12 @@ service cloud.firestore {
       allow write: if isAdminOrAbove() && (isRootMaster() || orgId == getUserData().org_id);
     }
 
+    // Backward-compatible path used by the current client data adapter.
+    match /organization/{orgId} {
+      allow read: if isAuthenticated() && (isRootMaster() || (hasUserRecord() && orgId == getUserData().org_id));
+      allow write: if isAdminOrAbove() && (isRootMaster() || orgId == getUserData().org_id);
+    }
+
     match /users/{userId} {
       allow read: if isRootMaster() || (isAuthenticated() && userId == request.auth.uid) ||
         (isAuthenticated() && hasUserRecord() && resource.data.org_id == getUserData().org_id && resource.data.hierarchy != 'founder');
